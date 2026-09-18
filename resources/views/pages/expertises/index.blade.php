@@ -7,6 +7,10 @@ use Livewire\Component;
 
 new #[Layout('layouts::public')] class extends Component
 {
+    public bool $showDetails = false;
+
+    public ?int $selectedExpertiseId = null;
+
     #[Computed]
     public function expertises()
     {
@@ -17,6 +21,25 @@ new #[Layout('layouts::public')] class extends Component
                 'services' => fn ($query) => $query->active()->ordered(),
             ])
             ->get();
+    }
+
+    #[Computed]
+    public function selectedExpertise(): ?Expertise
+    {
+        if ($this->selectedExpertiseId === null) {
+            return null;
+        }
+
+        return Expertise::with([
+            'sectors',
+            'services' => fn ($query) => $query->active()->ordered(),
+        ])->find($this->selectedExpertiseId);
+    }
+
+    public function openDetails(int $id): void
+    {
+        $this->selectedExpertiseId = $id;
+        $this->showDetails = true;
     }
 };
 ?>
@@ -43,10 +66,6 @@ new #[Layout('layouts::public')] class extends Component
             @foreach($this->expertises as $expertise)
                 @php($position = str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT))
                 @php($cover = $expertise->getFirstMediaUrl('cover', 'thumb'))
-                @php($benefits = collect($expertise->benefits)->filter()->values())
-                @php($steps = collect($expertise->process_steps)->filter()->values())
-                @php($remainingBenefits = $benefits->count() - 6)
-                @php($remainingSteps = $steps->count() - 5)
                 @php($remainingServices = $expertise->services->count() - 6)
                 <article
                     wire:key="expertise-{{ $expertise->id }}"
@@ -72,69 +91,37 @@ new #[Layout('layouts::public')] class extends Component
                     </div>
 
                     <div class="flex flex-1 flex-col p-6 lg:p-8">
-                        <h2 class="font-display text-2xl font-extrabold text-nuit leading-snug tracking-tight transition-colors duration-300 group-hover:text-cuivre">{{ $expertise->name }}</h2>
+                        <h2 class="font-display text-xl font-extrabold text-nuit leading-snug tracking-tight transition-colors duration-300 group-hover:text-cuivre">{{ $expertise->name }}</h2>
 
                         @if($expertise->short_description ?? $expertise->description)
                             <p class="mt-3 text-sm leading-relaxed text-ardoise">{{ $expertise->short_description ?? $expertise->description }}</p>
                         @endif
 
-                        @if($benefits->isNotEmpty())
-                            <div class="mt-6 border-t border-bordure pt-5">
-                                <div class="font-display text-[10px] font-semibold uppercase tracking-[0.18em] text-ardoise/70">Bénéfices</div>
-                                <ul class="mt-3 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
-                                    @foreach($benefits->take(6) as $index => $benefit)
-                                        <li wire:key="expertise-{{ $expertise->id }}-benefit-{{ $index }}" class="flex items-start gap-2.5 text-sm text-anthracite">
-                                            <svg class="mt-0.5 size-4 shrink-0 text-cuivre" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/>
-                                            </svg>
-                                            <span>{{ $benefit }}</span>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                                @if($remainingBenefits > 0)
-                                    <div class="mt-3 text-xs text-ardoise">+ {{ $remainingBenefits }} autre{{ $remainingBenefits > 1 ? 's' : '' }} bénéfice{{ $remainingBenefits > 1 ? 's' : '' }}</div>
-                                @endif
-                            </div>
-                        @endif
-
-                        @if($steps->isNotEmpty())
-                            <div class="mt-6 border-t border-bordure pt-5">
-                                <div class="font-display text-[10px] font-semibold uppercase tracking-[0.18em] text-ardoise/70">Étapes d’intervention</div>
-                                <ol class="mt-3 space-y-2.5">
-                                    @foreach($steps->take(5) as $index => $step)
-                                        <li wire:key="expertise-{{ $expertise->id }}-step-{{ $index }}" class="flex items-start gap-3 text-sm text-anthracite">
-                                            <span class="font-display text-lg font-extrabold leading-none text-cuivre">{{ sprintf('%02d', $index + 1) }}</span>
-                                            <span class="pt-0.5">{{ $step }}</span>
-                                        </li>
-                                    @endforeach
-                                </ol>
-                                @if($remainingSteps > 0)
-                                    <div class="mt-3 text-xs text-ardoise">+ {{ $remainingSteps }} autre{{ $remainingSteps > 1 ? 's' : '' }} étape{{ $remainingSteps > 1 ? 's' : '' }}</div>
-                                @endif
-                            </div>
-                        @endif
-
                         @if($expertise->services->isNotEmpty())
-                            <div class="mt-6 border-t border-bordure pt-5">
-                                <div class="font-display text-[10px] font-semibold uppercase tracking-[0.18em] text-ardoise/70">Prestations associées</div>
-                                <div class="mt-3 flex flex-wrap gap-2">
-                                    @foreach($expertise->services->take(6) as $service)
-                                        <span wire:key="expertise-{{ $expertise->id }}-service-{{ $service->id }}" class="rounded-full border border-bordure bg-casse px-3 py-1 text-xs font-medium text-anthracite">{{ $service->name }}</span>
-                                    @endforeach
-                                    @if($remainingServices > 0)
-                                        <span class="rounded-full border border-dashed border-bordure px-3 py-1 text-xs text-ardoise">+ {{ $remainingServices }}</span>
-                                    @endif
-                                </div>
+                            <div class="mt-5 flex flex-wrap gap-2">
+                                @foreach($expertise->services->take(6) as $service)
+                                    <span wire:key="expertise-{{ $expertise->id }}-service-{{ $service->id }}" class="rounded-full border border-bordure bg-casse px-3 py-1 text-xs font-medium text-anthracite">{{ $service->name }}</span>
+                                @endforeach
+                                @if($remainingServices > 0)
+                                    <span class="rounded-full border border-dashed border-bordure px-3 py-1 text-xs text-ardoise">+ {{ $remainingServices }}</span>
+                                @endif
                             </div>
                         @endif
 
-                        <div class="mt-auto flex justify-end pt-6">
+                        <div class="mt-auto flex flex-wrap items-center gap-2 pt-6">
+                            <button
+                                type="button"
+                                wire:click="openDetails({{ $expertise->id }})"
+                                class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
+                            >
+                                Bénéfices &amp; étapes
+                                <span aria-hidden="true">→</span>
+                            </button>
                             <a
                                 href="{{ route('contact') }}"
-                                class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
-                             wire:navigate>
+                                class="inline-flex items-center gap-2 rounded-full border border-bordure px-4 py-2 font-display text-sm font-semibold text-anthracite transition-colors duration-300 hover:border-cuivre hover:text-cuivre focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
+                                wire:navigate>
                                 Nous contacter
-                                <span aria-hidden="true">→</span>
                             </a>
                         </div>
                     </div>
@@ -166,4 +153,72 @@ new #[Layout('layouts::public')] class extends Component
             </div>
         </div>
     </section>
+
+    <flux:modal wire:model="showDetails" class="md:w-[46rem]">
+        @if($this->selectedExpertise)
+            @php($benefits = collect($this->selectedExpertise->benefits)->filter()->values())
+            @php($steps = collect($this->selectedExpertise->process_steps)->filter()->values())
+
+            <div class="space-y-6">
+                <div>
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach($this->selectedExpertise->sectors as $sector)
+                            <a href="{{ route('sectors.show', $sector->slug) }}" class="rounded-full border border-bordure bg-casse px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-ardoise transition-colors duration-300 hover:border-cuivre hover:text-cuivre" wire:navigate>{{ $sector->name }}</a>
+                        @endforeach
+                    </div>
+                    <flux:heading size="lg" class="mt-4">{{ $this->selectedExpertise->name }}</flux:heading>
+                    @if($this->selectedExpertise->description)
+                        <p class="mt-2 text-sm leading-relaxed text-ardoise">{{ $this->selectedExpertise->description }}</p>
+                    @endif
+                </div>
+
+                @if($benefits->isNotEmpty())
+                    <div class="border-t border-bordure pt-5">
+                        <div class="font-display text-[10px] font-semibold uppercase tracking-[0.18em] text-ardoise/70">Bénéfices</div>
+                        <ul class="mt-3 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                            @foreach($benefits as $index => $benefit)
+                                <li wire:key="detail-benefit-{{ $index }}" class="flex items-start gap-2.5 text-sm text-anthracite">
+                                    <svg class="mt-0.5 size-4 shrink-0 text-cuivre" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>{{ $benefit }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                @if($steps->isNotEmpty())
+                    <div class="border-t border-bordure pt-5">
+                        <div class="font-display text-[10px] font-semibold uppercase tracking-[0.18em] text-ardoise/70">Étapes d’intervention</div>
+                        <ol class="mt-3 space-y-2.5">
+                            @foreach($steps as $index => $step)
+                                <li wire:key="detail-step-{{ $index }}" class="flex items-start gap-3 text-sm text-anthracite">
+                                    <span class="font-display text-lg font-extrabold leading-none text-cuivre">{{ sprintf('%02d', $index + 1) }}</span>
+                                    <span class="pt-0.5">{{ $step }}</span>
+                                </li>
+                            @endforeach
+                        </ol>
+                    </div>
+                @endif
+
+                @if($this->selectedExpertise->services->isNotEmpty())
+                    <div class="border-t border-bordure pt-5">
+                        <div class="font-display text-[10px] font-semibold uppercase tracking-[0.18em] text-ardoise/70">Prestations associées</div>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            @foreach($this->selectedExpertise->services as $service)
+                                <span wire:key="detail-service-{{ $service->id }}" class="rounded-full border border-bordure bg-casse px-3 py-1 text-xs font-medium text-anthracite">{{ $service->name }}</span>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                <div class="flex items-center gap-2 border-t border-bordure pt-5">
+                    <flux:spacer />
+                    <flux:button variant="ghost" wire:click="$set('showDetails', false)">Fermer</flux:button>
+                    <flux:button variant="primary" :href="route('contact')" wire:navigate>Nous contacter</flux:button>
+                </div>
+            </div>
+        @endif
+    </flux:modal>
 </div>

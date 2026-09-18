@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Support\UniqueSlug;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -21,6 +22,8 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
     public string $search = '';
 
     public bool $showForm = false;
+
+    public string $tab = 'contenu';
 
     public ?int $editingId = null;
 
@@ -143,22 +146,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
             $this->slug = UniqueSlug::for(Expertise::class, $this->name, $this->editingId);
         }
 
-        $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('expertises', 'slug')->ignore($this->editingId)],
-            'short_description' => ['nullable', 'string'],
-            'description' => ['nullable', 'string'],
-            'benefits_text' => ['nullable', 'string'],
-            'process_text' => ['nullable', 'string'],
-            'is_active' => ['boolean'],
-            'sort_order' => ['integer', 'min:0'],
-            'sector_ids' => ['array'],
-            'sector_ids.*' => ['exists:sectors,id'],
-            'service_ids' => ['array'],
-            'service_ids.*' => ['exists:services,id'],
-            'cover' => ['nullable', 'image', 'max:5120'],
-            'icon' => ['nullable', 'image', 'max:5120'],
-        ]);
+        $validated = $this->validatedData();
 
         $data = $validated;
         $data['benefits'] = $this->linesToArray($validated['benefits_text'] ?? null) ?: null;
@@ -231,6 +219,69 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         $expertise->delete();
     }
 
+    /**
+     * @var array<string, array<int, string>>
+     */
+    private const TAB_FIELDS = [
+        'contenu' => ['name', 'slug', 'short_description', 'description', 'benefits_text', 'process_text'],
+        'visuels' => ['cover', 'icon'],
+        'associations' => ['sector_ids', 'service_ids', 'sort_order', 'is_active'],
+    ];
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatedData(): array
+    {
+        try {
+            return $this->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'slug' => ['required', 'string', 'max:255', Rule::unique('expertises', 'slug')->ignore($this->editingId)],
+                'short_description' => ['nullable', 'string'],
+                'description' => ['nullable', 'string'],
+                'benefits_text' => ['nullable', 'string'],
+                'process_text' => ['nullable', 'string'],
+                'is_active' => ['boolean'],
+                'sort_order' => ['integer', 'min:0'],
+                'sector_ids' => ['array'],
+                'sector_ids.*' => ['exists:sectors,id'],
+                'service_ids' => ['array'],
+                'service_ids.*' => ['exists:services,id'],
+                'cover' => ['nullable', 'image', 'max:5120'],
+                'icon' => ['nullable', 'image', 'max:5120'],
+            ]);
+        } catch (ValidationException $exception) {
+            $this->tab = $this->tabForErrors($exception->validator->errors()->keys());
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $fields
+     */
+    private function tabForErrors(array $fields): string
+    {
+        foreach (self::TAB_FIELDS as $tab => $tabFields) {
+            if (array_intersect($fields, $tabFields) !== []) {
+                return $tab;
+            }
+        }
+
+        return 'contenu';
+    }
+
+    public function tabHasErrors(string $tab): bool
+    {
+        foreach (self::TAB_FIELDS[$tab] ?? [] as $field) {
+            if ($this->getErrorBag()->has($field)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function resetForm(): void
     {
         $this->reset([
@@ -239,6 +290,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
             'cover', 'icon', 'coverPreview', 'iconPreview',
         ]);
 
+        $this->tab = 'contenu';
         $this->is_active = true;
         unset($this->editedExpertise);
     }
@@ -321,7 +373,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
     </flux:table>
 
     <flux:modal wire:model="showForm" class="md:w-[48rem]">
-        <form wire:submit="save" class="space-y-5" x-data="{ tab: 'contenu' }">
+        <form wire:submit="save" class="space-y-5" wire:key="expertise-form-{{ $tab }}" x-data="{ tab: @js($tab) }">
             <div>
                 <flux:heading size="lg">{{ $editingId ? 'Modifier l’expertise' : 'Nouvelle expertise' }}</flux:heading>
                 <flux:subheading>Contenus, visuels (max 5 Mo) et associations.</flux:subheading>
@@ -334,7 +386,12 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
                         x-on:click="tab = '{{ $key }}'"
                         x-bind:class="tab === '{{ $key }}' ? 'border-cuivre bg-cuivre text-nuit' : 'border-zinc-200 text-zinc-600 hover:border-cuivre dark:border-zinc-700 dark:text-zinc-300'"
                         class="rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors"
-                    >{{ $label }}</button>
+                    >
+                        {{ $label }}
+                        @if($this->tabHasErrors($key))
+                            <span class="ml-1 inline-block size-2 rounded-full bg-red-500 align-middle" title="Champs à corriger"></span>
+                        @endif
+                    </button>
                 @endforeach
             </div>
 
@@ -466,10 +523,11 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
                 </div>
             </div>
 
-            <div class="flex gap-2">
+            <div class="flex items-center gap-2">
+                <span wire:loading wire:target="cover,icon" class="text-xs font-medium text-cuivre">Téléversement en cours…</span>
                 <flux:spacer />
                 <flux:button variant="ghost" wire:click="$set('showForm', false)">Annuler</flux:button>
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled">Enregistrer</flux:button>
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="cover,icon,save">Enregistrer</flux:button>
             </div>
         </form>
     </flux:modal>

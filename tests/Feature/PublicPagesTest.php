@@ -9,6 +9,7 @@ use App\Models\Service;
 use App\Models\Setting;
 use App\Models\Testimonial;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 
 test('renders public pages', function () {
     $sector = Sector::factory()->create(['is_active' => true, 'slug' => 'btp']);
@@ -215,7 +216,7 @@ test('shows associated expertises on sector cards', function () {
         ->assertDontSee('Fiche détaillée');
 });
 
-test('shows benefits, steps and services on expertise cards', function () {
+test('shows services on expertise cards and details in a modal', function () {
     $expertise = Expertise::factory()->create([
         'name' => 'Gros œuvre',
         'slug' => 'gros-oeuvre',
@@ -228,14 +229,17 @@ test('shows benefits, steps and services on expertise cards', function () {
     $this->get(route('expertises.index'))
         ->assertOk()
         ->assertSee('Gros œuvre')
-        ->assertSee('Bénéfices')
+        ->assertSee('Bénéfices & étapes')
+        ->assertSee('Étude de sol')
+        ->assertDontSee('Solidité');
+
+    Livewire::test('pages::expertises.index')
+        ->call('openDetails', $expertise->id)
+        ->assertSet('showDetails', true)
         ->assertSee('Solidité')
         ->assertSee('Durabilité')
         ->assertSee('Étapes d’intervention')
-        ->assertSee('Réalisation')
-        ->assertSee('Prestations associées')
-        ->assertSee('Étude de sol')
-        ->assertDontSee('Fiche détaillée');
+        ->assertSee('Réalisation');
 });
 
 test('links sector cards to their dedicated page', function () {
