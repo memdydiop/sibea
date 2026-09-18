@@ -72,6 +72,30 @@ test('creates an expertise with cover upload and pivots', function () {
         ->and($expertise->hasMedia('cover'))->toBeTrue();
 });
 
+test('truncates long original file names', function () {
+    Storage::fake('public');
+    $sector = Sector::factory()->create();
+    $service = Service::factory()->create();
+
+    Livewire::actingAs(catalogManager(['manage_expertises']))
+        ->test('pages::admin.expertises.index')
+        ->set('name', 'Nom long')
+        ->set('slug', 'nom-long')
+        ->set('benefits_text', 'Benefice')
+        ->set('sector_ids', [$sector->id])
+        ->set('service_ids', [$service->id])
+        ->set('cover', UploadedFile::fake()->image(str_repeat('a', 300).'.jpg'))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $media = Expertise::where('slug', 'nom-long')->first()?->getFirstMedia('cover');
+
+    expect($media)->not->toBeNull()
+        ->and(strlen($media->file_name))->toBeLessThanOrEqual(255)
+        ->and(strlen($media->name))->toBeLessThanOrEqual(255)
+        ->and($media->file_name)->toEndWith('.jpg');
+});
+
 test('rejects oversized uploads', function () {
     Livewire::actingAs(catalogManager(['manage_expertises']))
         ->test('pages::admin.expertises.index')

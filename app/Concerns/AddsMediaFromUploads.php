@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\FileUploadConfiguration;
 use Spatie\MediaLibrary\MediaCollections\FileAdderFactory;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -24,7 +25,11 @@ trait AddsMediaFromUploads
             ? FileAdderFactory::createFromDisk($model, $path, FileUploadConfiguration::disk())
             : FileAdderFactory::create($model, $path);
 
-        $fileAdder->usingFileName($file->getClientOriginalName());
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $baseName = Str::limit(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 200, '') ?: 'fichier';
+
+        $fileAdder->usingName($baseName);
+        $fileAdder->usingFileName($extension !== '' ? "{$baseName}.{$extension}" : $baseName);
 
         return $usesRemoteDisk
             ? $fileAdder->toMediaCollectionFromRemote($collection)
