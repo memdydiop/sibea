@@ -101,10 +101,9 @@ new #[Layout('layouts::public')] class extends Component
                                 type="button"
                                 wire:click="openDetails({{ $expertise->id }})"
                                 class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
-                                icon="information-circle">
-                                Bénéfices &amp; étapes
-                                <span aria-hidden="true">→</span>
-                            </flux:button>
+                                icon="information-circle"
+                                aria-label="Voir les bénéfices et les étapes d’intervention"
+                                tooltip="Bénéfices & étapes" />
                             <flux:button
                                 href="{{ route('contact') }}"
                                 class="inline-flex items-center gap-2 rounded-full border border-bordure px-4 py-2 font-display text-sm font-semibold text-anthracite transition-colors duration-300 hover:border-cuivre hover:text-cuivre focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"

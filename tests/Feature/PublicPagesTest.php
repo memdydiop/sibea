@@ -229,7 +229,7 @@ test('shows services on expertise cards and details in a modal', function () {
     $this->get(route('expertises.index'))
         ->assertOk()
         ->assertSee('Gros œuvre')
-        ->assertSee('Bénéfices & étapes')
+        ->assertSee('aria-label="Voir les bénéfices et les étapes d’intervention"', false)
         ->assertDontSee('Étude de sol')
         ->assertDontSee('Solidité');
 
