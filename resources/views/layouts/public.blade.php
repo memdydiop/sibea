@@ -51,7 +51,7 @@
                 @endif
             </nav>
             <div class="flex items-center gap-3">
-                <flux:button variant="ghost" href="{{ route('login') }}" target="_blank" rel="noopener" class="hidden sm:inline-flex text-white! hover:text-cuivre!">
+                <flux:button variant="ghost" href="{{ route('admin.dashboard') }}" target="_blank" rel="noopener" class="hidden sm:inline-flex text-white! hover:text-cuivre!">
                     {{ setting('header.login_label') }}
                 </flux:button>
                 <button
@@ -79,7 +79,7 @@
                 @if($headerLinks['contact'])
                     <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.link.contact.label') }}</a>
                 @endif
-                <a x-on:click="open = false" href="{{ route('login') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.login_label') }}</a>
+                <a x-on:click="open = false" href="{{ route('admin.dashboard') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.login_label') }}</a>
             </div>
         </nav>
     </header>
