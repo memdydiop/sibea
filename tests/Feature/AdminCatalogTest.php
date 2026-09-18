@@ -97,6 +97,29 @@ test('truncates long original file names', function () {
         ->and($media->file_name)->toEndWith('.webp');
 });
 
+test('handles file names with invalid utf-8 bytes', function () {
+    Storage::fake('public');
+    $sector = Sector::factory()->create();
+    $service = Service::factory()->create();
+
+    Livewire::actingAs(catalogManager(['manage_expertises']))
+        ->test('pages::admin.expertises.index')
+        ->set('name', 'Encodage')
+        ->set('slug', 'encodage')
+        ->set('benefits_text', 'Benefice')
+        ->set('sector_ids', [$sector->id])
+        ->set('service_ids', [$service->id])
+        ->set('cover', UploadedFile::fake()->image("photo-\xff\xfe.jpg"))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $media = Expertise::where('slug', 'encodage')->first()?->getFirstMedia('cover');
+
+    expect($media)->not->toBeNull()
+        ->and(mb_check_encoding($media->file_name, 'UTF-8'))->toBeTrue()
+        ->and($media->file_name)->toEndWith('.webp');
+});
+
 test('rejects oversized uploads', function () {
     Livewire::actingAs(catalogManager(['manage_expertises']))
         ->test('pages::admin.expertises.index')

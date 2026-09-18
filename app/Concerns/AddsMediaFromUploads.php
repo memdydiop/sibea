@@ -27,8 +27,8 @@ trait AddsMediaFromUploads
      */
     protected static function addMediaFromUpload(Model $model, UploadedFile $file, string $collection): Media
     {
-        $extension = strtolower((string) $file->getClientOriginalExtension());
-        $baseName = Str::limit(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 200, '') ?: 'fichier';
+        $extension = preg_replace('/[^a-z0-9]/', '', strtolower((string) $file->getClientOriginalExtension())) ?? '';
+        $baseName = static::uploadFileBaseName($file);
 
         $webpPath = static::convertUploadToWebp($file);
         $usesRemoteDisk = false;
@@ -55,6 +55,19 @@ trait AddsMediaFromUploads
         return $usesRemoteDisk
             ? $fileAdder->toMediaCollectionFromRemote($collection)
             : $fileAdder->toMediaCollection($collection);
+    }
+
+    /**
+     * Build a safe, displayable file name from the uploaded file, guarding
+     * against invalid UTF-8 and extremely long client file names.
+     */
+    protected static function uploadFileBaseName(UploadedFile $file): string
+    {
+        $originalName = mb_scrub((string) $file->getClientOriginalName(), 'UTF-8');
+
+        $baseName = Str::limit(pathinfo(Str::ascii($originalName), PATHINFO_FILENAME), 200, '');
+
+        return $baseName !== '' ? $baseName : 'fichier';
     }
 
     /**
