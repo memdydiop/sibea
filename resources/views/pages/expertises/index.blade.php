@@ -66,7 +66,6 @@ new #[Layout('layouts::public')] class extends Component
             @foreach($this->expertises as $expertise)
                 @php($position = str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT))
                 @php($cover = $expertise->getFirstMediaUrl('cover', 'thumb'))
-                @php($remainingServices = $expertise->services->count() - 6)
                 <article
                     wire:key="expertise-{{ $expertise->id }}"
                     class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md"
@@ -97,32 +96,21 @@ new #[Layout('layouts::public')] class extends Component
                             <p class="mt-3 text-sm leading-relaxed text-ardoise">{{ $expertise->short_description ?? $expertise->description }}</p>
                         @endif
 
-                        @if($expertise->services->isNotEmpty())
-                            <div class="mt-5 flex flex-wrap gap-2">
-                                @foreach($expertise->services->take(6) as $service)
-                                    <span wire:key="expertise-{{ $expertise->id }}-service-{{ $service->id }}" class="rounded-full border border-bordure bg-casse px-3 py-1 text-xs font-medium text-anthracite">{{ $service->name }}</span>
-                                @endforeach
-                                @if($remainingServices > 0)
-                                    <span class="rounded-full border border-dashed border-bordure px-3 py-1 text-xs text-ardoise">+ {{ $remainingServices }}</span>
-                                @endif
-                            </div>
-                        @endif
-
-                        <div class="mt-auto flex flex-wrap items-center gap-2 pt-6">
-                            <button
+                        <div class="mt-auto flex items-center justify-between gap-2 pt-6">
+                            <flux:button
                                 type="button"
                                 wire:click="openDetails({{ $expertise->id }})"
                                 class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
-                            >
+                                icon="information-circle">
                                 Bénéfices &amp; étapes
                                 <span aria-hidden="true">→</span>
-                            </button>
-                            <a
+                            </flux:button>
+                            <flux:button
                                 href="{{ route('contact') }}"
                                 class="inline-flex items-center gap-2 rounded-full border border-bordure px-4 py-2 font-display text-sm font-semibold text-anthracite transition-colors duration-300 hover:border-cuivre hover:text-cuivre focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
                                 wire:navigate>
                                 Nous contacter
-                            </a>
+                            </flux:button>
                         </div>
                     </div>
                 </article>

@@ -230,7 +230,7 @@ test('shows services on expertise cards and details in a modal', function () {
         ->assertOk()
         ->assertSee('Gros œuvre')
         ->assertSee('Bénéfices & étapes')
-        ->assertSee('Étude de sol')
+        ->assertDontSee('Étude de sol')
         ->assertDontSee('Solidité');
 
     Livewire::test('pages::expertises.index')
@@ -239,7 +239,9 @@ test('shows services on expertise cards and details in a modal', function () {
         ->assertSee('Solidité')
         ->assertSee('Durabilité')
         ->assertSee('Étapes d’intervention')
-        ->assertSee('Réalisation');
+        ->assertSee('Réalisation')
+        ->assertSee('Prestations associées')
+        ->assertSee('Étude de sol');
 });
 
 test('links sector cards to their dedicated page', function () {
