@@ -8,7 +8,7 @@
     $organization = Schema::organization()
         ->name('Groupe SIBEA')
         ->url(config('app.url'))
-        ->logo(asset('images/logo-sibea.jpeg'));
+        ->logo(asset('images/logo-sibea.png'));
 
     $breadcrumbs = Schema::breadcrumbList()
         ->itemListElement([

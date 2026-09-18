@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProjectStatus;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -20,13 +21,24 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property string $slug
  * @property string|null $short_description
  * @property string|null $description
+ * @property string|null $challenge
+ * @property string|null $solution
+ * @property string|null $impact
  * @property string|null $location
  * @property string|null $client_name
+ * @property ProjectStatus|null $status
+ * @property string|null $duration
+ * @property string|null $surface
+ * @property string|null $budget
+ * @property string|null $testimonial_quote
+ * @property string|null $testimonial_author
+ * @property float|null $latitude
+ * @property float|null $longitude
  * @property bool $is_active
  * @property bool $is_published
  * @property array<int, mixed>|null $results
  */
-#[Fillable(['title', 'slug', 'short_description', 'description', 'location', 'project_date', 'status', 'client_name', 'client_publishable', 'results', 'is_active', 'is_published'])]
+#[Fillable(['title', 'slug', 'short_description', 'description', 'challenge', 'solution', 'impact', 'location', 'project_date', 'status', 'duration', 'surface', 'budget', 'client_name', 'client_publishable', 'testimonial_quote', 'testimonial_author', 'latitude', 'longitude', 'results', 'is_active', 'is_published'])]
 class Project extends Model implements HasMedia
 {
     /** @use HasFactory<ProjectFactory> */
@@ -39,7 +51,10 @@ class Project extends Model implements HasMedia
     {
         return [
             'project_date' => 'date',
+            'status' => ProjectStatus::class,
             'client_publishable' => 'boolean',
+            'latitude' => 'float',
+            'longitude' => 'float',
             'results' => 'array',
             'is_active' => 'boolean',
             'is_published' => 'boolean',
@@ -95,12 +110,13 @@ class Project extends Model implements HasMedia
         $this->addMediaCollection('cover')->singleFile();
         $this->addMediaCollection('gallery');
         $this->addMediaCollection('og_image')->singleFile();
+        $this->addMediaCollection('documents');
     }
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->fit(Fit::Crop, 600, 400)->format('webp');
-        $this->addMediaConversion('medium')->fit(Fit::Crop, 1200, 800)->format('webp');
-        $this->addMediaConversion('og')->fit(Fit::Crop, 1200, 630)->format('webp');
+        $this->addMediaConversion('thumb')->performOnCollections('cover', 'gallery', 'og_image')->fit(Fit::Crop, 600, 400)->format('webp');
+        $this->addMediaConversion('medium')->performOnCollections('cover', 'gallery', 'og_image')->fit(Fit::Crop, 1200, 800)->format('webp');
+        $this->addMediaConversion('og')->performOnCollections('cover', 'gallery', 'og_image')->fit(Fit::Crop, 1200, 630)->format('webp');
     }
 }

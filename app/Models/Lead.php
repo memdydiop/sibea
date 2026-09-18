@@ -10,16 +10,19 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string|null $residence_country
+ * @property string|null $target_territory
  * @property LeadStatus $status
  * @property RequestType $request_type
  * @property LeadSource $source
  */
-#[Fillable(['name', 'company', 'email', 'phone', 'sector_id', 'request_type', 'budget', 'message', 'status', 'source', 'assigned_to', 'notes', 'consent_at', 'consent_ip'])]
+#[Fillable(['name', 'company', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'request_type', 'budget', 'message', 'status', 'source', 'assigned_to', 'notes', 'consent_at', 'consent_ip'])]
 class Lead extends Model
 {
     /** @use HasFactory<LeadFactory> */
@@ -52,5 +55,13 @@ class Lead extends Model
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
+     * @return HasMany<LeadActivity, $this>
+     */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(LeadActivity::class)->latest();
     }
 }

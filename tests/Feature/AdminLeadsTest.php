@@ -89,3 +89,46 @@ test('lists lead sector name', function () {
         ->test('pages::admin.leads.index')
         ->assertSee('Voirie');
 });
+
+test('creates a lead manually with history entry', function () {
+    $sector = Sector::factory()->create();
+
+    Livewire::actingAs(leadsManager())
+        ->test('pages::admin.leads.index')
+        ->set('name', 'Koffi Mensah')
+        ->set('email', 'koffi@example.com')
+        ->set('sector_id', $sector->id)
+        ->set('request_type', 'information')
+        ->set('residence_country', 'France')
+        ->set('target_territory', 'Abidjan, Cocody')
+        ->set('message', 'Appel entrant.')
+        ->set('source', 'telephone')
+        ->call('store')
+        ->assertHasNoErrors();
+
+    $lead = Lead::where('email', 'koffi@example.com')->first();
+
+    expect($lead)->not->toBeNull()
+        ->and($lead->residence_country)->toBe('France')
+        ->and($lead->target_territory)->toBe('Abidjan, Cocody')
+        ->and($lead->activities()->where('action', 'created')->exists())->toBeTrue();
+});
+
+test('logs status and assignment changes in history', function () {
+    $manager = leadsManager();
+    $assignee = User::factory()->create();
+    $lead = Lead::factory()->create(['status' => LeadStatus::Nouveau]);
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.leads.index')
+        ->call('edit', $lead->id)
+        ->set('status', LeadStatus::Contacte->value)
+        ->set('assigned_to', $assignee->id)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $actions = $lead->fresh()->activities()->pluck('action')->all();
+
+    expect($actions)->toContain('status_changed')
+        ->and($actions)->toContain('assigned');
+});

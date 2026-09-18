@@ -8,68 +8,66 @@
     <meta name="description" content="{{ $description ?? 'Le Groupe SIBEA rassemble des expertises complémentaires dans le BTP, l’immobilier, l’énergie et l’agro-industrie.' }}">
     {{-- Partial SEO centralisé : exception documentée au principe "aucun composant réutilisable" --}}
     @include('partials.seo')
-    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo-sibea.jpeg') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=manrope:400,500,600,700,800|inter:400,500,600" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=poppins:400,500,600,700,800" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="min-h-screen bg-casse text-anthracite font-[Inter] antialiased">
+<body class="theme-sibea min-h-screen bg-casse text-anthracite font-[Poppins] antialiased selection:bg-cuivre selection:text-nuit">
 
     <header
         x-data="{ open: false, scrolled: false }"
         x-on:scroll.window="scrolled = window.scrollY > 40"
-        class="fixed top-0 inset-x-0 z-50 bg-white text-anthracite shadow-lg border-b-6 border-cuivre"
+        class="fixed top-0 inset-x-0 z-50 shadow-md text-anthracite backdrop-blur-xl bg-nuit"
     >
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between transition-all duration-300" :class="scrolled ? 'h-20' : 'h-30'">
-            <a href="{{ route('home') }}" class="flex flex-col leading-none" aria-label="Groupe SIBEA — Accueil">
-                <img src="{{ asset('images/logo-sibea.jpeg') }}" alt="Groupe SIBEA" class="w-auto mix-blend-multiply transition-all duration-300" :class="scrolled ? 'h-16' : 'h-28'">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between transition-all duration-300 h-20">
+            <a href="{{ route('home') }}"
+                class="inline-flex items-center rounded-lg bg-surface px-3 py-2 transition-opacity duration-300 hover:opacity-90 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre"
+                aria-label="Groupe SIBEA — Accueil">
+                <img src="{{ asset('images/logo-sibea.png') }}" alt="Groupe SIBEA" class="h-10 w-auto lg:h-12">
             </a>
-            <nav class="hidden lg:flex items-center gap-8 text-sm font-[Manrope] font-medium">
-                <a href="{{ route('sectors.index') }}" class="hover:text-cuivre text-lg {{ request()->routeIs('sectors.*') ? 'text-cuivre' : '' }}">Secteurs d’activité</a>
-                <a href="{{ route('expertises.index') }}" class="hover:text-cuivre text-lg {{ request()->routeIs('expertises.*') ? 'text-cuivre' : '' }}">Expertises</a>
-                <a href="{{ route('projects.index') }}" class="hover:text-cuivre text-lg {{ request()->routeIs('projects.*') ? 'text-cuivre' : '' }}">Réalisations</a>
-                <a href="{{ route('contact') }}" class="hover:text-cuivre text-lg {{ request()->routeIs('contact') ? 'text-cuivre' : '' }}">Contact</a>
+            <nav class="hidden lg:flex items-center gap-8 font-display text-base font-semibold">
+                <a href="{{ route('sectors.index') }}" class="text-white transition-colors hover:text-cuivre  {{ request()->routeIs('sectors.index') ? 'text-cuivre!' : '' }}">Secteurs d’activité</a>
+                <a href="{{ route('expertises.index') }}"  class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('expertises.*') ? 'text-cuivre!' : '' }}">Expertises</a>
+                <a href="{{ route('projects.index') }}"  class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('projects.*') ? 'text-cuivre!' : '' }}">Réalisations</a>
+                <a href="{{ route('contact') }}"  class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('contact') ? 'text-cuivre!' : '' }}">Contact</a>
+
+                
             </nav>
             <div class="flex items-center gap-3">
-                <flux:button variant="ghost" href="{{ route('login') }}" class="hidden sm:inline-flex">
+                <flux:button variant="ghost" href="{{ route('login') }}" class="hidden sm:inline-flex text-white! hover:text-cuivre!">
                     Se connecter
-                </flux:button>
-                <flux:button variant="primary" x-on:click="$flux.modal('contact').open()" class="!bg-cuivre !text-white hidden sm:inline-flex">
-                    Nous contacter
                 </flux:button>
                 <button
                     x-on:click="open = !open"
                     :aria-expanded="open"
                     aria-label="Menu"
-                    class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-lg border border-bordure text-nuit"
+                    class="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-lg border border-bordure text-anthracite transition-colors hover:border-cuivre hover:text-cuivre"
                 >
                     <span x-show="!open" class="text-xl leading-none">☰</span>
                     <span x-show="open" class="text-xl leading-none">✕</span>
                 </button>
             </div>
         </div>
-        <nav x-show="open" x-cloak class="lg:hidden bg-white border-t border-bordure" aria-label="Menu mobile">
-            <div class="px-6 py-4 flex flex-col gap-1 text-sm font-[Manrope] font-medium">
-                <a x-on:click="open = false" href="{{ route('sectors.index') }}" class="py-3 border-b border-bordure">Secteurs d’activité</a>
-                <a x-on:click="open = false" href="{{ route('expertises.index') }}" class="py-3 border-b border-bordure">Expertises</a>
-                <a x-on:click="open = false" href="{{ route('projects.index') }}" class="py-3 border-b border-bordure">Réalisations</a>
-                <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure">Contact</a>
-                <a x-on:click="open = false" href="{{ route('login') }}" class="py-3 border-b border-bordure">Se connecter</a>
-                <flux:button variant="primary" x-on:click="open = false; $flux.modal('contact').open()" class="!bg-cuivre !text-white mt-3">
-                    Nous contacter
-                </flux:button>
+        <nav x-show="open" x-cloak class="lg:hidden border-t border-bordure bg-casse" aria-label="Menu mobile">
+            <div class="px-6 py-4 flex flex-col gap-1 font-display text-base font-semibold">
+                <a x-on:click="open = false" href="{{ route('sectors.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Secteurs d’activité</a>
+                <a x-on:click="open = false" href="{{ route('expertises.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Expertises</a>
+                <a x-on:click="open = false" href="{{ route('projects.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Réalisations</a>
+                <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Contact</a>
+                <a x-on:click="open = false" href="{{ route('login') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Se connecter</a>
             </div>
         </nav>
     </header>
 
-    <main id="main" x-data="{ scrolled: window.scrollY > 40 }" x-on:scroll.window="scrolled = window.scrollY > 40" :class="scrolled ? 'pt-20' : 'pt-30'" class="transition-all duration-300">{{ $slot }}</main>
+    <main id="main" x-data="{ scrolled: window.scrollY > 40 }" x-on:scroll.window="scrolled = window.scrollY > 40" class="transition-all duration-300 pt-20">{{ $slot }}</main>
 
-    <footer class="bg-nuit text-white">
+    <footer class="on-dark border-t border-white/10 bg-nuit text-white">
         <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
             <div>
-                <span class="inline-block bg-white rounded-lg px-3 py-2 mb-4">
-                    <img src="{{ asset('images/logo-sibea.jpeg') }}" alt="Groupe SIBEA" class="h-10 w-auto">
+                <span class="mb-4 inline-flex rounded-lg bg-surface px-3 py-2">
+                    <img src="{{ asset('images/logo-sibea.png') }}" alt="Groupe SIBEA" class="h-10 w-auto">
                 </span>
                 <p class="text-sm text-white/70 leading-relaxed">
                     Un groupe multi-activités intervenant dans le BTP, l’immobilier,
@@ -77,28 +75,28 @@
                 </p>
             </div>
             <div>
-                <div class="font-[Manrope] font-semibold mb-4">Secteurs</div>
+                <div class="font-display font-bold mb-4">Secteurs</div>
                 <ul class="space-y-2 text-sm text-white/70">
                     @foreach(\App\Models\Sector::cachedActiveList() as $sector)
                         <li>
-                            <a href="{{ route('sectors.show', $sector->slug) }}">{{ $sector->name }}</a>
+                            <a href="{{ route('sectors.index') }}" class="transition-colors hover:text-cuivre">{{ $sector->name }}</a>
                         </li>
                     @endforeach
                 </ul>
             </div>
             <div>
-                <div class="font-[Manrope] font-semibold mb-4">Expertises</div>
+                <div class="font-display font-bold mb-4">Expertises</div>
                 <ul class="space-y-2 text-sm text-white/70">
-                    <li><a href="{{ route('expertises.index') }}">Nos expertises</a></li>
-                    <li><a href="{{ route('projects.index') }}">Réalisations</a></li>
+                    <li><a href="{{ route('expertises.index') }}" class="transition-colors hover:text-cuivre">Nos expertises</a></li>
+                    <li><a href="{{ route('projects.index') }}" class="transition-colors hover:text-cuivre">Réalisations</a></li>
                 </ul>
             </div>
             <div>
-                <div class="font-[Manrope] font-semibold mb-4">Contact</div>
+                <div class="font-display font-bold mb-4">Contact</div>
                 <ul class="space-y-2 text-sm text-white/70">
-                    <li><a href="{{ route('contact') }}">Nous contacter</a></li>
-                    <li><a href="{{ route('legal') }}">Mentions légales</a></li>
-                    <li><a href="{{ route('privacy') }}">Politique de confidentialité</a></li>
+                    <li><a href="{{ route('contact') }}" class="transition-colors hover:text-cuivre">Nous contacter</a></li>
+                    <li><a href="{{ route('legal') }}" class="transition-colors hover:text-cuivre">Mentions légales</a></li>
+                    <li><a href="{{ route('privacy') }}" class="transition-colors hover:text-cuivre">Politique de confidentialité</a></li>
                 </ul>
             </div>
         </div>
@@ -109,7 +107,6 @@
         </div>
     </footer>
 
-    <livewire:contact-modal />
     @fluxScripts
     @livewireScripts
 </body>

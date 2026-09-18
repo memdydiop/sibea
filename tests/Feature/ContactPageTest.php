@@ -1,23 +1,23 @@
 <?php
 
-use App\Events\LeadCreated;
 use App\Models\Lead;
 use App\Models\Sector;
 use App\Models\User;
 use App\Notifications\NewLeadNotification;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-function validContactData(Sector $sector): array
+function contactPageData(Sector $sector): array
 {
     return [
         'name' => 'Awa Koné',
         'company' => 'SIBEA Test',
         'email' => 'awa@example.com',
         'phone' => '+2250700000000',
+        'residence_country' => 'France',
+        'target_territory' => 'Abidjan, Cocody',
         'sector_id' => $sector->id,
         'request_type' => 'devis',
         'budget' => '10M FCFA',
@@ -26,62 +26,35 @@ function validContactData(Sector $sector): array
     ];
 }
 
-test('creates a lead and shows success on valid submit', function () {
-    Event::fake([LeadCreated::class]);
+test('creates a lead with consent data and history', function () {
     $sector = Sector::factory()->create(['is_active' => true]);
 
-    Livewire::test('contact-modal')
-        ->set(validContactData($sector))
+    Livewire::test('pages::contact')
+        ->set(contactPageData($sector))
         ->call('submit')
         ->assertHasNoErrors()
         ->assertSet('success', true);
 
-    $this->assertDatabaseHas('leads', [
-        'email' => 'awa@example.com',
-        'sector_id' => $sector->id,
-        'status' => 'nouveau',
-        'source' => 'site',
-    ]);
-
-    Event::assertDispatched(LeadCreated::class);
-});
-
-test('records consent timestamp and ip', function () {
-    Event::fake([LeadCreated::class]);
-    $sector = Sector::factory()->create(['is_active' => true]);
-
-    Livewire::test('contact-modal')
-        ->set(validContactData($sector))
-        ->call('submit')
-        ->assertSet('success', true);
-
     $lead = Lead::where('email', 'awa@example.com')->first();
 
-    expect($lead->consent_at)->not->toBeNull()
-        ->and($lead->consent_ip)->not->toBeNull();
+    expect($lead)->not->toBeNull()
+        ->and($lead->status->value)->toBe('nouveau')
+        ->and($lead->source->value)->toBe('site')
+        ->and($lead->residence_country)->toBe('France')
+        ->and($lead->target_territory)->toBe('Abidjan, Cocody')
+        ->and($lead->consent_at)->not->toBeNull()
+        ->and($lead->consent_ip)->not->toBeNull()
+        ->and($lead->activities()->where('action', 'created')->exists())->toBeTrue();
 });
 
 test('ignores silently when honeypot is filled', function () {
-    Event::fake([LeadCreated::class]);
     $sector = Sector::factory()->create(['is_active' => true]);
 
-    Livewire::test('contact-modal')
-        ->set(validContactData($sector))
+    Livewire::test('pages::contact')
+        ->set(contactPageData($sector))
         ->set('honeypot', 'spam-bot')
         ->call('submit')
         ->assertSet('success', false);
-
-    $this->assertDatabaseCount('leads', 0);
-    Event::assertNotDispatched(LeadCreated::class);
-});
-
-test('refuses submit for an inactive sector', function () {
-    $sector = Sector::factory()->create(['is_active' => false]);
-
-    Livewire::test('contact-modal')
-        ->set(validContactData($sector))
-        ->call('submit')
-        ->assertHasErrors(['sector_id']);
 
     $this->assertDatabaseCount('leads', 0);
 });
@@ -89,11 +62,22 @@ test('refuses submit for an inactive sector', function () {
 test('refuses submit without consent', function () {
     $sector = Sector::factory()->create(['is_active' => true]);
 
-    Livewire::test('contact-modal')
-        ->set(validContactData($sector))
+    Livewire::test('pages::contact')
+        ->set(contactPageData($sector))
         ->set('consent', false)
         ->call('submit')
         ->assertHasErrors(['consent']);
+
+    $this->assertDatabaseCount('leads', 0);
+});
+
+test('refuses submit for an inactive sector', function () {
+    $sector = Sector::factory()->create(['is_active' => false]);
+
+    Livewire::test('pages::contact')
+        ->set(contactPageData($sector))
+        ->call('submit')
+        ->assertHasErrors(['sector_id']);
 
     $this->assertDatabaseCount('leads', 0);
 });
@@ -102,15 +86,15 @@ test('throttles contact submits after 5 attempts', function () {
     $sector = Sector::factory()->create(['is_active' => true]);
 
     for ($i = 0; $i < 5; $i++) {
-        Livewire::test('contact-modal')
-            ->set(validContactData($sector))
+        Livewire::test('pages::contact')
+            ->set(contactPageData($sector))
             ->set('email', "user{$i}@example.com")
             ->call('submit')
             ->assertSet('success', true);
     }
 
-    Livewire::test('contact-modal')
-        ->set(validContactData($sector))
+    Livewire::test('pages::contact')
+        ->set(contactPageData($sector))
         ->set('email', 'blocked@example.com')
         ->call('submit')
         ->assertHasErrors(['email']);
@@ -126,8 +110,8 @@ test('notifies commercial on new lead', function () {
     $commercial = User::factory()->create()->assignRole($role);
     $sector = Sector::factory()->create(['is_active' => true]);
 
-    Livewire::test('contact-modal')
-        ->set(validContactData($sector))
+    Livewire::test('pages::contact')
+        ->set(contactPageData($sector))
         ->call('submit')
         ->assertSet('success', true);
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ProjectStatus;
 use App\Models\Expertise;
 use App\Models\Project;
 use App\Models\Sector;
@@ -31,15 +32,35 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
     public ?string $description = null;
 
+    public ?string $challenge = null;
+
+    public ?string $solution = null;
+
+    public ?string $impact = null;
+
     public ?string $location = null;
 
     public ?string $project_date = null;
 
     public ?string $status = null;
 
+    public ?string $duration = null;
+
+    public ?string $surface = null;
+
+    public ?string $budget = null;
+
     public ?string $client_name = null;
 
     public bool $client_publishable = false;
+
+    public ?string $testimonial_quote = null;
+
+    public ?string $testimonial_author = null;
+
+    public ?string $latitude = null;
+
+    public ?string $longitude = null;
 
     public ?string $results_text = null;
 
@@ -60,6 +81,9 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
     /** @var array */
     public array $gallery = [];
+
+    /** @var array */
+    public array $documents = [];
 
     public ?string $coverPreview = null;
 
@@ -111,7 +135,7 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
     public function create(): void
     {
         $this->authorize('create', Project::class);
-        $this->reset(['editingId', 'title', 'slug', 'short_description', 'description', 'location', 'project_date', 'status', 'client_name', 'results_text', 'sector_ids', 'expertise_ids', 'service_ids', 'cover', 'gallery', 'coverPreview']);
+        $this->reset(['editingId', 'title', 'slug', 'short_description', 'description', 'challenge', 'solution', 'impact', 'location', 'project_date', 'status', 'duration', 'surface', 'budget', 'client_name', 'testimonial_quote', 'testimonial_author', 'latitude', 'longitude', 'results_text', 'sector_ids', 'expertise_ids', 'service_ids', 'cover', 'gallery', 'documents', 'coverPreview']);
         $this->is_active = true;
         $this->client_publishable = false;
         $this->is_published = false;
@@ -127,11 +151,21 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
         $this->slug = $project->slug;
         $this->short_description = $project->short_description;
         $this->description = $project->description;
+        $this->challenge = $project->challenge;
+        $this->solution = $project->solution;
+        $this->impact = $project->impact;
         $this->location = $project->location;
         $this->project_date = $project->project_date?->format('Y-m-d');
-        $this->status = $project->status;
+        $this->status = $project->status?->value;
+        $this->duration = $project->duration;
+        $this->surface = $project->surface;
+        $this->budget = $project->budget;
         $this->client_name = $project->client_name;
         $this->client_publishable = $project->client_publishable;
+        $this->testimonial_quote = $project->testimonial_quote;
+        $this->testimonial_author = $project->testimonial_author;
+        $this->latitude = $project->latitude !== null ? (string) $project->latitude : null;
+        $this->longitude = $project->longitude !== null ? (string) $project->longitude : null;
         $this->results_text = $project->results ? implode("\n", $project->results) : null;
         $this->is_active = $project->is_active;
         $this->is_published = $project->is_published;
@@ -139,7 +173,7 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
         $this->expertise_ids = $project->expertises->pluck('id')->all();
         $this->service_ids = $project->services->pluck('id')->all();
         $this->coverPreview = $project->getFirstMediaUrl('cover') ?: null;
-        $this->reset(['cover', 'gallery']);
+        $this->reset(['cover', 'gallery', 'documents']);
         $this->showForm = true;
     }
 
@@ -150,11 +184,21 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
             'slug' => ['required', 'string', 'max:255', Rule::unique('projects', 'slug')->ignore($this->editingId)],
             'short_description' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
+            'challenge' => ['nullable', 'string'],
+            'solution' => ['nullable', 'string'],
+            'impact' => ['nullable', 'string'],
             'location' => ['nullable', 'string', 'max:255'],
             'project_date' => ['nullable', 'date'],
-            'status' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::enum(ProjectStatus::class)],
+            'duration' => ['nullable', 'string', 'max:255'],
+            'surface' => ['nullable', 'string', 'max:255'],
+            'budget' => ['nullable', 'string', 'max:255'],
             'client_name' => ['nullable', 'string', 'max:255'],
             'client_publishable' => ['boolean'],
+            'testimonial_quote' => ['nullable', 'string'],
+            'testimonial_author' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'results_text' => ['nullable', 'string'],
             'is_active' => ['boolean'],
             'is_published' => ['boolean'],
@@ -167,6 +211,8 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
             'cover' => ['nullable', 'image', 'max:5120'],
             'gallery' => ['array', 'max:10'],
             'gallery.*' => ['image', 'max:5120'],
+            'documents' => ['array', 'max:5'],
+            'documents.*' => ['file', 'mimes:pdf', 'max:10240'],
         ]);
 
         $results = collect(preg_split('/\r?\n/', $validated['results_text'] ?? ''))
@@ -174,7 +220,7 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
         $data = $validated;
         $data['results'] = $results ?: null;
-        unset($data['results_text'], $data['cover'], $data['gallery'], $data['sector_ids'], $data['expertise_ids'], $data['service_ids']);
+        unset($data['results_text'], $data['cover'], $data['gallery'], $data['documents'], $data['sector_ids'], $data['expertise_ids'], $data['service_ids']);
 
         if ($this->editingId) {
             $project = Project::findOrFail($this->editingId);
@@ -196,9 +242,12 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
         foreach ($this->gallery as $photo) {
             $project->addMedia($photo->getRealPath())->usingFileName($photo->getClientOriginalName())->toMediaCollection('gallery');
         }
+        foreach ($this->documents as $document) {
+            $project->addMedia($document->getRealPath())->usingFileName($document->getClientOriginalName())->toMediaCollection('documents');
+        }
 
         $this->showForm = false;
-        $this->reset(['editingId', 'title', 'slug', 'short_description', 'description', 'location', 'project_date', 'status', 'client_name', 'results_text', 'sector_ids', 'expertise_ids', 'service_ids', 'cover', 'gallery', 'coverPreview']);
+        $this->reset(['editingId', 'title', 'slug', 'short_description', 'description', 'challenge', 'solution', 'impact', 'location', 'project_date', 'status', 'duration', 'surface', 'budget', 'client_name', 'testimonial_quote', 'testimonial_author', 'latitude', 'longitude', 'results_text', 'sector_ids', 'expertise_ids', 'service_ids', 'cover', 'gallery', 'documents', 'coverPreview']);
         $this->is_active = true;
         $this->client_publishable = false;
         $this->is_published = false;
@@ -306,6 +355,24 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
                 <flux:error name="description" />
             </flux:field>
 
+            <flux:field>
+                <flux:label>Contexte & enjeu</flux:label>
+                <flux:textarea wire:model="challenge" rows="3" />
+                <flux:error name="challenge" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Notre réponse</flux:label>
+                <flux:textarea wire:model="solution" rows="3" />
+                <flux:error name="solution" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Impact</flux:label>
+                <flux:textarea wire:model="impact" rows="3" />
+                <flux:error name="impact" />
+            </flux:field>
+
             <div class="grid sm:grid-cols-3 gap-4">
                 <flux:field>
                     <flux:label>Lieu</flux:label>
@@ -321,8 +388,33 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
                 <flux:field>
                     <flux:label>Statut</flux:label>
-                    <flux:input wire:model="status" type="text" placeholder="Ex. Livré" />
+                    <flux:select wire:model="status">
+                        <option value="">Non précisé</option>
+                        @foreach(ProjectStatus::cases() as $case)
+                            <option value="{{ $case->value }}">{{ $case->label() }}</option>
+                        @endforeach
+                    </flux:select>
                     <flux:error name="status" />
+                </flux:field>
+            </div>
+
+            <div class="grid sm:grid-cols-3 gap-4">
+                <flux:field>
+                    <flux:label>Durée</flux:label>
+                    <flux:input wire:model="duration" type="text" placeholder="Ex. 18 mois" />
+                    <flux:error name="duration" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Surface</flux:label>
+                    <flux:input wire:model="surface" type="text" placeholder="Ex. 4 200 m²" />
+                    <flux:error name="surface" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Budget</flux:label>
+                    <flux:input wire:model="budget" type="text" placeholder="Ex. 2,4 milliards FCFA" />
+                    <flux:error name="budget" />
                 </flux:field>
             </div>
 
@@ -342,6 +434,34 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
             <div class="grid sm:grid-cols-2 gap-4">
                 <flux:field>
+                    <flux:label>Auteur du témoignage</flux:label>
+                    <flux:input wire:model="testimonial_author" type="text" placeholder="Ex. Directeur de promotion" />
+                    <flux:error name="testimonial_author" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Citation</flux:label>
+                    <flux:textarea wire:model="testimonial_quote" rows="2" />
+                    <flux:error name="testimonial_quote" />
+                </flux:field>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <flux:field>
+                    <flux:label>Latitude</flux:label>
+                    <flux:input wire:model="latitude" type="text" placeholder="Ex. 5.3540" />
+                    <flux:error name="latitude" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Longitude</flux:label>
+                    <flux:input wire:model="longitude" type="text" placeholder="Ex. -3.9861" />
+                    <flux:error name="longitude" />
+                </flux:field>
+            </div>
+
+            <div class="grid sm:grid-cols-3 gap-4">
+                <flux:field>
                     <flux:label>Image de couverture (max 5 Mo)</flux:label>
                     @if($coverPreview)
                         <img src="{{ $coverPreview }}" alt="" class="h-16 w-24 object-cover rounded mb-2">
@@ -354,6 +474,12 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
                     <flux:label>Galerie (max 10 images, 5 Mo chacune)</flux:label>
                     <input type="file" wire:model="gallery" accept="image/*" multiple class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
                     <flux:error name="gallery" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Documents PDF (max 5, 10 Mo chacun)</flux:label>
+                    <input type="file" wire:model="documents" accept="application/pdf" multiple class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
+                    <flux:error name="documents" />
                 </flux:field>
             </div>
 
