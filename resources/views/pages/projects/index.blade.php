@@ -44,7 +44,7 @@ new #[Layout('layouts::public')] class extends Component
         <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
             <nav aria-label="Fil d’Ariane" class="mb-8">
                 <ol class="flex flex-wrap items-center gap-2 text-sm text-white/60">
-                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre">Accueil</a></li>
+                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre" wire:navigate>Accueil</a></li>
                     <li aria-hidden="true">/</li>
                     <li class="text-white/90" aria-current="page">{{ setting('projects.hero.title') }}</li>
                 </ol>
@@ -60,7 +60,7 @@ new #[Layout('layouts::public')] class extends Component
                 <p class="font-display text-sm font-semibold text-nuit">
                     Réalisations du secteur <span class="text-cuivre">{{ $this->activeSector->name }}</span>
                 </p>
-                <a href="{{ route('projects.index') }}" class="inline-flex items-center gap-2 font-display text-sm font-semibold text-cuivre transition-colors hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre">
+                <a href="{{ route('projects.index') }}" class="inline-flex items-center gap-2 font-display text-sm font-semibold text-cuivre transition-colors hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre" wire:navigate>
                     Voir toutes les réalisations
                     <span aria-hidden="true">→</span>
                 </a>
@@ -83,7 +83,7 @@ new #[Layout('layouts::public')] class extends Component
             <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 transition-opacity" wire:loading.class="opacity-40">
                 @foreach($this->projects as $project)
                     @php($position = str_pad((string) ($this->projects->firstItem() + $loop->index), 2, '0', STR_PAD_LEFT))
-                    <a wire:key="project-{{ $project->id }}" href="{{ route('projects.show', $project->slug) }}" class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md">
+                    <a wire:key="project-{{ $project->id }}" href="{{ route('projects.show', $project->slug) }}" class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md" wire:navigate>
                         <div class="relative h-56 overflow-hidden bg-nuit lg:h-64">
                             @if($project->getFirstMediaUrl('cover', 'thumb'))
                                 <img src="{{ $project->getFirstMediaUrl('cover', 'thumb') }}" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover:scale-[1.03]">

@@ -44,9 +44,9 @@ new #[Layout('layouts::public')] class extends Component
         <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
             <nav aria-label="Fil d’Ariane" class="mb-8">
                 <ol class="flex flex-wrap items-center gap-2 text-sm text-white/60">
-                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre">Accueil</a></li>
+                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre" wire:navigate>Accueil</a></li>
                     <li aria-hidden="true">/</li>
-                    <li><a href="{{ route('sectors.index') }}" class="transition-colors hover:text-cuivre">{{ setting('sectors.hero.title') }}</a></li>
+                    <li><a href="{{ route('sectors.index') }}" class="transition-colors hover:text-cuivre" wire:navigate>{{ setting('sectors.hero.title') }}</a></li>
                     <li aria-hidden="true">/</li>
                     <li class="text-white/90" aria-current="page">{{ $sector->name }}</li>
                 </ol>
@@ -64,7 +64,7 @@ new #[Layout('layouts::public')] class extends Component
 
             @if($sector->hero_cta_label)
                 <div class="mt-8">
-                    <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 rounded-full bg-cuivre px-5 py-2.5 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white">
+                    <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 rounded-full bg-cuivre px-5 py-2.5 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white" wire:navigate>
                         {{ $sector->hero_cta_label }}
                         <span aria-hidden="true">→</span>
                     </a>
@@ -130,7 +130,7 @@ new #[Layout('layouts::public')] class extends Component
                     <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl">Nos réalisations dans ce secteur.</h2>
                 </div>
                 @if($this->totalProjects > 3)
-                    <a href="{{ route('projects.index', ['sector_id' => $sector->id]) }}" class="font-display text-sm font-semibold text-cuivre transition-colors hover:text-nuit">
+                    <a href="{{ route('projects.index', ['sector_id' => $sector->id]) }}" class="font-display text-sm font-semibold text-cuivre transition-colors hover:text-nuit" wire:navigate>
                         Voir toutes les réalisations →
                     </a>
                 @endif
@@ -140,7 +140,7 @@ new #[Layout('layouts::public')] class extends Component
                 @foreach($this->projects as $project)
                     @php($position = str_pad((string) ($loop->index + 1), 2, '0', STR_PAD_LEFT))
                     @php($cover = $project->getFirstMediaUrl('cover', 'thumb'))
-                    <a wire:key="project-{{ $project->id }}" href="{{ route('projects.show', $project->slug) }}" class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md">
+                    <a wire:key="project-{{ $project->id }}" href="{{ route('projects.show', $project->slug) }}" class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md" wire:navigate>
                         <div class="relative h-56 overflow-hidden bg-nuit">
                             @if($cover)
                                 <img src="{{ $cover }}" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover:scale-[1.03]">
@@ -182,7 +182,7 @@ new #[Layout('layouts::public')] class extends Component
                 <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">ENGAGEMENTS</div>
                 <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl">Sécurité, qualité et impact local.</h2>
             </div>
-            <a href="{{ route('pages.show', ['page' => 'engagements']) }}" class="inline-flex items-center gap-2 rounded-full bg-nuit px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit">
+            <a href="{{ route('pages.show', ['page' => 'engagements']) }}" class="inline-flex items-center gap-2 rounded-full bg-nuit px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit" wire:navigate>
                 Nos engagements
                 <span aria-hidden="true">→</span>
             </a>
@@ -197,7 +197,7 @@ new #[Layout('layouts::public')] class extends Component
                 @if($sector->page_cta_text)
                     <p class="text-white/70 text-lg max-w-2xl mx-auto mb-8">{{ $sector->page_cta_text }}</p>
                 @endif
-                <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 rounded-full bg-cuivre px-5 py-2.5 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white">
+                <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 rounded-full bg-cuivre px-5 py-2.5 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white" wire:navigate>
                     {{ $sector->page_cta_label ?: 'Nous contacter' }}
                     <span aria-hidden="true">→</span>
                 </a>

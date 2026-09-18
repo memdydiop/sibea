@@ -61,7 +61,7 @@ new #[Layout('layouts::public')] class extends Component {
                     <p class="text-white/80 text-lg leading-relaxed mb-10">
                         {{ setting('home.hero.subtitle') }}
                     </p>
-                    <flux:button href="{{ route('sectors.index') }}" variant="primary" class="bg-cuivre!">
+                    <flux:button href="{{ route('sectors.index') }}" variant="primary" class="bg-cuivre!" wire:navigate>
                         {{ setting('home.hero.primary_label') }}
                     </flux:button>
                 </div>
@@ -84,7 +84,7 @@ new #[Layout('layouts::public')] class extends Component {
                                 <figcaption class="mt-2 text-sm text-ardoise">Le Président Directeur Général</figcaption>
                             </figure>
                         @endif
-                        <a href="{{ route('pages.show', ['page' => 'le-groupe']) }}" class="inline-flex items-center gap-2 rounded-full bg-nuit px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit">
+                        <a href="{{ route('pages.show', ['page' => 'le-groupe']) }}" class="inline-flex items-center gap-2 rounded-full bg-nuit px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit" wire:navigate>
                             {{ setting('home.group.button') }}
                             <span aria-hidden="true">→</span>
                         </a>
@@ -118,7 +118,7 @@ new #[Layout('layouts::public')] class extends Component {
                         @php($position = str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT))
                         @php($hero = $sector->getFirstMediaUrl('hero', 'thumb'))
                         <a wire:key="sector-{{ $sector->id }}" href="{{ route('sectors.show', $sector->slug) }}"
-                            class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md">
+                            class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md" wire:navigate>
                             <div class="relative h-56 overflow-hidden bg-nuit lg:h-64">
                                 @if ($hero)
                                     <img src="{{ $hero }}" alt="{{ $sector->name }}" loading="lazy" decoding="async"
@@ -177,7 +177,7 @@ new #[Layout('layouts::public')] class extends Component {
                         @php($position = str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT))
                         @php($cover = $expertise->getFirstMediaUrl('cover', 'thumb'))
                         <a wire:key="expertise-{{ $expertise->id }}" href="{{ route('expertises.index') }}"
-                            class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md">
+                            class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md" wire:navigate>
                             <div class="relative h-56 overflow-hidden bg-nuit lg:h-64">
                                 @if ($cover)
                                     <img src="{{ $cover }}" alt="{{ $expertise->name }}" loading="lazy" decoding="async"
@@ -260,7 +260,7 @@ new #[Layout('layouts::public')] class extends Component {
                             @endif
                             <div class="mt-auto flex flex-wrap items-center gap-3 pt-6">
                                 <a href="{{ route('contact') }}"
-                                    class="inline-flex items-center gap-2 rounded-full bg-cuivre px-4 py-2 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white">
+                                    class="inline-flex items-center gap-2 rounded-full bg-cuivre px-4 py-2 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white" wire:navigate>
                                     Nous contacter
                                     <span aria-hidden="true">→</span>
                                 </a>
@@ -289,7 +289,7 @@ new #[Layout('layouts::public')] class extends Component {
                             {{ setting('home.projects.title') }}</h2>
                     </div>
                     <a href="{{ route('projects.index') }}"
-                        class="text-sm font-display font-semibold text-cuivre">Voir toutes les réalisations →</a>
+                        class="text-sm font-display font-semibold text-cuivre" wire:navigate>Voir toutes les réalisations →</a>
                 </div>
                 @if ($this->projects->isNotEmpty())
                     <div class="grid md:grid-cols-3 gap-6">
@@ -299,7 +299,7 @@ new #[Layout('layouts::public')] class extends Component {
                             @php($meta = collect([$project->location, $project->project_date?->format('Y')])->filter())
                             <a wire:key="project-{{ $project->id }}"
                                 href="{{ route('projects.show', $project->slug) }}"
-                                class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md">
+                                class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md" wire:navigate>
                                 <div class="relative h-56 overflow-hidden bg-nuit lg:h-64">
                                     @if ($cover)
                                         <img src="{{ $cover }}" alt="{{ $project->title }}" loading="lazy"
@@ -381,7 +381,7 @@ new #[Layout('layouts::public')] class extends Component {
                 </div>
                 <div class="flex flex-wrap gap-4">
                     <a href="{{ route('expertises.index') }}"
-                        class="text-sm font-display font-semibold text-accroche">Découvrir nos expertises →</a>
+                        class="text-sm font-display font-semibold text-accroche" wire:navigate>Découvrir nos expertises →</a>
                 </div>
             </div>
         </section>
@@ -394,7 +394,7 @@ new #[Layout('layouts::public')] class extends Component {
                         <h2 class="font-display font-extrabold tracking-tight text-3xl lg:text-4xl mb-5">{{ setting('home.rse.title') }}</h2>
                         <p class="text-white/70 text-lg leading-relaxed">{{ setting('home.rse.text') }}</p>
                     </div>
-                    <a href="{{ route('pages.show', ['page' => 'engagements']) }}" class="inline-flex items-center gap-2 self-start rounded-full bg-foret px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-white hover:text-nuit">
+                    <a href="{{ route('pages.show', ['page' => 'engagements']) }}" class="inline-flex items-center gap-2 self-start rounded-full bg-foret px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-white hover:text-nuit" wire:navigate>
                         {{ setting('home.rse.button') }}
                         <span aria-hidden="true">→</span>
                     </a>
@@ -445,10 +445,10 @@ new #[Layout('layouts::public')] class extends Component {
                     {{ setting('home.cta.title') }}</h2>
                 <p class="text-ardoise text-lg max-w-2xl mx-auto mb-10">{{ setting('home.cta.subtitle') }}</p>
                 <div class="flex flex-wrap justify-center gap-4">
-                    <flux:button variant="primary" href="{{ route('contact') }}" class="!bg-cuivre">
+                    <flux:button variant="primary" href="{{ route('contact') }}" class="!bg-cuivre" wire:navigate>
                         {{ setting('home.cta.button') }}
                     </flux:button>
-                    <flux:button href="{{ route('projects.index') }}" variant="outline">
+                    <flux:button href="{{ route('projects.index') }}" variant="outline" wire:navigate>
                         Voir nos réalisations
                     </flux:button>
                 </div>

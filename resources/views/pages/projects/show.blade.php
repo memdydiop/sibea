@@ -111,9 +111,9 @@ new #[Layout('layouts::public')] class extends Component
         <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
             <nav aria-label="Fil d’Ariane" class="mb-8">
                 <ol class="flex flex-wrap items-center gap-2 text-sm text-white/60">
-                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre">Accueil</a></li>
+                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre" wire:navigate>Accueil</a></li>
                     <li aria-hidden="true">/</li>
-                    <li><a href="{{ route('projects.index') }}" class="transition-colors hover:text-cuivre">Réalisations</a></li>
+                    <li><a href="{{ route('projects.index') }}" class="transition-colors hover:text-cuivre" wire:navigate>Réalisations</a></li>
                     <li aria-hidden="true">/</li>
                     <li class="text-white/90" aria-current="page">{{ $project->title }}</li>
                 </ol>
@@ -124,7 +124,7 @@ new #[Layout('layouts::public')] class extends Component
                     <span class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm">{{ $project->status->label() }}</span>
                 @endif
                 @foreach($project->sectors as $sector)
-                    <a href="{{ route('sectors.show', $sector->slug) }}" class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm transition-colors duration-300 hover:border-cuivre hover:text-cuivre">{{ $sector->name }}</a>
+                    <a href="{{ route('sectors.show', $sector->slug) }}" class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm transition-colors duration-300 hover:border-cuivre hover:text-cuivre" wire:navigate>{{ $sector->name }}</a>
                 @endforeach
             </div>
 
@@ -229,7 +229,7 @@ new #[Layout('layouts::public')] class extends Component
                                 <div class="font-display text-[10px] font-semibold uppercase tracking-[0.18em] text-ardoise/70">Expertises mobilisées</div>
                                 <div class="mt-3 flex flex-wrap gap-2">
                                     @foreach($project->expertises as $expertise)
-                                        <a wire:key="expertise-{{ $expertise->id }}" href="{{ route('expertises.index') }}" class="rounded-full border border-bordure bg-casse px-3 py-1 text-xs font-medium text-anthracite transition-colors hover:border-cuivre hover:text-cuivre">{{ $expertise->name }}</a>
+                                        <a wire:key="expertise-{{ $expertise->id }}" href="{{ route('expertises.index') }}" class="rounded-full border border-bordure bg-casse px-3 py-1 text-xs font-medium text-anthracite transition-colors hover:border-cuivre hover:text-cuivre" wire:navigate>{{ $expertise->name }}</a>
                                     @endforeach
                                 </div>
                             </div>
@@ -273,7 +273,7 @@ new #[Layout('layouts::public')] class extends Component
                         <p class="mt-3 text-sm leading-relaxed text-white/70">L’équipe SIBEA vous accompagne de l’étude à la réalisation.</p>
                     </div>
                     <div class="relative mt-6">
-                        <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 rounded-full bg-cuivre px-5 py-2.5 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white">
+                        <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 rounded-full bg-cuivre px-5 py-2.5 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white" wire:navigate>
                             Nous contacter
                             <span aria-hidden="true">→</span>
                         </a>
@@ -353,7 +353,7 @@ new #[Layout('layouts::public')] class extends Component
                 <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                     @foreach($this->relatedProjects as $related)
                         @php($relatedCover = $related->getFirstMediaUrl('cover', 'thumb'))
-                        <a wire:key="related-project-{{ $related->id }}" href="{{ route('projects.show', $related->slug) }}" class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md">
+                        <a wire:key="related-project-{{ $related->id }}" href="{{ route('projects.show', $related->slug) }}" class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md" wire:navigate>
                             <div class="relative h-56 overflow-hidden bg-nuit">
                                 @if($relatedCover)
                                     <img src="{{ $relatedCover }}" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover:scale-[1.03]">
@@ -393,7 +393,7 @@ new #[Layout('layouts::public')] class extends Component
         <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
             <div class="flex flex-col gap-6 border-t border-bordure pt-8 sm:flex-row sm:items-center sm:justify-between">
                 @if($this->previousProject)
-                    <a href="{{ route('projects.show', $this->previousProject->slug) }}" class="group inline-flex items-center gap-3">
+                    <a href="{{ route('projects.show', $this->previousProject->slug) }}" class="group inline-flex items-center gap-3" wire:navigate>
                         <span aria-hidden="true" class="text-lg text-cuivre transition-transform duration-300 motion-safe:group-hover:-translate-x-1">←</span>
                         <span>
                             <span class="block font-display text-xs font-semibold uppercase tracking-wider text-ardoise/70">Réalisation précédente</span>
@@ -405,7 +405,7 @@ new #[Layout('layouts::public')] class extends Component
                 @endif
 
                 @if($this->nextProject)
-                    <a href="{{ route('projects.show', $this->nextProject->slug) }}" class="group inline-flex items-center gap-3 text-left sm:ml-auto sm:text-right">
+                    <a href="{{ route('projects.show', $this->nextProject->slug) }}" class="group inline-flex items-center gap-3 text-left sm:ml-auto sm:text-right" wire:navigate>
                         <span>
                             <span class="block font-display text-xs font-semibold uppercase tracking-wider text-ardoise/70">Réalisation suivante</span>
                             <span class="font-display font-bold text-nuit transition-colors duration-300 group-hover:text-cuivre">{{ $this->nextProject->title }}</span>

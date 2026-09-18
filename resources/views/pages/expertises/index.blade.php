@@ -28,7 +28,7 @@ new #[Layout('layouts::public')] class extends Component
         <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
             <nav aria-label="Fil d’Ariane" class="mb-8">
                 <ol class="flex flex-wrap items-center gap-2 text-sm text-white/60">
-                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre">Accueil</a></li>
+                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre" wire:navigate>Accueil</a></li>
                     <li aria-hidden="true">/</li>
                     <li class="text-white/90" aria-current="page">{{ setting('expertises.hero.title') }}</li>
                 </ol>
@@ -64,7 +64,7 @@ new #[Layout('layouts::public')] class extends Component
                         <div class="absolute inset-x-5 top-5 flex items-start justify-between gap-4">
                             <div class="flex flex-wrap gap-1.5">
                                 @foreach($expertise->sectors->take(2) as $sector)
-                                    <a wire:key="expertise-{{ $expertise->id }}-sector-{{ $sector->id }}" href="{{ route('sectors.show', $sector->slug) }}" class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm transition-colors duration-300 hover:border-cuivre hover:text-cuivre focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre">{{ $sector->name }}</a>
+                                    <a wire:key="expertise-{{ $expertise->id }}-sector-{{ $sector->id }}" href="{{ route('sectors.show', $sector->slug) }}" class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm transition-colors duration-300 hover:border-cuivre hover:text-cuivre focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre" wire:navigate>{{ $sector->name }}</a>
                                 @endforeach
                             </div>
                             <span class="font-display text-[11px] font-bold tracking-[0.22em] text-white/50">{{ $position }}</span>
@@ -132,7 +132,7 @@ new #[Layout('layouts::public')] class extends Component
                             <a
                                 href="{{ route('contact') }}"
                                 class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
-                            >
+                             wire:navigate>
                                 Nous contacter
                                 <span aria-hidden="true">→</span>
                             </a>
@@ -150,7 +150,7 @@ new #[Layout('layouts::public')] class extends Component
                     <p class="mt-3 text-sm leading-relaxed text-white/70">{{ setting('expertises.cta.subtitle') }}</p>
                 </div>
                 <div class="relative mt-auto flex flex-wrap items-center gap-3 pt-8">
-                    <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 rounded-full bg-cuivre px-5 py-2.5 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white">
+                    <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 rounded-full bg-cuivre px-5 py-2.5 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white" wire:navigate>
                         Nous contacter
                         <span aria-hidden="true">→</span>
                     </a>

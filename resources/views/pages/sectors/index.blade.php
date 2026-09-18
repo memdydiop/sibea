@@ -31,7 +31,7 @@ new #[Layout('layouts::public')] class extends Component
         <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
             <nav aria-label="Fil d’Ariane" class="mb-8">
                 <ol class="flex flex-wrap items-center gap-2 text-sm text-white/60">
-                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre">Accueil</a></li>
+                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre" wire:navigate>Accueil</a></li>
                     <li aria-hidden="true">/</li>
                     <li class="text-white/90" aria-current="page">{{ setting('sectors.hero.title') }}</li>
                 </ol>
@@ -83,14 +83,14 @@ new #[Layout('layouts::public')] class extends Component
                             <a
                                 href="{{ route('sectors.show', $sector->slug) }}"
                                 class="inline-flex items-center gap-2 font-display text-sm font-semibold text-cuivre transition-colors hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
-                            >
+                             wire:navigate>
                                 Découvrir le secteur
                                 <span aria-hidden="true">→</span>
                             </a>
                             <a
                                 href="{{ route('contact') }}"
                                 class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
-                            >
+                             wire:navigate>
                                 Nous contacter
                                 <span aria-hidden="true">→</span>
                             </a>

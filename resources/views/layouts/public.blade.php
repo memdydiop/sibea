@@ -33,25 +33,25 @@
         <div class="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between transition-all duration-300 h-20">
             <a href="{{ route('home') }}"
                 class="inline-flex items-center rounded-lg bg-surface px-3 py-2 transition-opacity duration-300 hover:opacity-90 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre"
-                aria-label="Groupe SIBEA — Accueil">
+                aria-label="Groupe SIBEA — Accueil" wire:navigate>
                 <img src="{{ setting_media_url('visuals.logo') }}" alt="Groupe SIBEA" class="h-10 w-auto lg:h-12">
             </a>
             <nav class="hidden lg:flex items-center gap-8 font-display text-base font-semibold">
                 @if($headerLinks['sectors'])
-                    <a href="{{ route('sectors.index') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('sectors.*') ? 'text-cuivre!' : '' }}">{{ setting('header.link.sectors.label') }}</a>
+                    <a href="{{ route('sectors.index') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('sectors.*') ? 'text-cuivre!' : '' }}" wire:navigate>{{ setting('header.link.sectors.label') }}</a>
                 @endif
                 @if($headerLinks['expertises'])
-                    <a href="{{ route('expertises.index') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('expertises.*') ? 'text-cuivre!' : '' }}">{{ setting('header.link.expertises.label') }}</a>
+                    <a href="{{ route('expertises.index') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('expertises.*') ? 'text-cuivre!' : '' }}" wire:navigate>{{ setting('header.link.expertises.label') }}</a>
                 @endif
                 @if($headerLinks['projects'])
-                    <a href="{{ route('projects.index') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('projects.*') ? 'text-cuivre!' : '' }}">{{ setting('header.link.projects.label') }}</a>
+                    <a href="{{ route('projects.index') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('projects.*') ? 'text-cuivre!' : '' }}" wire:navigate>{{ setting('header.link.projects.label') }}</a>
                 @endif
                 @if($headerLinks['contact'])
-                    <a href="{{ route('contact') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('contact') ? 'text-cuivre!' : '' }}">{{ setting('header.link.contact.label') }}</a>
+                    <a href="{{ route('contact') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('contact') ? 'text-cuivre!' : '' }}" wire:navigate>{{ setting('header.link.contact.label') }}</a>
                 @endif
             </nav>
             <div class="flex items-center gap-3">
-                <flux:button variant="ghost" href="{{ route('login') }}" class="hidden sm:inline-flex text-white! hover:text-cuivre!">
+                <flux:button variant="ghost" href="{{ route('login') }}" target="_blank" rel="noopener" class="hidden sm:inline-flex text-white! hover:text-cuivre!">
                     {{ setting('header.login_label') }}
                 </flux:button>
                 <button
@@ -68,18 +68,18 @@
         <nav x-show="open" x-cloak class="lg:hidden border-t border-bordure bg-casse" aria-label="Menu mobile">
             <div class="px-6 py-4 flex flex-col gap-1 font-display text-base font-semibold">
                 @if($headerLinks['sectors'])
-                    <a x-on:click="open = false" href="{{ route('sectors.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.link.sectors.label') }}</a>
+                    <a x-on:click="open = false" href="{{ route('sectors.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.link.sectors.label') }}</a>
                 @endif
                 @if($headerLinks['expertises'])
-                    <a x-on:click="open = false" href="{{ route('expertises.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.link.expertises.label') }}</a>
+                    <a x-on:click="open = false" href="{{ route('expertises.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.link.expertises.label') }}</a>
                 @endif
                 @if($headerLinks['projects'])
-                    <a x-on:click="open = false" href="{{ route('projects.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.link.projects.label') }}</a>
+                    <a x-on:click="open = false" href="{{ route('projects.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.link.projects.label') }}</a>
                 @endif
                 @if($headerLinks['contact'])
-                    <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.link.contact.label') }}</a>
+                    <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.link.contact.label') }}</a>
                 @endif
-                <a x-on:click="open = false" href="{{ route('login') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.login_label') }}</a>
+                <a x-on:click="open = false" href="{{ route('login') }}" target="_blank" rel="noopener" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.login_label') }}</a>
             </div>
         </nav>
     </header>
@@ -99,8 +99,8 @@
             <div>
                 <div class="font-display font-bold mb-4">Le groupe</div>
                 <ul class="space-y-2 text-sm text-white/70">
-                    <li><a href="{{ route('pages.show', ['page' => 'le-groupe']) }}" class="transition-colors hover:text-cuivre">Qui sommes-nous</a></li>
-                    <li><a href="{{ route('pages.show', ['page' => 'engagements']) }}" class="transition-colors hover:text-cuivre">Engagements</a></li>
+                    <li><a href="{{ route('pages.show', ['page' => 'le-groupe']) }}" class="transition-colors hover:text-cuivre" wire:navigate>Qui sommes-nous</a></li>
+                    <li><a href="{{ route('pages.show', ['page' => 'engagements']) }}" class="transition-colors hover:text-cuivre" wire:navigate>Engagements</a></li>
                 </ul>
             </div>
             <div>
@@ -108,7 +108,7 @@
                 <ul class="space-y-2 text-sm text-white/70">
                     @foreach(\App\Models\Sector::cachedActiveList() as $sector)
                         <li>
-                            <a href="{{ route('sectors.show', $sector->slug) }}" class="transition-colors hover:text-cuivre">{{ $sector->name }}</a>
+                            <a href="{{ route('sectors.show', $sector->slug) }}" class="transition-colors hover:text-cuivre" wire:navigate>{{ $sector->name }}</a>
                         </li>
                     @endforeach
                 </ul>
@@ -116,16 +116,16 @@
             <div>
                 <div class="font-display font-bold mb-4">Expertises</div>
                 <ul class="space-y-2 text-sm text-white/70">
-                    <li><a href="{{ route('expertises.index') }}" class="transition-colors hover:text-cuivre">Nos expertises</a></li>
-                    <li><a href="{{ route('projects.index') }}" class="transition-colors hover:text-cuivre">Réalisations</a></li>
+                    <li><a href="{{ route('expertises.index') }}" class="transition-colors hover:text-cuivre" wire:navigate>Nos expertises</a></li>
+                    <li><a href="{{ route('projects.index') }}" class="transition-colors hover:text-cuivre" wire:navigate>Réalisations</a></li>
                 </ul>
             </div>
             <div>
                 <div class="font-display font-bold mb-4">Contact</div>
                 <ul class="space-y-2 text-sm text-white/70">
-                    <li><a href="{{ route('contact') }}" class="transition-colors hover:text-cuivre">Nous contacter</a></li>
-                    <li><a href="{{ route('legal') }}" class="transition-colors hover:text-cuivre">Mentions légales</a></li>
-                    <li><a href="{{ route('privacy') }}" class="transition-colors hover:text-cuivre">Politique de confidentialité</a></li>
+                    <li><a href="{{ route('contact') }}" class="transition-colors hover:text-cuivre" wire:navigate>Nous contacter</a></li>
+                    <li><a href="{{ route('legal') }}" class="transition-colors hover:text-cuivre" wire:navigate>Mentions légales</a></li>
+                    <li><a href="{{ route('privacy') }}" class="transition-colors hover:text-cuivre" wire:navigate>Politique de confidentialité</a></li>
                 </ul>
             </div>
         </div>
