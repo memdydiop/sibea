@@ -58,6 +58,19 @@ test('creates a project with gallery and pivots', function () {
         ->and($project->getMedia('gallery'))->toHaveCount(2);
 });
 
+test('generates the project slug automatically', function () {
+    Storage::fake('public');
+
+    Livewire::actingAs(projectManager())
+        ->test('pages::admin.projects.index')
+        ->set('title', 'Rizerie moderne')
+        ->set('slug', '')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $this->assertDatabaseHas('projects', ['title' => 'Rizerie moderne', 'slug' => 'rizerie-moderne']);
+});
+
 test('saves editorial content, coordinates and documents', function () {
     Storage::fake('public');
 

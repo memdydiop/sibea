@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\UniqueSlug;
 use App\Models\Page;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -38,8 +39,17 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
 
     public function updatedTitle(): void
     {
-        if ($this->editingId === null) {
-            $this->slug = Str::slug($this->title);
+        $isAutomaticSlug = $this->editingId === null;
+
+        if (! $isAutomaticSlug) {
+            $page = Page::find($this->editingId);
+            $isAutomaticSlug = $page !== null
+                && $this->slug === $page->slug
+                && $page->slug === Str::slug($page->title);
+        }
+
+        if ($isAutomaticSlug) {
+            $this->slug = UniqueSlug::for(Page::class, $this->title, $this->editingId);
         }
     }
 
@@ -65,6 +75,10 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
 
     public function save(): void
     {
+        if (trim($this->slug) === '') {
+            $this->slug = UniqueSlug::for(Page::class, $this->title, $this->editingId);
+        }
+
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('pages', 'slug')->ignore($this->editingId)],
@@ -164,6 +178,7 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
                 <flux:field>
                     <flux:label>Slug *</flux:label>
                     <flux:input wire:model="slug" type="text" />
+                    <flux:description>Généré automatiquement depuis le titre si laissé vide.</flux:description>
                     <flux:error name="slug" />
                 </flux:field>
             </div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Concerns\AddsMediaFromUploads;
+use App\Support\UniqueSlug;
 use App\Models\Sector;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -86,8 +87,17 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
 
     public function updatedName(): void
     {
-        if ($this->editingId === null) {
-            $this->slug = Str::slug($this->name);
+        $isAutomaticSlug = $this->editingId === null;
+
+        if (! $isAutomaticSlug) {
+            $sector = Sector::find($this->editingId);
+            $isAutomaticSlug = $sector !== null
+                && $this->slug === $sector->slug
+                && $sector->slug === Str::slug($sector->name);
+        }
+
+        if ($isAutomaticSlug) {
+            $this->slug = UniqueSlug::for(Sector::class, $this->name, $this->editingId);
         }
     }
 
@@ -127,6 +137,10 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
 
     public function save(): void
     {
+        if (trim($this->slug) === '') {
+            $this->slug = UniqueSlug::for(Sector::class, $this->name, $this->editingId);
+        }
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique('sectors', 'slug')->ignore($this->editingId)],
@@ -395,6 +409,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
                     <flux:field>
                         <flux:label>Slug *</flux:label>
                         <flux:input wire:model="slug" type="text" />
+                        <flux:description>Généré automatiquement depuis le nom si laissé vide.</flux:description>
                         <flux:error name="slug" />
                     </flux:field>
                 </div>

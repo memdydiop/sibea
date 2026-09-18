@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\UniqueSlug;
 use App\Models\Expertise;
 use App\Models\Service;
 use Illuminate\Support\Str;
@@ -63,8 +64,17 @@ new #[Layout('layouts::app')] #[Title('Services')] class extends Component
 
     public function updatedName(): void
     {
-        if ($this->editingId === null) {
-            $this->slug = Str::slug($this->name);
+        $isAutomaticSlug = $this->editingId === null;
+
+        if (! $isAutomaticSlug) {
+            $service = Service::find($this->editingId);
+            $isAutomaticSlug = $service !== null
+                && $this->slug === $service->slug
+                && $service->slug === Str::slug($service->name);
+        }
+
+        if ($isAutomaticSlug) {
+            $this->slug = UniqueSlug::for(Service::class, $this->name, $this->editingId);
         }
     }
 
@@ -93,6 +103,10 @@ new #[Layout('layouts::app')] #[Title('Services')] class extends Component
 
     public function save(): void
     {
+        if (trim($this->slug) === '') {
+            $this->slug = UniqueSlug::for(Service::class, $this->name, $this->editingId);
+        }
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique('services', 'slug')->ignore($this->editingId)],
@@ -206,6 +220,7 @@ new #[Layout('layouts::app')] #[Title('Services')] class extends Component
                 <flux:field>
                     <flux:label>Slug *</flux:label>
                     <flux:input wire:model="slug" type="text" />
+                    <flux:description>Généré automatiquement depuis le nom si laissé vide.</flux:description>
                     <flux:error name="slug" />
                 </flux:field>
             </div>

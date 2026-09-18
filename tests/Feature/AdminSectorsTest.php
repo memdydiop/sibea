@@ -67,7 +67,7 @@ test('validates sector fields', function () {
         ->set('name', '')
         ->set('slug', '')
         ->call('save')
-        ->assertHasErrors(['name', 'slug']);
+        ->assertHasErrors(['name']);
 
     $this->assertDatabaseCount('sectors', 0);
 });
@@ -167,6 +167,56 @@ test('redirects the legacy sector pages url', function () {
     $this->actingAs(sectorAdmin())
         ->get('/admin/contenus-secteurs')
         ->assertRedirect('/admin/secteurs');
+});
+
+test('generates the slug automatically from the name', function () {
+    Livewire::actingAs(sectorAdmin())
+        ->test('pages::admin.sectors.index')
+        ->set('name', 'Énergie durable')
+        ->set('slug', '')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $this->assertDatabaseHas('sectors', ['name' => 'Énergie durable', 'slug' => 'energie-durable']);
+});
+
+test('generates a unique slug when it already exists', function () {
+    Sector::factory()->create(['name' => 'BTP', 'slug' => 'btp']);
+
+    Livewire::actingAs(sectorAdmin())
+        ->test('pages::admin.sectors.index')
+        ->set('name', 'BTP')
+        ->set('slug', '')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $this->assertDatabaseHas('sectors', ['name' => 'BTP', 'slug' => 'btp-2']);
+});
+
+test('regenerates the slug when renaming a sector with an automatic slug', function () {
+    $sector = Sector::factory()->create(['name' => 'BTP', 'slug' => 'btp']);
+
+    Livewire::actingAs(sectorAdmin())
+        ->test('pages::admin.sectors.index')
+        ->call('edit', $sector->id)
+        ->set('name', 'BTP & Génie civil')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($sector->fresh()->slug)->toBe('btp-genie-civil');
+});
+
+test('keeps a custom slug when renaming a sector', function () {
+    $sector = Sector::factory()->create(['name' => 'BTP', 'slug' => 'notre-btp']);
+
+    Livewire::actingAs(sectorAdmin())
+        ->test('pages::admin.sectors.index')
+        ->call('edit', $sector->id)
+        ->set('name', 'BTP & Génie civil')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($sector->fresh()->slug)->toBe('notre-btp');
 });
 
 test('invalidates public sectors cache on toggle', function () {

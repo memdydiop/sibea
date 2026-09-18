@@ -17,6 +17,9 @@ class SectorSeeder extends Seeder
                 'name' => 'BTP',
                 'slug' => 'btp',
                 'short_description' => 'Bâtiments, infrastructures et travaux publics.',
+                'description' => 'Pôle historique du Groupe SIBEA, le BTP et le Génie Civil couvre l’ensemble du cycle de construction : études techniques, terrassement, VRD, gros œuvre, ouvrages d’art et aménagement foncier. Nos équipes interviennent pour les acteurs publics comme privés, en zone urbaine comme en milieu rural, avec une exigence constante de conformité aux normes de sécurité et de qualité.'
+                    ."\n\n"
+                    .'De la viabilisation d’un site à la livraison d’infrastructures complexes, nous mobilisons ingénierie de pointe et moyens matériels adaptés pour tenir les délais, maîtriser les coûts et limiter l’impact environnemental. Chaque chantier est piloté par des conducteurs de travaux expérimentés et suivi selon un plan qualité rigoureux, gage d’ouvrages durables et fiables.',
                 'hero_title' => 'Construire des ouvrages qui durent.',
                 'hero_description' => 'Bâtiments, infrastructures et travaux publics réalisés avec exigence, dans le respect des délais et des normes.',
                 'hero_cta_label' => 'Découvrir le BTP',
@@ -38,6 +41,9 @@ class SectorSeeder extends Seeder
                 'name' => 'Immobilier',
                 'slug' => 'immobilier',
                 'short_description' => 'Développement et valorisation immobilière.',
+                'description' => 'Le pôle Immobilier conçoit, développe et valorise des programmes résidentiels et professionnels à Abidjan et en région. De la sélection foncière à la remise des clés, en passant par la commercialisation et la gestion locative, nous maîtrisons toute la chaîne de valeur grâce à notre synergie avec les équipes de construction du groupe.'
+                    ."\n\n"
+                    .'Nous proposons des appartements, villas, bureaux, plateformes logistiques et locaux commerciaux pensés pour les usages actuels : emplacements stratégiques, architectures contemporaines, finitions soignées et sécurité des investissements. Nos conseillers accompagnent investisseurs particuliers et entreprises à chaque étape de leur projet patrimonial.',
                 'hero_title' => 'Valoriser le foncier, livrer des lieux de vie.',
                 'hero_description' => 'Développement et réalisation de programmes immobiliers créateurs de valeur, à Abidjan et en région.',
                 'hero_cta_label' => 'Découvrir l’immobilier',
@@ -59,6 +65,9 @@ class SectorSeeder extends Seeder
                 'name' => 'Énergie',
                 'slug' => 'energie',
                 'short_description' => 'Solutions énergétiques fiables et durables.',
+                'description' => 'Face aux enjeux de la transition et de la souveraineté énergétique, le pôle Énergie conçoit, installe et maintient des infrastructures de production, de distribution et de stockage. Centrales solaires photovoltaïques, systèmes hybrides avec batteries, lignes HT/BT, postes de transformation : nous couvrons toute la chaîne de valeur, des études d’impact à la maintenance.'
+                    ."\n\n"
+                    .'Nos ingénieurs et techniciens accompagnent industries, opérateurs télécoms et collectivités pour sécuriser leur approvisionnement, réduire leur facture énergétique et diminuer leur empreinte carbone. Chaque solution est dimensionnée sur mesure, puis supervisée en continu pour garantir performance et continuité de service.',
                 'hero_title' => 'L’énergie au service du développement.',
                 'hero_description' => 'Des solutions énergétiques fiables pour alimenter durablement entreprises et collectivités.',
                 'hero_cta_label' => 'Découvrir l’énergie',
@@ -80,6 +89,9 @@ class SectorSeeder extends Seeder
                 'name' => 'Agro-industrie',
                 'slug' => 'agro-industrie',
                 'short_description' => 'Transformation industrielle des matières premières agricoles.',
+                'description' => 'Le pôle Agro-industrie transforme et conditionne localement les matières premières agricoles au sein d’unités industrielles modernes : huilerie, rizerie, conserverie et lignes de conditionnement. De la réception des récoltes à l’expédition des produits finis, chaque étape est contrôlée selon des procédures strictes de traçabilité et de sécurité alimentaire.'
+                    ."\n\n"
+                    .'En travaillant main dans la main avec les coopératives et les bassins de production, nous sécurisons nos approvisionnements tout en garantissant des revenus équitables aux producteurs. Notre objectif : créer de la valeur ajoutée locale, réduire les pertes post-récolte et approvisionner le marché en produits de qualité aux normes internationales.',
                 'hero_title' => 'Transformer local, créer de la valeur.',
                 'hero_description' => 'Unités de transformation agro-industrielle — huilerie, rizerie, conserverie, conditionnement — de la matière première au produit fini.',
                 'hero_cta_label' => 'Découvrir l’agro-industrie',

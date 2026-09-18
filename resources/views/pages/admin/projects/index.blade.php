@@ -1,6 +1,7 @@
 <?php
 
 use App\Concerns\AddsMediaFromUploads;
+use App\Support\UniqueSlug;
 use App\Enums\ProjectStatus;
 use App\Models\Expertise;
 use App\Models\Project;
@@ -128,8 +129,17 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
     public function updatedTitle(): void
     {
-        if ($this->editingId === null) {
-            $this->slug = Str::slug($this->title);
+        $isAutomaticSlug = $this->editingId === null;
+
+        if (! $isAutomaticSlug) {
+            $project = Project::find($this->editingId);
+            $isAutomaticSlug = $project !== null
+                && $this->slug === $project->slug
+                && $project->slug === Str::slug($project->title);
+        }
+
+        if ($isAutomaticSlug) {
+            $this->slug = UniqueSlug::for(Project::class, $this->title, $this->editingId);
         }
     }
 
@@ -180,6 +190,10 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
     public function save(): void
     {
+        if (trim($this->slug) === '') {
+            $this->slug = UniqueSlug::for(Project::class, $this->title, $this->editingId);
+        }
+
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique('projects', 'slug')->ignore($this->editingId)],
@@ -410,6 +424,7 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
                 <flux:field>
                     <flux:label>Slug *</flux:label>
                     <flux:input wire:model="slug" type="text" />
+                    <flux:description>Généré automatiquement depuis le titre si laissé vide.</flux:description>
                     <flux:error name="slug" />
                 </flux:field>
             </div>
