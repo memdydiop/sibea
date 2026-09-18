@@ -100,19 +100,25 @@ new #[Layout('layouts::public')] class extends Component
 
 <div>
     <section class="on-dark relative bg-nuit text-white  overflow-hidden">
-        <img src="{{ asset('images/heroes/contact.jpg') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+        <img src="{{ setting_media_url('visuals.hero.contact') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
         <div class="absolute inset-0" style="background: linear-gradient(90deg, rgba(11,31,51,0.92) 0%, rgba(11,31,51,0.65) 100%);"></div>
-        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-12">
-            <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">GROUPE SIBEA</div>
-            <h1 class="font-display font-extrabold text-4xl mb-6">Contact</h1>
-            <p class="text-white/80 text-lg max-w-2xl leading-relaxed">Parlons de votre projet. Notre équipe vous répond sous 24h ouvrées.</p>
+        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
+            <nav aria-label="Fil d’Ariane" class="mb-8">
+                <ol class="flex flex-wrap items-center gap-2 text-sm text-white/60">
+                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre">Accueil</a></li>
+                    <li aria-hidden="true">/</li>
+                    <li class="text-white/90" aria-current="page">Contact</li>
+                </ol>
+            </nav>
+            <h1 class="font-display font-extrabold text-4xl lg:text-6xl mb-6 max-w-4xl">Contact</h1>
+            <p class="text-white/80 text-lg max-w-2xl leading-relaxed">{{ setting('contact.hero.subtitle') }}</p>
         </div>
     </section>
 
     <section class="max-w-7xl mx-auto px-6 lg:px-8 py-24">
         <div class="grid lg:grid-cols-5 gap-12 lg:gap-16">
             <div class="lg:col-span-2">
-                <div class="text-cuivre font-display font-semibold tracking-widest text-xs mb-3">CONTACT DIRECT</div>
+                <div class="text-accroche font-display font-semibold tracking-widest text-xs mb-3">CONTACT DIRECT</div>
                 <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-4xl mb-6">Coordonnées</h2>
                 <p class="text-ardoise text-lg max-w-xl mb-12">Une question, un projet à nous confier, ou simplement envie d’échanger ? Notre équipe est à votre écoute.</p>
 
@@ -123,7 +129,7 @@ new #[Layout('layouts::public')] class extends Component
                         </span>
                         <div>
                             <dt class="font-display font-bold mb-1">Adresse</dt>
-                            <dd class="text-ardoise text-sm leading-relaxed">Abidjan, Cocody<br>Côte d’Ivoire</dd>
+                            <dd class="text-ardoise text-sm leading-relaxed">{!! nl2br(e(setting('contact.address'))) !!}</dd>
                         </div>
                     </div>
 
@@ -133,7 +139,7 @@ new #[Layout('layouts::public')] class extends Component
                         </span>
                         <div>
                             <dt class="font-display font-bold mb-1">Téléphone</dt>
-                            <dd class="text-ardoise text-sm"><a href="tel:+2252722445566" class="hover:text-cuivre transition-colors">+225 27 22 44 55 66</a></dd>
+                            <dd class="text-ardoise text-sm"><a href="tel:{{ setting('contact.phone_link') }}" class="hover:text-cuivre transition-colors">{{ setting('contact.phone') }}</a></dd>
                         </div>
                     </div>
 
@@ -143,7 +149,7 @@ new #[Layout('layouts::public')] class extends Component
                         </span>
                         <div>
                             <dt class="font-display font-bold mb-1">Email</dt>
-                            <dd class="text-ardoise text-sm"><a href="mailto:contact@sibea.ci" class="hover:text-cuivre transition-colors">contact@sibea.ci</a></dd>
+                            <dd class="text-ardoise text-sm"><a href="mailto:{{ setting('contact.email') }}" class="hover:text-cuivre transition-colors">{{ setting('contact.email') }}</a></dd>
                         </div>
                     </div>
 
@@ -153,7 +159,7 @@ new #[Layout('layouts::public')] class extends Component
                         </span>
                         <div>
                             <dt class="font-display font-bold mb-1">Horaires</dt>
-                            <dd class="text-ardoise text-sm leading-relaxed">Lun–Ven : 8h–18h<br>Sam : 9h–13h</dd>
+                            <dd class="text-ardoise text-sm leading-relaxed">{!! nl2br(e(setting('contact.hours'))) !!}</dd>
                         </div>
                     </div>
                 </dl>
@@ -161,7 +167,7 @@ new #[Layout('layouts::public')] class extends Component
                 <div class="mt-12 border border-bordure rounded-lg bg-surface p-6">
                     <div class="font-display font-bold mb-2">Échange direct</div>
                     <p class="text-ardoise text-sm leading-relaxed mb-5">Discutez en temps réel avec un conseiller SIBEA, du lundi au samedi.</p>
-                    <a href="https://wa.me/2252722445566?text={{ urlencode('Bonjour, je souhaite échanger au sujet de mon projet.') }}"
+                    <a href="https://wa.me/{{ setting('contact.whatsapp') }}?text={{ urlencode(setting('contact.whatsapp_message')) }}"
                         target="_blank" rel="noopener"
                         class="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-[#25D366] px-5 py-3 font-display font-semibold text-white text-sm hover:bg-[#1EBE5B] transition-colors">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -184,7 +190,7 @@ new #[Layout('layouts::public')] class extends Component
                     </div>
                 @else
                     <div class="border border-bordure rounded-lg bg-surface p-8 lg:p-10">
-                        <div class="text-cuivre font-display font-semibold tracking-widest text-xs mb-3">FORMULAIRE DIRECT</div>
+                        <div class="text-accroche font-display font-semibold tracking-widest text-xs mb-3">FORMULAIRE DIRECT</div>
                         <h2 class="font-display font-extrabold text-nuit tracking-tight text-2xl mb-2">Un projet à structurer ?</h2>
                         <p class="text-ardoise text-sm mb-8">Remplissez ce formulaire, notre équipe vous recontacte sous 24h ouvrées.</p>
 
@@ -292,22 +298,22 @@ new #[Layout('layouts::public')] class extends Component
 
     <section class="bg-surface border-y border-bordure">
         <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16">
-            <div class="text-cuivre font-display font-semibold tracking-widest text-xs mb-3">NOS IMPLANTATIONS</div>
+            <div class="text-accroche font-display font-semibold tracking-widest text-xs mb-3">NOS IMPLANTATIONS</div>
             <h2 class="font-display font-extrabold text-nuit tracking-tight text-2xl mb-8">Nous trouver</h2>
             <div class="grid lg:grid-cols-3 gap-8 items-start">
                 <div class="border border-bordure rounded-lg bg-casse p-6">
-                    <div class="font-display font-bold text-lg mb-1">Siège — Abidjan</div>
-                    <div class="text-cuivre text-sm font-semibold mb-3">Cocody, Côte d’Ivoire</div>
-                    <p class="text-ardoise text-sm leading-relaxed">Direction générale et coordination des activités BTP, immobilier, énergie et agro-industrie du Groupe SIBEA.</p>
+                    <div class="font-display font-bold text-lg mb-1">{{ setting('contact.office_title') }}</div>
+                    <div class="text-cuivre text-sm font-semibold mb-3">{{ setting('contact.office_location') }}</div>
+                    <p class="text-ardoise text-sm leading-relaxed">{{ setting('contact.office_description') }}</p>
                 </div>
                 <div class="lg:col-span-2 rounded-lg overflow-hidden border border-bordure">
                     <iframe
-                        src="https://www.openstreetmap.org/export/embed.html?bbox=-4.10%2C5.25%2C-3.90%2C5.45&layer=mapnik&marker=5.35%2C-4.00"
+                        src="https://www.openstreetmap.org/export/embed.html?bbox={{ setting('contact.longitude') - 0.1 }}%2C{{ setting('contact.latitude') - 0.1 }}%2C{{ setting('contact.longitude') + 0.1 }}%2C{{ setting('contact.latitude') + 0.1 }}&layer=mapnik&marker={{ setting('contact.latitude') }}%2C{{ setting('contact.longitude') }}"
                         width="100%"
                         height="380"
                         style="border:0;"
                         loading="lazy"
-                        title="Localisation du Groupe SIBEA — Abidjan, Cocody">
+                        title="Localisation — {{ setting('contact.office_title') }}">
                     </iframe>
                 </div>
             </div>
@@ -319,7 +325,7 @@ new #[Layout('layouts::public')] class extends Component
             <div class="border border-bordure rounded-lg p-6 bg-surface max-w-xl">
                 <p class="text-sm text-anthracite">
                     JavaScript est désactivé. Écrivez-nous directement à
-                    <a class="text-cuivre underline" href="mailto:contact@sibea.ci">contact@sibea.ci</a>.
+                    <a class="text-cuivre underline" href="mailto:{{ setting('contact.email') }}">{{ setting('contact.email') }}</a>.
                 </p>
             </div>
         </section>

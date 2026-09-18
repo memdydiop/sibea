@@ -124,7 +124,7 @@ new #[Layout('layouts::public')] class extends Component
                     <span class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm">{{ $project->status->label() }}</span>
                 @endif
                 @foreach($project->sectors as $sector)
-                    <a href="{{ route('sectors.index') }}" class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm transition-colors duration-300 hover:border-cuivre hover:text-cuivre">{{ $sector->name }}</a>
+                    <a href="{{ route('sectors.show', $sector->slug) }}" class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm transition-colors duration-300 hover:border-cuivre hover:text-cuivre">{{ $sector->name }}</a>
                 @endforeach
             </div>
 
@@ -286,7 +286,7 @@ new #[Layout('layouts::public')] class extends Component
     @if($this->gallery->isNotEmpty())
         <section class="border-y border-bordure bg-surface">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-20" x-data="{ lightboxOpen: false, lightboxImage: '', lightboxAlt: '' }" x-on:keydown.escape.window="lightboxOpen = false">
-                <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">EN IMAGES</div>
+                <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">EN IMAGES</div>
                 <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl mb-8">Galerie</h2>
 
                 <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
@@ -328,7 +328,7 @@ new #[Layout('layouts::public')] class extends Component
     @if($hasCoordinates)
         <section class="border-b border-bordure">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-20">
-                <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">LOCALISATION</div>
+                <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">LOCALISATION</div>
                 <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl mb-8">{{ $project->location ?: $project->title }}</h2>
                 <div class="overflow-hidden rounded-lg border border-bordure">
                     <iframe
@@ -347,7 +347,7 @@ new #[Layout('layouts::public')] class extends Component
     @if($this->relatedProjects->isNotEmpty())
         <section class="border-b border-bordure bg-surface">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-20">
-                <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">POUR ALLER PLUS LOIN</div>
+                <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">POUR ALLER PLUS LOIN</div>
                 <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl mb-8">Réalisations similaires</h2>
 
                 <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">

@@ -27,12 +27,6 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
 
     public ?string $description = null;
 
-    public ?string $hero_title = null;
-
-    public ?string $hero_description = null;
-
-    public ?string $hero_cta_label = null;
-
     public bool $is_active = true;
 
     public bool $is_locked = false;
@@ -68,7 +62,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
     public function create(): void
     {
         $this->authorize('create', Sector::class);
-        $this->reset(['editingId', 'name', 'slug', 'short_description', 'description', 'hero_title', 'hero_description', 'hero_cta_label', 'is_active', 'is_locked', 'sort_order']);
+        $this->reset(['editingId', 'name', 'slug', 'short_description', 'description', 'is_active', 'is_locked', 'sort_order']);
         $this->is_active = true;
         $this->showForm = true;
     }
@@ -82,9 +76,6 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
         $this->slug = $sector->slug;
         $this->short_description = $sector->short_description;
         $this->description = $sector->description;
-        $this->hero_title = $sector->hero_title;
-        $this->hero_description = $sector->hero_description;
-        $this->hero_cta_label = $sector->hero_cta_label;
         $this->is_active = $sector->is_active;
         $this->is_locked = $sector->is_locked;
         $this->sort_order = $sector->sort_order;
@@ -98,9 +89,6 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
             'slug' => ['required', 'string', 'max:255', Rule::unique('sectors', 'slug')->ignore($this->editingId)],
             'short_description' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'hero_title' => ['nullable', 'string', 'max:255'],
-            'hero_description' => ['nullable', 'string'],
-            'hero_cta_label' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
             'is_locked' => ['boolean'],
             'sort_order' => ['integer', 'min:0'],
@@ -117,7 +105,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
 
         $this->showForm = false;
         Sector::flushActiveListCache();
-        $this->reset(['editingId', 'name', 'slug', 'short_description', 'description', 'hero_title', 'hero_description', 'hero_cta_label', 'sort_order']);
+        $this->reset(['editingId', 'name', 'slug', 'short_description', 'description', 'sort_order']);
         $this->is_active = true;
         $this->is_locked = false;
     }
@@ -227,25 +215,10 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
                 <flux:error name="description" />
             </flux:field>
 
-            <div class="grid sm:grid-cols-2 gap-4">
-                <flux:field>
-                    <flux:label>Titre hero</flux:label>
-                    <flux:input wire:model="hero_title" type="text" />
-                    <flux:error name="hero_title" />
-                </flux:field>
-
-                <flux:field>
-                    <flux:label>Bouton hero</flux:label>
-                    <flux:input wire:model="hero_cta_label" type="text" />
-                    <flux:error name="hero_cta_label" />
-                </flux:field>
-            </div>
-
-            <flux:field>
-                <flux:label>Description hero</flux:label>
-                <flux:textarea wire:model="hero_description" rows="2" />
-                <flux:error name="hero_description" />
-            </flux:field>
+            <flux:callout icon="information-circle">
+                Le hero de la page secteur (image, titre, description, bouton) se règle dans
+                <strong>Paramètres → Pages</strong>.
+            </flux:callout>
 
             <div class="grid sm:grid-cols-3 gap-4">
                 <flux:field>

@@ -22,6 +22,10 @@ class ProjectSeeder extends Seeder
      */
     public function run(): void
     {
+        if (app()->isProduction()) {
+            return;
+        }
+
         $projects = [
             [
                 'title' => 'Résidence Les Palmiers — Cocody',

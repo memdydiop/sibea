@@ -34,7 +34,7 @@ new #[Layout('layouts::public')] class extends Component {
     #[Computed]
     public function testimonials()
     {
-        return Testimonial::active()->ordered()->take(6)->get();
+        return Testimonial::active()->ordered()->take(3)->get();
     }
 
     #[Computed]
@@ -47,218 +47,51 @@ new #[Layout('layouts::public')] class extends Component {
 
 <div>
     <div>
-        <section x-data="{
-            current: 0,
-            paused: false,
-            isMobile: window.innerWidth < 1024,
-            autoplay: !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
-                window.innerWidth >= 1024,
-            timer: null,
-            touchStartX: 0,
-            hues: ['#0B1F33', '#12304D', '#0A2438', '#173350'],
-            sectors: @js(
-    $this->sectors->map(
-        fn($s) => [
-            'name' => $s->name,
-            'title' => $s->hero_title,
-            'description' => $s->hero_description,
-            'cta' => $s->hero_cta_label ?: 'Découvrir le secteur',
-            'scene' => match ($s->slug) {
-                'btp' => 'crane',
-                'immobilier' => 'city',
-                'energie' => 'sun',
-                'agro-industrie' => 'field',
-                default => 'city',
-            },
-            'image' => $s->getFirstMediaUrl('hero'),
-            'url' => route('sectors.index'),
-        ],
-    ),
-),
-            start() {
-                if (!this.autoplay || !this.sectors.length) return;
-                this.timer = setInterval(() => {
-                    if (!this.paused) this.current = (this.current + 1) % this.sectors.length;
-                }, 7000);
-            },
-            destroy() { if (this.timer) clearInterval(this.timer); },
-            next() {
-                if (!this.sectors.length) return;
-                this.current = (this.current + 1) % this.sectors.length;
-            },
-            prev() {
-                if (!this.sectors.length) return;
-                this.current = (this.current - 1 + this.sectors.length) % this.sectors.length;
-            },
-            goTo(i) {
-                if (!this.sectors.length) return;
-                this.current = i;
-            },
-            onTouchStart(e) { this.touchStartX = e.touches[0].clientX; },
-            onTouchEnd(e) {
-                const delta = e.changedTouches[0].clientX - this.touchStartX;
-                if (Math.abs(delta) > 50) delta < 0 ? this.next() : this.prev();
-            }
-        }" x-init="start()" x-on:mouseenter="paused = true"
-            x-on:mouseleave="paused = false" x-on:focusin="paused = true" x-on:focusout="paused = false"
-            x-on:keydown.arrow-left.window="prev()" x-on:keydown.arrow-right.window="next()"
-            x-on:touchstart="onTouchStart($event)" x-on:touchend="onTouchEnd($event)"
-            x-on:livewire:navigating.window="destroy()"
-            class="on-dark relative min-h-[50vh]! bg-nuit text-white overflow-hidden">
-            <div class="absolute inset-0" aria-hidden="true">
-                <template x-for="(sector, index) in sectors" :key="'bg-' + index">
-                    <div x-show="current === index" x-transition.opacity.duration.700ms class="absolute inset-0">
-                        <div class="absolute inset-0"
-                            :style="`background: linear-gradient(135deg, ${hues[index % hues.length]} 0%, #0B1F33 100%)`">
-                        </div>
-                        <div class="absolute inset-0 opacity-20"
-                            style="background-image: radial-gradient(rgba(255,255,255,.35) 1px, transparent 1px); background-size: 22px 22px;">
-                        </div>
-                        <template x-if="sector.image">
-                            <img :src="sector.image" :alt="sector.name"
-                                class="absolute inset-0 h-full w-full object-cover" loading="lazy">
-                        </template>
-                        <div class="absolute inset-0"
-                            style="background: linear-gradient(90deg, rgba(11,31,51,0.93) 0%, rgba(11,31,51,0.55) 50%, rgba(11,31,51,0.30) 100%);">
-                        </div>
-                        <template x-if="sector.scene === 'crane'">
-                            <svg class="absolute bottom-0 left-0 h-44 w-full text-white/10" viewBox="0 0 800 200"
-                                preserveAspectRatio="xMidYMax slice" fill="currentColor" aria-hidden="true">
-                                <rect x="60" y="120" width="120" height="80" />
-                                <rect x="200" y="90" width="90" height="110" />
-                                <rect x="620" y="110" width="140" height="90" />
-                                <rect x="392" y="20" width="10" height="180" />
-                                <rect x="250" y="20" width="300" height="8" />
-                                <rect x="250" y="28" width="6" height="60" />
-                                <rect x="236" y="88" width="34" height="22" />
-                                <rect x="402" y="4" width="60" height="16" />
-                            </svg>
-                        </template>
-                        <template x-if="sector.scene === 'city'">
-                            <svg class="absolute bottom-0 left-0 h-44 w-full text-white/10" viewBox="0 0 800 200"
-                                preserveAspectRatio="xMidYMax slice" fill="currentColor" aria-hidden="true">
-                                <rect x="80" y="70" width="110" height="130" />
-                                <rect x="210" y="30" width="130" height="170" />
-                                <rect x="360" y="90" width="90" height="110" />
-                                <rect x="470" y="50" width="150" height="150" />
-                                <rect x="640" y="100" width="100" height="100" />
-                            </svg>
-                        </template>
-                        <template x-if="sector.scene === 'sun'">
-                            <svg class="absolute bottom-0 left-0 h-44 w-full text-white/10" viewBox="0 0 800 200"
-                                preserveAspectRatio="xMidYMax slice" fill="currentColor" aria-hidden="true">
-                                <circle cx="640" cy="56" r="34" />
-                                <g stroke="currentColor" stroke-width="8" stroke-linecap="round">
-                                    <line x1="640" y1="4" x2="640" y2="14" />
-                                    <line x1="640" y1="98" x2="640" y2="108" />
-                                    <line x1="588" y1="56" x2="598" y2="56" />
-                                    <line x1="682" y1="56" x2="692" y2="56" />
-                                </g>
-                                <polygon points="120,200 230,200 195,128 85,128" />
-                                <polygon points="250,200 360,200 325,128 215,128" />
-                            </svg>
-                        </template>
-                        <template x-if="sector.scene === 'field'">
-                            <svg class="absolute bottom-0 left-0 h-44 w-full text-white/10" viewBox="0 0 800 200"
-                                preserveAspectRatio="xMidYMax slice" fill="currentColor" aria-hidden="true">
-                                <circle cx="650" cy="48" r="26" />
-                                <path d="M0 148 Q 200 118 400 148 T 800 148 L800 200 L0 200 Z" />
-                                <path d="M0 170 Q 200 144 400 170 T 800 170 L800 200 L0 200 Z" opacity=".6" />
-                            </svg>
-                        </template>
-                        <div class="absolute -bottom-8 right-4 font-display font-extrabold text-[10rem] leading-none text-white/10 select-none"
-                            aria-hidden="true" x-text="String(index + 1).padStart(2, '0')"></div>
-                    </div>
-                </template>
-            </div>
-
-            <div
-                class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-8 grid lg:grid-cols-2 gap-12 items-center min-h-[60vh]">
-                <div class="max-w-xl">
+        <section class="on-dark relative bg-nuit text-white overflow-hidden">
+            <img src="{{ setting_media_url('visuals.hero.home', 'hero') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="eager" decoding="async" fetchpriority="high">
+            <div class="absolute inset-0" style="background: linear-gradient(90deg, rgba(11,31,51,0.94) 0%, rgba(11,31,51,0.68) 100%);"></div>
+            <div class="relative max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28 lg:min-h-[60vh] flex items-center">
+                <div class="max-w-2xl">
                     <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-6">
-                        GROUPE SIBEA
+                        {{ setting('general.site_name') }}
                     </div>
                     <h1 class="font-display font-extrabold text-3xl lg:text-6xl leading-tight mb-6">
-                        Des expertises solides pour construire des projets durables.
+                        {{ setting('home.hero.title') }}
                     </h1>
                     <p class="text-white/80 text-lg leading-relaxed mb-10">
-                        Le Groupe SIBEA rassemble des compétences complémentaires
-                        dans le BTP, l’immobilier, l’énergie et l’agro-industrie
-                        pour accompagner des projets structurants et créateurs de valeur.
+                        {{ setting('home.hero.subtitle') }}
                     </p>
-                    <div class="flex flex-wrap gap-4">
-                        <flux:button href="{{ route('sectors.index') }}" variant="primary" class="bg-cuivre!">
-                            Découvrir nos secteurs
-                        </flux:button>
-                        <flux:button href="{{ route('projects.index') }}" variant="outline"
-                            class="bg-transparent! text-white! border-white/40! hover:bg-white/10!">
-                            Voir nos réalisations
-                        </flux:button>
-                    </div>
+                    <flux:button href="{{ route('sectors.index') }}" variant="primary" class="bg-cuivre!">
+                        {{ setting('home.hero.primary_label') }}
+                    </flux:button>
                 </div>
-                <div class="grid" aria-live="polite">
-                    <template x-for="(sector, index) in sectors" :key="'caption-' + index">
-                        <div x-show="current === index" x-transition.opacity.duration.700ms
-                            :aria-hidden="current !== index" class="col-start-1 row-start-1">
-                            <div class="mb-4">
-                                <span
-                                    class="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-display font-semibold tracking-widest backdrop-blur">
-                                    <span class="inline-block w-2 h-2 rounded-full bg-cuivre"
-                                        aria-hidden="true"></span>
-                                    GROUPE SIBEA — <span x-text="sector.name"></span>
-                                </span>
-                            </div>
-                            <h2 class="font-display font-extrabold tracking-tight text-3xl lg:text-5xl leading-tight mb-4 max-w-lg"
-                                x-text="sector.title"></h2>
-                            <p class="text-white/80 max-w-md mb-6" x-text="sector.description"></p>
-                            <a :href="sector.url"
-                                class="inline-flex items-center justify-center gap-2 rounded-lg bg-cuivre px-4 py-2 text-sm font-display font-semibold text-nuit self-start">
-                                <span x-text="sector.cta"></span> →
-                            </a>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <button x-on:click="prev()" aria-label="Slide précédent"
-                class="absolute left-4 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition-colors hover:bg-cuivre hover:text-nuit lg:inline-flex">‹</button>
-            <button x-on:click="next()" aria-label="Slide suivant"
-                class="absolute right-4 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition-colors hover:bg-cuivre hover:text-nuit lg:inline-flex">›</button>
-
-            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10" role="tablist">
-                <template x-for="(sector, index) in sectors" :key="index">
-                    <button x-on:click="goTo(index)" :aria-selected="current === index"
-                        :aria-label="`Aller au slide ${index + 1} : ${sector.name}`"
-                        :class="current === index ? 'bg-cuivre w-8' : 'bg-white/40 w-2'"
-                        class="h-2 rounded-full transition-all"></button>
-                </template>
-            </div>
-            <div class="absolute bottom-6 right-10 lg:right-16 z-10 text-white/70 text-sm font-display font-semibold"
-                aria-hidden="true">
-                <span x-text="String(current + 1).padStart(2, '0')"></span>
-                <span class="text-white/40"> / </span>
-                <span x-text="String(sectors.length).padStart(2, '0')"></span>
             </div>
         </section>
 
-        <div class="bg-cuivre text-nuit overflow-hidden py-3 marquee-hover" aria-label="Nos domaines d’intervention">
-            <div class="flex w-max animate-marquee">
-                @for ($i = 0; $i < 2; $i++)
-                    <div @if ($i === 1) aria-hidden="true" @endif
-                        class="flex items-center gap-8 pr-8">
-                        @foreach ($this->sectors as $sector)
-                            <span
-                                class="font-display font-extrabold tracking-wide whitespace-nowrap">{{ $sector->name }}</span>
-                            <span aria-hidden="true">✦</span>
-                        @endforeach
-                        @foreach ($this->expertises as $expertise)
-                            <span class="font-display font-semibold whitespace-nowrap">{{ $expertise->name }}</span>
-                            <span aria-hidden="true">✦</span>
-                        @endforeach
+        <section class="bg-surface">
+            <div class="max-w-7xl mx-auto px-6 lg:px-8 py-24">
+                <div class="grid gap-12 lg:grid-cols-2 lg:gap-16 lg:items-center">
+                    <div class="overflow-hidden rounded-lg border border-bordure bg-surface">
+                        <img src="{{ setting_media_url('visuals.group', 'hero') }}" alt="{{ setting('home.group.title') }}" loading="lazy" decoding="async" class="h-72 w-full object-cover lg:h-96">
                     </div>
-                @endfor
+                    <div>
+                        <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">LE GROUPE</div>
+                        <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-4xl mb-5">{{ setting('home.group.title') }}</h2>
+                        <p class="text-ardoise text-lg leading-relaxed mb-6">{{ setting('home.group.text') }}</p>
+                        @if(setting('home.group.quote'))
+                            <figure class="mb-8 border-l-2 border-cuivre pl-5">
+                                <blockquote class="font-display text-lg italic leading-relaxed text-anthracite">« {{ setting('home.group.quote') }} »</blockquote>
+                                <figcaption class="mt-2 text-sm text-ardoise">Le Président Directeur Général</figcaption>
+                            </figure>
+                        @endif
+                        <a href="{{ route('pages.show', ['page' => 'le-groupe']) }}" class="inline-flex items-center gap-2 rounded-full bg-nuit px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit">
+                            {{ setting('home.group.button') }}
+                            <span aria-hidden="true">→</span>
+                        </a>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
 
         @if ($this->statistics->isNotEmpty())
             <section class="on-dark bg-nuit text-white border-t border-white/10">
@@ -274,75 +107,54 @@ new #[Layout('layouts::public')] class extends Component {
             </section>
         @endif
 
-        <section class="bg-surface border-b border-bordure">
-            <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
-                <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-8">
-                    <div>
-                        <div class="font-display font-bold text-lg mb-1">Qualité</div>
-                        <p class="text-sm text-ardoise leading-relaxed">Des réalisations contrôlées, conformes aux
-                            normes.</p>
-                    </div>
-                    <div>
-                        <div class="font-display font-bold text-lg mb-1">Fiabilité</div>
-                        <p class="text-sm text-ardoise leading-relaxed">Des engagements tenus, délais et budgets
-                            respectés.</p>
-                    </div>
-                    <div>
-                        <div class="font-display font-bold text-lg mb-1">Innovation</div>
-                        <p class="text-sm text-ardoise leading-relaxed">Des solutions modernes, adaptées à chaque
-                            projet.
-                        </p>
-                    </div>
-                    <div>
-                        <div class="font-display font-bold text-lg mb-1">Responsabilité</div>
-                        <p class="text-sm text-ardoise leading-relaxed">Sécurité, conformité et conduite exemplaire.
-                        </p>
-                    </div>
-                    <div>
-                        <div class="font-display font-bold text-lg mb-1">Durabilité</div>
-                        <p class="text-sm text-ardoise leading-relaxed">Des ouvrages pensés pour durer et créer de la
-                            valeur.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="on-dark bg-nuit text-white">
+        <section class="bg-casse">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-24">
-                <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">NOS SECTEURS</div>
-                <h2 class="font-display font-extrabold tracking-tight text-3xl lg:text-5xl mb-4">Tout ce que vos
-                    projets exigent, au
-                    même endroit.</h2>
-                <p class="text-white/70 text-lg  mb-8">Quatre secteurs d’activité, une même exigence de qualité
-                    et de durabilité.</p>
+                <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">NOS SECTEURS</div>
+                <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl mb-4">
+                    {{ setting('home.sectors.title') }}</h2>
+                <p class="text-ardoise text-lg mb-8">{{ setting('home.sectors.subtitle') }}</p>
                 <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     @foreach ($this->sectors as $index => $sector)
                         @php($position = str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT))
                         @php($hero = $sector->getFirstMediaUrl('hero', 'thumb'))
-                        <a wire:key="sector-{{ $sector->id }}" href="{{ route('sectors.index') }}"
+                        <a wire:key="sector-{{ $sector->id }}" href="{{ route('sectors.show', $sector->slug) }}"
                             class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md">
                             <div class="relative h-56 overflow-hidden bg-nuit lg:h-64">
-                                @if($hero)
-                                    <img src="{{ $hero }}" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover:scale-[1.03]">
+                                @if ($hero)
+                                    <img src="{{ $hero }}" alt="{{ $sector->name }}" loading="lazy" decoding="async"
+                                        class="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover:scale-[1.03]">
                                 @else
-                                    <div class="absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1px); background-size: 22px 22px;" aria-hidden="true"></div>
-                                    <span class="pointer-events-none absolute -bottom-12 -right-3 font-display text-[11rem] font-extrabold leading-none text-white/5" aria-hidden="true">{{ mb_substr($sector->name, 0, 1) }}</span>
+                                    <div class="absolute inset-0 opacity-[0.07]"
+                                        style="background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1px); background-size: 22px 22px;"
+                                        aria-hidden="true"></div>
+                                    <span
+                                        class="pointer-events-none absolute -bottom-12 -right-3 font-display text-[11rem] font-extrabold leading-none text-white/5"
+                                        aria-hidden="true">{{ mb_substr($sector->name, 0, 1) }}</span>
                                 @endif
-                                <div class="absolute inset-0 bg-linear-to-t from-nuit via-nuit/45 to-nuit/10" aria-hidden="true"></div>
+                                <div class="absolute inset-0 bg-linear-to-t from-nuit via-nuit/45 to-nuit/10"
+                                    aria-hidden="true"></div>
                                 <div class="absolute inset-x-5 top-5 flex items-start justify-between gap-4">
-                                    <span class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm">Secteur d’activité</span>
-                                    <span class="font-display text-[11px] font-bold tracking-[0.22em] text-white/50">{{ $position }}</span>
+                                    <span
+                                        class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm">Secteur
+                                        d’activité</span>
+                                    <span
+                                        class="font-display text-[11px] font-bold tracking-[0.22em] text-white/50">{{ $position }}</span>
                                 </div>
                             </div>
                             <div class="flex flex-1 flex-col p-6 lg:p-8">
-                                <h3 class="font-display text-2xl font-extrabold text-nuit leading-snug tracking-tight transition-colors duration-300 group-hover:text-cuivre">{{ $sector->name }}</h3>
-                                <p class="mt-3 text-sm leading-relaxed text-ardoise">{{ $sector->short_description }}</p>
+                                <h3
+                                    class="font-display text-2xl font-extrabold text-nuit leading-snug tracking-tight transition-colors duration-300 group-hover:text-cuivre">
+                                    {{ $sector->name }}</h3>
+                                <p class="mt-3 text-sm leading-relaxed text-ardoise">{{ $sector->short_description }}
+                                </p>
                                 <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
-                                    <span class="text-xs font-display font-semibold uppercase tracking-wider text-ardoise/70">
+                                    <span
+                                        class="text-xs font-display font-semibold uppercase tracking-wider text-ardoise/70">
                                         {{ $sector->expertises_count }}
                                         expertise{{ $sector->expertises_count > 1 ? 's' : '' }}
                                     </span>
-                                    <span class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 group-hover:bg-cuivre group-hover:text-nuit">
+                                    <span
+                                        class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 group-hover:bg-cuivre group-hover:text-nuit">
                                         Découvrir
                                         <span aria-hidden="true">→</span>
                                     </span>
@@ -354,39 +166,45 @@ new #[Layout('layouts::public')] class extends Component {
             </div>
         </section>
 
-        <section>
+        <section class="bg-surface border-y border-bordure">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-24">
-                <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">NOS EXPERTISES</div>
-                <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl mb-4">Cinq savoir-faire
-                    complémentaires.</h2>
-                <p class="text-ardoise text-lg mb-8">De l’étude à la réalisation, chaque expertise s’appuie
-                    sur des prestations concrètes.</p>
+                <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">NOS EXPERTISES</div>
+                <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl mb-4">
+                    {{ setting('home.expertises.title') }}</h2>
+                <p class="text-ardoise text-lg mb-8">{{ setting('home.expertises.subtitle') }}</p>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach ($this->expertises as $index => $expertise)
-                    @php($position = str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT))
-                    @php($cover = $expertise->getFirstMediaUrl('cover', 'thumb'))
-                    <a wire:key="expertise-{{ $expertise->id }}"
-                        href="{{ route('expertises.index') }}"
+                        @php($position = str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT))
+                        @php($cover = $expertise->getFirstMediaUrl('cover', 'thumb'))
+                        <a wire:key="expertise-{{ $expertise->id }}" href="{{ route('expertises.index') }}"
                             class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md">
                             <div class="relative h-56 overflow-hidden bg-nuit lg:h-64">
                                 @if ($cover)
-                                    <img src="{{ $cover }}" alt="" loading="lazy" decoding="async"
+                                    <img src="{{ $cover }}" alt="{{ $expertise->name }}" loading="lazy" decoding="async"
                                         class="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover:scale-[1.03]">
                                 @else
                                     <div class="absolute inset-0 opacity-[0.07]"
-                                        style="background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1px); background-size: 22px 22px;" aria-hidden="true"></div>
-                                    <span class="pointer-events-none absolute -bottom-12 -right-3 font-display text-[11rem] font-extrabold leading-none text-white/5"
+                                        style="background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1px); background-size: 22px 22px;"
+                                        aria-hidden="true"></div>
+                                    <span
+                                        class="pointer-events-none absolute -bottom-12 -right-3 font-display text-[11rem] font-extrabold leading-none text-white/5"
                                         aria-hidden="true">{{ mb_substr($expertise->name, 0, 1) }}</span>
                                 @endif
-                                <div class="absolute inset-0 bg-linear-to-t from-nuit via-nuit/45 to-nuit/10" aria-hidden="true"></div>
+                                <div class="absolute inset-0 bg-linear-to-t from-nuit via-nuit/45 to-nuit/10"
+                                    aria-hidden="true"></div>
                                 <div class="absolute inset-x-5 top-5 flex items-start justify-between gap-4">
-                                    <span class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm">Expertise</span>
-                                    <span class="font-display text-[11px] font-bold tracking-[0.22em] text-white/50">{{ $position }}</span>
+                                    <span
+                                        class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm">Expertise</span>
+                                    <span
+                                        class="font-display text-[11px] font-bold tracking-[0.22em] text-white/50">{{ $position }}</span>
                                 </div>
                             </div>
                             <div class="flex flex-1 flex-col p-6 lg:p-8">
-                                <h3 class="font-display text-2xl font-extrabold text-nuit leading-snug tracking-tight transition-colors duration-300 group-hover:text-cuivre">{{ $expertise->name }}</h3>
-                                <p class="mt-3 text-sm leading-relaxed text-ardoise">{{ $expertise->short_description }}</p>
+                                <h3
+                                    class="font-display text-2xl font-extrabold text-nuit leading-snug tracking-tight transition-colors duration-300 group-hover:text-cuivre">
+                                    {{ $expertise->name }}</h3>
+                                <p class="mt-3 text-sm leading-relaxed text-ardoise">
+                                    {{ $expertise->short_description }}</p>
                                 @if ($expertise->services->isNotEmpty())
                                     <ul class="mt-4 text-sm text-anthracite space-y-1.5">
                                         @foreach ($expertise->services->take(4) as $service)
@@ -397,38 +215,78 @@ new #[Layout('layouts::public')] class extends Component {
                                     </ul>
                                 @endif
                                 <div class="mt-auto pt-6">
-                                    <span class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 group-hover:bg-cuivre group-hover:text-nuit">
+                                    <span
+                                        class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 group-hover:bg-cuivre group-hover:text-nuit">
                                         En savoir plus
-                                        <span class="inline-block transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+                                        <span class="inline-block transition-transform group-hover:translate-x-1"
+                                            aria-hidden="true">→</span>
                                     </span>
                                 </div>
                             </div>
                         </a>
                     @endforeach
-                    <div
-                        class="on-dark rounded-lg bg-nuit text-white p-6 flex flex-col justify-center md:col-span-2 lg:col-span-3 lg:flex-row lg:items-center lg:gap-8">
-                        <div class="flex-1">
-                            <h3 class="font-display font-bold text-xl mb-2">Un besoin spécifique ?</h3>
-                            <p class="text-sm text-white/70 mb-4 lg:mb-0">Parlons de votre projet avec l’équipe SIBEA.
-                            </p>
+                    <div class="on-dark group relative flex flex-col overflow-hidden rounded-lg bg-nuit text-white">
+                        <div class="relative h-56 overflow-hidden lg:h-64">
+                            <div class="absolute inset-0 opacity-[0.07]"
+                                style="background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1px); background-size: 22px 22px;"
+                                aria-hidden="true"></div>
+                            <div class="pointer-events-none absolute -left-16 -top-20 size-64 rounded-full bg-cuivre/15 blur-3xl"
+                                aria-hidden="true"></div>
+                            <div class="absolute inset-0 bg-linear-to-t from-nuit via-nuit/45 to-nuit/10" aria-hidden="true"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <svg class="size-16 text-cuivre" fill="none" stroke="currentColor" stroke-width="1.5"
+                                    viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 1.53.468 2.965 1.276 4.19L3 20.25l4.5-1.5A9.72 9.72 0 0 0 12 20.25Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm3.75 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm3.75 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                                </svg>
+                            </div>
+                            <div class="absolute inset-x-5 top-5 flex items-start justify-between gap-4">
+                                <span
+                                    class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm">{{ setting('home.expertise_cta.eyebrow') }}</span>
+                            </div>
                         </div>
-                        <flux:button variant="primary" href="{{ route('contact') }}"
-                            class="!bg-cuivre self-start lg:self-center">
-                            Nous contacter
-                        </flux:button>
+                        <div class="flex flex-1 flex-col p-6 lg:p-8">
+                            <h3 class="font-display text-2xl font-extrabold leading-snug tracking-tight">{{ setting('home.expertise_cta.title') }}</h3>
+                            <p class="mt-3 text-sm leading-relaxed text-white/70">{{ setting('home.expertise_cta.subtitle') }}</p>
+                            @php($points = collect(preg_split('/\R/', (string) setting('home.expertise_cta.points')))->map(fn ($point) => trim($point))->filter())
+                            @if($points->isNotEmpty())
+                                <ul class="mt-4 space-y-1.5 text-sm text-white/70">
+                                    @foreach($points as $point)
+                                        <li class="flex gap-2"><span class="text-cuivre" aria-hidden="true">•</span>{{ $point }}</li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                            <div class="mt-auto flex flex-wrap items-center gap-3 pt-6">
+                                <a href="{{ route('contact') }}"
+                                    class="inline-flex items-center gap-2 rounded-full bg-cuivre px-4 py-2 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white">
+                                    Nous contacter
+                                    <span aria-hidden="true">→</span>
+                                </a>
+                                @if(setting('contact.whatsapp'))
+                                    <a href="https://wa.me/{{ setting('contact.whatsapp') }}?text={{ urlencode(setting('contact.whatsapp_message')) }}"
+                                        target="_blank" rel="noopener"
+                                        class="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 font-display text-sm font-semibold text-white/90 transition-colors duration-300 hover:border-[#25D366] hover:text-[#25D366]">
+                                        <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                        {{ setting('home.expertise_cta.whatsapp_label') }}
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="bg-surface border-y border-bordure">
+        <section class="bg-casse">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-24">
                 <div class="flex flex-wrap items-end justify-between gap-4 mb-12">
                     <div>
-                        <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">RÉALISATIONS
+                        <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">RÉALISATIONS
                         </div>
-                        <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl">Nos projets
-                            récents.</h2>
+                        <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl">
+                            {{ setting('home.projects.title') }}</h2>
                     </div>
                     <a href="{{ route('projects.index') }}"
                         class="text-sm font-display font-semibold text-cuivre">Voir toutes les réalisations →</a>
@@ -444,43 +302,55 @@ new #[Layout('layouts::public')] class extends Component {
                                 class="reveal-up group flex flex-col overflow-hidden rounded-lg border border-bordure bg-surface transition duration-300 ease-out focus-within:border-cuivre hover:border-cuivre hover:shadow-md">
                                 <div class="relative h-56 overflow-hidden bg-nuit lg:h-64">
                                     @if ($cover)
-                                        <img src="{{ $cover }}" alt="" loading="lazy" decoding="async"
+                                        <img src="{{ $cover }}" alt="{{ $project->title }}" loading="lazy"
+                                            decoding="async"
                                             class="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover:scale-[1.03]">
                                     @else
                                         <div class="absolute inset-0 opacity-[0.07]"
-                                            style="background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1px); background-size: 22px 22px;" aria-hidden="true"></div>
-                                        <span class="pointer-events-none absolute -bottom-12 -right-3 font-display text-[11rem] font-extrabold leading-none text-white/5"
+                                            style="background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1px); background-size: 22px 22px;"
+                                            aria-hidden="true"></div>
+                                        <span
+                                            class="pointer-events-none absolute -bottom-12 -right-3 font-display text-[11rem] font-extrabold leading-none text-white/5"
                                             aria-hidden="true">{{ mb_substr($project->title, 0, 1) }}</span>
                                     @endif
-                                    <div class="absolute inset-0 bg-linear-to-t from-nuit via-nuit/45 to-nuit/10" aria-hidden="true"></div>
+                                    <div class="absolute inset-0 bg-linear-to-t from-nuit via-nuit/45 to-nuit/10"
+                                        aria-hidden="true"></div>
                                     <div class="absolute inset-x-5 top-5 flex items-start justify-between gap-4">
                                         @if ($project->status)
-                                            <span class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm">{{ $project->status->label() }}</span>
+                                            <span
+                                                class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm">{{ $project->status->label() }}</span>
                                         @else
                                             <span aria-hidden="true"></span>
                                         @endif
-                                        <span class="font-display text-[11px] font-bold tracking-[0.22em] text-white/50">{{ $position }}</span>
+                                        <span
+                                            class="font-display text-[11px] font-bold tracking-[0.22em] text-white/50">{{ $position }}</span>
                                     </div>
                                 </div>
                                 <div class="flex flex-1 flex-col p-6 lg:p-8">
                                     @if ($project->sectors->isNotEmpty())
                                         <div class="mb-3 flex flex-wrap gap-2">
                                             @foreach ($project->sectors as $sector)
-                                                <span class="rounded-full bg-cuivre/10 px-3 py-1 text-[11px] font-display font-semibold uppercase tracking-wider text-cuivre">{{ $sector->name }}</span>
+                                                <span
+                                                    class="rounded-full bg-cuivre/10 px-3 py-1 text-[11px] font-display font-semibold uppercase tracking-wider text-cuivre">{{ $sector->name }}</span>
                                             @endforeach
                                         </div>
                                     @endif
-                                    <h3 class="font-display text-2xl font-extrabold text-nuit leading-snug tracking-tight transition-colors duration-300 group-hover:text-cuivre">{{ $project->title }}</h3>
+                                    <h3
+                                        class="font-display text-2xl font-extrabold text-nuit leading-snug tracking-tight transition-colors duration-300 group-hover:text-cuivre">
+                                        {{ $project->title }}</h3>
                                     @if ($project->short_description)
-                                        <p class="mt-3 text-sm leading-relaxed text-ardoise">{{ $project->short_description }}</p>
+                                        <p class="mt-3 text-sm leading-relaxed text-ardoise">
+                                            {{ $project->short_description }}</p>
                                     @endif
                                     <div class="mt-auto flex flex-wrap items-center gap-3 pt-6">
                                         @if ($meta->isNotEmpty())
                                             <span class="text-xs text-ardoise">{{ $meta->implode(' · ') }}</span>
                                         @endif
-                                        <span class="ml-auto inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 group-hover:bg-cuivre group-hover:text-nuit">
+                                        <span
+                                            class="ml-auto inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 group-hover:bg-cuivre group-hover:text-nuit">
                                             Lire l’étude de cas
-                                            <span class="inline-block transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+                                            <span class="inline-block transition-transform group-hover:translate-x-1"
+                                                aria-hidden="true">→</span>
                                         </span>
                                     </div>
                                 </div>
@@ -493,38 +363,41 @@ new #[Layout('layouts::public')] class extends Component {
             </div>
         </section>
 
-        <section class="on-dark bg-nuit text-white">
+        <section class="bg-surface border-y border-bordure">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-24">
-                <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">NOTRE MÉTHODE</div>
-                <h2 class="font-display font-extrabold tracking-tight text-3xl lg:text-5xl mb-12 max-w-3xl">Comment
-                    nous planifions,
-                    réalisons et suivons chaque projet.</h2>
+                <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">NOTRE MÉTHODE</div>
+                <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl mb-12 max-w-3xl">
+                    {{ setting('home.method.title') }}</h2>
+                @php($steps = setting_array('home.method_steps'))
                 <div class="grid md:grid-cols-3 gap-10 mb-12">
-                    <div>
-                        <div class="font-display font-extrabold text-4xl text-cuivre mb-4">01</div>
-                        <h3 class="font-display font-bold text-xl mb-2">Écoute & étude</h3>
-                        <p class="text-sm text-white/70 leading-relaxed">Nous cadrons votre besoin, étudions la
-                            faisabilité
-                            et chiffrons en toute transparence.</p>
-                    </div>
-                    <div>
-                        <div class="font-display font-extrabold text-4xl text-cuivre mb-4">02</div>
-                        <h3 class="font-display font-bold text-xl mb-2">Réalisation pilotée</h3>
-                        <p class="text-sm text-white/70 leading-relaxed">Des équipes qualifiées, un suivi rigoureux et
-                            une
-                            communication claire à chaque étape.</p>
-                    </div>
-                    <div>
-                        <div class="font-display font-extrabold text-4xl text-cuivre mb-4">03</div>
-                        <h3 class="font-display font-bold text-xl mb-2">Suivi & durabilité</h3>
-                        <p class="text-sm text-white/70 leading-relaxed">Réception contrôlée, accompagnement et
-                            ouvrages
-                            pensés pour durer.</p>
-                    </div>
+                    @foreach ($steps as $index => $step)
+                        <div wire:key="method-step-{{ $index }}">
+                            <div class="font-display font-extrabold text-4xl text-accroche mb-4">
+                                {{ sprintf('%02d', $index + 1) }}</div>
+                            <h3 class="font-display font-bold text-xl mb-2 text-nuit">{{ $step['title'] }}</h3>
+                            <p class="text-sm text-ardoise leading-relaxed">{{ $step['text'] }}</p>
+                        </div>
+                    @endforeach
                 </div>
                 <div class="flex flex-wrap gap-4">
                     <a href="{{ route('expertises.index') }}"
-                        class="text-sm font-display font-semibold text-cuivre">Découvrir nos expertises →</a>
+                        class="text-sm font-display font-semibold text-accroche">Découvrir nos expertises →</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="on-dark bg-nuit text-white">
+            <div class="max-w-7xl mx-auto px-6 lg:px-8 py-20">
+                <div class="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
+                    <div class="max-w-3xl">
+                        <div class="text-foret-clair font-display font-semibold tracking-widest text-sm mb-4">ENGAGEMENTS</div>
+                        <h2 class="font-display font-extrabold tracking-tight text-3xl lg:text-4xl mb-5">{{ setting('home.rse.title') }}</h2>
+                        <p class="text-white/70 text-lg leading-relaxed">{{ setting('home.rse.text') }}</p>
+                    </div>
+                    <a href="{{ route('pages.show', ['page' => 'engagements']) }}" class="inline-flex items-center gap-2 self-start rounded-full bg-foret px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-white hover:text-nuit">
+                        {{ setting('home.rse.button') }}
+                        <span aria-hidden="true">→</span>
+                    </a>
                 </div>
             </div>
         </section>
@@ -532,9 +405,10 @@ new #[Layout('layouts::public')] class extends Component {
         @if ($this->testimonials->isNotEmpty())
             <section class="bg-casse">
                 <div class="max-w-7xl mx-auto px-6 lg:px-8 py-24">
-                    <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">TÉMOIGNAGES
+                    <div class="text-accroche font-display font-semibold tracking-widest text-sm mb-4">TÉMOIGNAGES
                     </div>
-                    <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl mb-12">Ce que disent nos clients.</h2>
+                    <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl mb-12">
+                        {{ setting('home.testimonials.title') }}</h2>
                     <div class="grid md:grid-cols-3 gap-6">
                         @foreach ($this->testimonials as $testimonial)
                             <figure wire:key="testimonial-{{ $testimonial->id }}"
@@ -567,12 +441,12 @@ new #[Layout('layouts::public')] class extends Component {
 
         <section class="bg-surface border-y border-bordure">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-24 text-center">
-                <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl mb-4">Vous avez un projet à structurer ?</h2>
-                <p class="text-ardoise text-lg max-w-2xl mx-auto mb-10">Obtenez un devis gratuit et sans engagement.
-                    Notre équipe vous répond rapidement.</p>
+                <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-5xl mb-4">
+                    {{ setting('home.cta.title') }}</h2>
+                <p class="text-ardoise text-lg max-w-2xl mx-auto mb-10">{{ setting('home.cta.subtitle') }}</p>
                 <div class="flex flex-wrap justify-center gap-4">
                     <flux:button variant="primary" href="{{ route('contact') }}" class="!bg-cuivre">
-                        Nous contacter
+                        {{ setting('home.cta.button') }}
                     </flux:button>
                     <flux:button href="{{ route('projects.index') }}" variant="outline">
                         Voir nos réalisations

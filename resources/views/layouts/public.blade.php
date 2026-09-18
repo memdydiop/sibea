@@ -16,6 +16,15 @@
 </head>
 <body class="theme-sibea min-h-screen bg-casse text-anthracite font-[Poppins] antialiased selection:bg-cuivre selection:text-nuit">
 
+    @php
+        $headerLinks = [
+            'sectors' => setting('header.link.sectors.visible') === '1',
+            'expertises' => setting('header.link.expertises.visible') === '1',
+            'projects' => setting('header.link.projects.visible') === '1',
+            'contact' => setting('header.link.contact.visible') === '1',
+        ];
+    @endphp
+
     <header
         x-data="{ open: false, scrolled: false }"
         x-on:scroll.window="scrolled = window.scrollY > 40"
@@ -25,19 +34,25 @@
             <a href="{{ route('home') }}"
                 class="inline-flex items-center rounded-lg bg-surface px-3 py-2 transition-opacity duration-300 hover:opacity-90 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre"
                 aria-label="Groupe SIBEA — Accueil">
-                <img src="{{ asset('images/logo-sibea.png') }}" alt="Groupe SIBEA" class="h-10 w-auto lg:h-12">
+                <img src="{{ setting_media_url('visuals.logo') }}" alt="Groupe SIBEA" class="h-10 w-auto lg:h-12">
             </a>
             <nav class="hidden lg:flex items-center gap-8 font-display text-base font-semibold">
-                <a href="{{ route('sectors.index') }}" class="text-white transition-colors hover:text-cuivre  {{ request()->routeIs('sectors.index') ? 'text-cuivre!' : '' }}">Secteurs d’activité</a>
-                <a href="{{ route('expertises.index') }}"  class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('expertises.*') ? 'text-cuivre!' : '' }}">Expertises</a>
-                <a href="{{ route('projects.index') }}"  class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('projects.*') ? 'text-cuivre!' : '' }}">Réalisations</a>
-                <a href="{{ route('contact') }}"  class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('contact') ? 'text-cuivre!' : '' }}">Contact</a>
-
-                
+                @if($headerLinks['sectors'])
+                    <a href="{{ route('sectors.index') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('sectors.*') ? 'text-cuivre!' : '' }}">{{ setting('header.link.sectors.label') }}</a>
+                @endif
+                @if($headerLinks['expertises'])
+                    <a href="{{ route('expertises.index') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('expertises.*') ? 'text-cuivre!' : '' }}">{{ setting('header.link.expertises.label') }}</a>
+                @endif
+                @if($headerLinks['projects'])
+                    <a href="{{ route('projects.index') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('projects.*') ? 'text-cuivre!' : '' }}">{{ setting('header.link.projects.label') }}</a>
+                @endif
+                @if($headerLinks['contact'])
+                    <a href="{{ route('contact') }}" class="text-white transition-colors hover:text-cuivre {{ request()->routeIs('contact') ? 'text-cuivre!' : '' }}">{{ setting('header.link.contact.label') }}</a>
+                @endif
             </nav>
             <div class="flex items-center gap-3">
                 <flux:button variant="ghost" href="{{ route('login') }}" class="hidden sm:inline-flex text-white! hover:text-cuivre!">
-                    Se connecter
+                    {{ setting('header.login_label') }}
                 </flux:button>
                 <button
                     x-on:click="open = !open"
@@ -52,11 +67,19 @@
         </div>
         <nav x-show="open" x-cloak class="lg:hidden border-t border-bordure bg-casse" aria-label="Menu mobile">
             <div class="px-6 py-4 flex flex-col gap-1 font-display text-base font-semibold">
-                <a x-on:click="open = false" href="{{ route('sectors.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Secteurs d’activité</a>
-                <a x-on:click="open = false" href="{{ route('expertises.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Expertises</a>
-                <a x-on:click="open = false" href="{{ route('projects.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Réalisations</a>
-                <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Contact</a>
-                <a x-on:click="open = false" href="{{ route('login') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">Se connecter</a>
+                @if($headerLinks['sectors'])
+                    <a x-on:click="open = false" href="{{ route('sectors.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.link.sectors.label') }}</a>
+                @endif
+                @if($headerLinks['expertises'])
+                    <a x-on:click="open = false" href="{{ route('expertises.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.link.expertises.label') }}</a>
+                @endif
+                @if($headerLinks['projects'])
+                    <a x-on:click="open = false" href="{{ route('projects.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.link.projects.label') }}</a>
+                @endif
+                @if($headerLinks['contact'])
+                    <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.link.contact.label') }}</a>
+                @endif
+                <a x-on:click="open = false" href="{{ route('login') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.login_label') }}</a>
             </div>
         </nav>
     </header>
@@ -64,22 +87,28 @@
     <main id="main" x-data="{ scrolled: window.scrollY > 40 }" x-on:scroll.window="scrolled = window.scrollY > 40" class="transition-all duration-300 pt-20">{{ $slot }}</main>
 
     <footer class="on-dark border-t border-white/10 bg-nuit text-white">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
             <div>
                 <span class="mb-4 inline-flex rounded-lg bg-surface px-3 py-2">
-                    <img src="{{ asset('images/logo-sibea.png') }}" alt="Groupe SIBEA" class="h-10 w-auto">
+                    <img src="{{ setting_media_url('visuals.logo') }}" alt="Groupe SIBEA" class="h-10 w-auto">
                 </span>
                 <p class="text-sm text-white/70 leading-relaxed">
-                    Un groupe multi-activités intervenant dans le BTP, l’immobilier,
-                    l’énergie et l’agro-industrie.
+                    {{ setting('general.footer_tagline') }}
                 </p>
+            </div>
+            <div>
+                <div class="font-display font-bold mb-4">Le groupe</div>
+                <ul class="space-y-2 text-sm text-white/70">
+                    <li><a href="{{ route('pages.show', ['page' => 'le-groupe']) }}" class="transition-colors hover:text-cuivre">Qui sommes-nous</a></li>
+                    <li><a href="{{ route('pages.show', ['page' => 'engagements']) }}" class="transition-colors hover:text-cuivre">Engagements</a></li>
+                </ul>
             </div>
             <div>
                 <div class="font-display font-bold mb-4">Secteurs</div>
                 <ul class="space-y-2 text-sm text-white/70">
                     @foreach(\App\Models\Sector::cachedActiveList() as $sector)
                         <li>
-                            <a href="{{ route('sectors.index') }}" class="transition-colors hover:text-cuivre">{{ $sector->name }}</a>
+                            <a href="{{ route('sectors.show', $sector->slug) }}" class="transition-colors hover:text-cuivre">{{ $sector->name }}</a>
                         </li>
                     @endforeach
                 </ul>
@@ -102,7 +131,7 @@
         </div>
         <div class="border-t border-white/10">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-6 text-xs text-white/50">
-                © {{ date('Y') }} Groupe SIBEA. Tous droits réservés.
+                © {{ date('Y') }} {{ setting('general.footer_copyright') }}
             </div>
         </div>
     </footer>

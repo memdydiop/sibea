@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,6 +18,10 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+beforeEach(function () {
+    Setting::flushCache();
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +49,10 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function fakeJpeg(int $width = 800, int $height = 600): string
 {
-    // ..
+    ob_start();
+    imagejpeg(imagecreatetruecolor($width, $height));
+
+    return ob_get_clean();
 }

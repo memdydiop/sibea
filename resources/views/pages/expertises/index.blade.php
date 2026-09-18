@@ -23,12 +23,18 @@ new #[Layout('layouts::public')] class extends Component
 
 <div>
     <section class="on-dark relative bg-nuit text-white overflow-hidden">
-        <img src="{{ asset('images/heroes/expertises.jpg') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+        <img src="{{ setting_media_url('visuals.hero.expertises') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
         <div class="absolute inset-0" style="background: linear-gradient(90deg, rgba(11,31,51,0.92) 0%, rgba(11,31,51,0.65) 100%);"></div>
-        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-12">
-            <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">GROUPE SIBEA</div>
-            <h1 class="font-display font-extrabold tracking-tight text-4xl mb-6">Nos expertises</h1>
-            <p class="text-white/80 text-lg max-w-2xl leading-relaxed">{{ $this->expertises->count() }} savoir-faire complémentaires au service de vos projets.</p>
+        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
+            <nav aria-label="Fil d’Ariane" class="mb-8">
+                <ol class="flex flex-wrap items-center gap-2 text-sm text-white/60">
+                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre">Accueil</a></li>
+                    <li aria-hidden="true">/</li>
+                    <li class="text-white/90" aria-current="page">{{ setting('expertises.hero.title') }}</li>
+                </ol>
+            </nav>
+            <h1 class="font-display font-extrabold text-4xl lg:text-6xl mb-6 max-w-4xl">{{ setting('expertises.hero.title') }}</h1>
+            <p class="text-white/80 text-lg max-w-2xl leading-relaxed">{{ str_replace(':count', (string) $this->expertises->count(), setting('expertises.hero.subtitle')) }}</p>
         </div>
     </section>
 
@@ -58,7 +64,7 @@ new #[Layout('layouts::public')] class extends Component
                         <div class="absolute inset-x-5 top-5 flex items-start justify-between gap-4">
                             <div class="flex flex-wrap gap-1.5">
                                 @foreach($expertise->sectors->take(2) as $sector)
-                                    <a wire:key="expertise-{{ $expertise->id }}-sector-{{ $sector->id }}" href="{{ route('sectors.index') }}" class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm transition-colors duration-300 hover:border-cuivre hover:text-cuivre focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre">{{ $sector->name }}</a>
+                                    <a wire:key="expertise-{{ $expertise->id }}-sector-{{ $sector->id }}" href="{{ route('sectors.show', $sector->slug) }}" class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-white/85 backdrop-blur-sm transition-colors duration-300 hover:border-cuivre hover:text-cuivre focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre">{{ $sector->name }}</a>
                                 @endforeach
                             </div>
                             <span class="font-display text-[11px] font-bold tracking-[0.22em] text-white/50">{{ $position }}</span>
@@ -140,14 +146,22 @@ new #[Layout('layouts::public')] class extends Component
                 <div class="pointer-events-none absolute -left-24 -top-24 size-72 rounded-full bg-cuivre/10 blur-3xl" aria-hidden="true"></div>
                 <div class="relative">
                     <div class="font-display text-xs font-semibold uppercase tracking-[0.22em] text-cuivre">Besoin spécifique</div>
-                    <h2 class="mt-3 font-display text-2xl font-extrabold tracking-tight">Un besoin qui sort du cadre ?</h2>
-                    <p class="mt-3 text-sm leading-relaxed text-white/70">Décrivez votre projet : l’équipe SIBEA vous oriente vers la bonne expertise et les bonnes prestations.</p>
+                    <h2 class="mt-3 font-display text-2xl font-extrabold tracking-tight">{{ setting('expertises.cta.title') }}</h2>
+                    <p class="mt-3 text-sm leading-relaxed text-white/70">{{ setting('expertises.cta.subtitle') }}</p>
                 </div>
-                <div class="relative mt-auto pt-8">
+                <div class="relative mt-auto flex flex-wrap items-center gap-3 pt-8">
                     <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 rounded-full bg-cuivre px-5 py-2.5 font-display text-sm font-semibold text-nuit transition-colors duration-300 hover:bg-white">
                         Nous contacter
                         <span aria-hidden="true">→</span>
                     </a>
+                    @if(setting('contact.whatsapp'))
+                        <a href="https://wa.me/{{ setting('contact.whatsapp') }}?text={{ urlencode(setting('contact.whatsapp_message')) }}"
+                            target="_blank" rel="noopener"
+                            class="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2.5 font-display text-sm font-semibold text-white/90 transition-colors duration-300 hover:border-[#25D366] hover:text-[#25D366]">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                            {{ setting('home.expertise_cta.whatsapp_label') }}
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>

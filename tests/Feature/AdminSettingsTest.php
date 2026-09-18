@@ -1,0 +1,152 @@
+<?php
+
+use App\Models\Sector;
+use App\Models\Setting;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
+beforeEach(function () {
+    foreach (['view_dashboard', 'manage_settings'] as $name) {
+        Permission::create(['name' => $name, 'guard_name' => 'web']);
+    }
+});
+
+function settingsManager(): User
+{
+    $role = Role::create(['name' => 'Administrateur site', 'guard_name' => 'web']);
+    $role->givePermissionTo(['view_dashboard', 'manage_settings']);
+
+    return User::factory()->create()->assignRole($role);
+}
+
+test('updates site texts', function () {
+    Livewire::actingAs(settingsManager())
+        ->test('pages::admin.settings.index')
+        ->set('texts.hero_title', 'Titre vitrine personnalisé')
+        ->set('texts.contact_phone', '+225 01 02 03 04 05')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(setting('home.hero.title'))->toBe('Titre vitrine personnalisé')
+        ->and(setting('contact.phone'))->toBe('+225 01 02 03 04 05');
+});
+
+test('updates method repeater', function () {
+    Livewire::actingAs(settingsManager())
+        ->test('pages::admin.settings.index')
+        ->set('method_steps', [['title' => 'Diagnostic', 'text' => 'Nous écoutons votre besoin.']])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(setting_array('home.method_steps'))->toBe([['title' => 'Diagnostic', 'text' => 'Nous écoutons votre besoin.']]);
+});
+
+test('adds, moves and removes method steps', function () {
+    $component = Livewire::actingAs(settingsManager())
+        ->test('pages::admin.settings.index')
+        ->set('method_steps', [])
+        ->call('addMethodStep')
+        ->set('method_steps.0.title', 'Première')
+        ->call('addMethodStep')
+        ->set('method_steps.1.title', 'Deuxième')
+        ->call('moveMethodStep', 1, 'up');
+
+    expect($component->get('method_steps')[0]['title'])->toBe('Deuxième');
+
+    $component->call('removeMethodStep', 0);
+
+    expect($component->get('method_steps'))->toHaveCount(1);
+});
+
+test('uploads a logo and a hero image', function () {
+    Storage::fake('public');
+
+    Livewire::actingAs(settingsManager())
+        ->test('pages::admin.settings.index')
+        ->set('logo', UploadedFile::fake()->image('logo.png'))
+        ->set('hero_contact', UploadedFile::fake()->image('hero.jpg'))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(Setting::where('key', 'visuals.logo')->first()->hasMedia('file'))->toBeTrue()
+        ->and(Setting::where('key', 'visuals.hero.contact')->first()->hasMedia('file'))->toBeTrue();
+});
+
+test('removes a visual', function () {
+    Storage::fake('public');
+
+    $setting = Setting::firstOrCreate(['key' => 'visuals.logo']);
+    $setting->addMediaFromString(fakeJpeg())->usingFileName('logo.png')->toMediaCollection('file');
+
+    Livewire::actingAs(settingsManager())
+        ->test('pages::admin.settings.index')
+        ->call('removeVisual', 'logo');
+
+    expect($setting->fresh()->hasMedia('file'))->toBeFalse();
+});
+
+test('updates sector hero content', function () {
+    $sector = Sector::factory()->create([
+        'name' => 'BTP',
+        'hero_title' => 'Ancien titre',
+    ]);
+
+    Livewire::actingAs(settingsManager())
+        ->test('pages::admin.settings.index')
+        ->set("slides.{$sector->id}.hero_title", 'Nouveau titre')
+        ->set("slides.{$sector->id}.hero_description", 'Nouvelle description')
+        ->set("slides.{$sector->id}.hero_cta_label", 'Découvrir')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $sector->refresh();
+
+    expect($sector->hero_title)->toBe('Nouveau titre')
+        ->and($sector->hero_description)->toBe('Nouvelle description')
+        ->and($sector->hero_cta_label)->toBe('Découvrir');
+});
+
+test('uploads and removes a hero image from the settings page', function () {
+    Storage::fake('public');
+    $sector = Sector::factory()->create(['name' => 'BTP']);
+    $manager = settingsManager();
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.settings.index')
+        ->set("heroImages.{$sector->id}", UploadedFile::fake()->image('hero.jpg'))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($sector->fresh()->hasMedia('hero'))->toBeTrue();
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.settings.index')
+        ->call('removeHeroImage', $sector->id);
+
+    expect($sector->fresh()->hasMedia('hero'))->toBeFalse();
+});
+
+test('updates header labels and link visibility', function () {
+    Livewire::actingAs(settingsManager())
+        ->test('pages::admin.settings.index')
+        ->set('texts.header_projects_label', 'Nos chantiers')
+        ->set('texts.header_login_label', 'Espace admin')
+        ->set('headerLinks.expertises', false)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(setting('header.link.projects.label'))->toBe('Nos chantiers')
+        ->and(setting('header.login_label'))->toBe('Espace admin')
+        ->and(setting('header.link.expertises.visible'))->toBe('0')
+        ->and(setting('header.link.sectors.visible'))->toBe('1');
+});
+
+test('forbids settings admin without permission', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get(route('admin.settings'))->assertForbidden();
+});

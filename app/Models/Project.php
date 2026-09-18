@@ -115,8 +115,8 @@ class Project extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->performOnCollections('cover', 'gallery', 'og_image')->fit(Fit::Crop, 600, 400)->format('webp');
-        $this->addMediaConversion('medium')->performOnCollections('cover', 'gallery', 'og_image')->fit(Fit::Crop, 1200, 800)->format('webp');
-        $this->addMediaConversion('og')->performOnCollections('cover', 'gallery', 'og_image')->fit(Fit::Crop, 1200, 630)->format('webp');
+        $this->addMediaConversion('thumb')->nonQueued()->performOnCollections('cover', 'gallery', 'og_image')->fit(Fit::Crop, 600, 400)->format('webp');
+        $this->addMediaConversion('medium')->nonQueued()->performOnCollections('cover', 'gallery', 'og_image')->fit(Fit::Crop, 1200, 800)->format('webp');
+        $this->addMediaConversion('og')->nonQueued()->performOnCollections('cover', 'gallery', 'og_image')->fit(Fit::Crop, 1200, 630)->format('webp');
     }
 }

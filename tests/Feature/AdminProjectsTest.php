@@ -92,6 +92,28 @@ test('saves editorial content, coordinates and documents', function () {
         ->and($project->hasMedia('documents'))->toBeTrue();
 });
 
+test('manages existing project media', function () {
+    Storage::fake('public');
+    $project = Project::factory()->create(['slug' => 'residence-media']);
+    $first = $project->addMediaFromString(fakeJpeg())->usingFileName('a.jpg')->toMediaCollection('gallery');
+    $second = $project->addMediaFromString(fakeJpeg())->usingFileName('b.jpg')->toMediaCollection('gallery');
+    $first->update(['order_column' => 1]);
+    $second->update(['order_column' => 2]);
+    $document = $project->addMediaFromString('%PDF-1.4 plaquette')->usingFileName('plaquette.pdf')->toMediaCollection('documents');
+    $project->addMediaFromString(fakeJpeg())->usingFileName('cover.jpg')->toMediaCollection('cover');
+
+    Livewire::actingAs(projectManager())
+        ->test('pages::admin.projects.index')
+        ->call('edit', $project->id)
+        ->call('moveMedia', $second->id, 'up')
+        ->call('deleteMedia', $document->id)
+        ->call('removeCover');
+
+    expect($project->fresh()->getMedia('gallery')->pluck('id')->all())->toBe([$second->id, $first->id])
+        ->and($project->fresh()->getMedia('documents'))->toHaveCount(0)
+        ->and($project->fresh()->getMedia('cover'))->toHaveCount(0);
+});
+
 test('toggles project publication', function () {
     $project = Project::factory()->create(['is_published' => false]);
 

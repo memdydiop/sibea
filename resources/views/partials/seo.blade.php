@@ -1,8 +1,8 @@
 @php
     use Spatie\SchemaOrg\Schema;
 
-    $seoTitle = $title ?? 'Groupe SIBEA — BTP, Immobilier, Énergie, Agro-industrie';
-    $seoDescription = $description ?? 'Le Groupe SIBEA rassemble des expertises complémentaires dans le BTP, l’immobilier, l’énergie et l’agro-industrie.';
+    $seoTitle = $title ?? setting('seo.title');
+    $seoDescription = $description ?? setting('seo.description');
     $canonical = $canonicalUrl ?? url()->current();
 
     $organization = Schema::organization()

@@ -25,13 +25,18 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property string|null $hero_title
  * @property string|null $hero_description
  * @property string|null $hero_cta_label
- * @property bool $hero_is_active
- * @property int $hero_sort_order
+ * @property string|null $page_intro_title
+ * @property string|null $page_intro_text
+ * @property array<int, array<string, string>>|null $page_cards
+ * @property array<int, array<string, string>>|null $page_figures
+ * @property string|null $page_cta_title
+ * @property string|null $page_cta_text
+ * @property string|null $page_cta_label
  * @property bool $is_active
  * @property bool $is_locked
  * @property int $sort_order
  */
-#[Fillable(['name', 'slug', 'short_description', 'description', 'hero_title', 'hero_description', 'hero_cta_label', 'hero_is_active', 'hero_sort_order', 'is_active', 'is_locked', 'sort_order'])]
+#[Fillable(['name', 'slug', 'short_description', 'description', 'hero_title', 'hero_description', 'hero_cta_label', 'page_intro_title', 'page_intro_text', 'page_cards', 'page_figures', 'page_cta_title', 'page_cta_text', 'page_cta_label', 'is_active', 'is_locked', 'sort_order'])]
 class Sector extends Model implements HasMedia
 {
     /** @use HasFactory<SectorFactory> */
@@ -43,7 +48,8 @@ class Sector extends Model implements HasMedia
     protected function casts(): array
     {
         return [
-            'hero_is_active' => 'boolean',
+            'page_cards' => 'array',
+            'page_figures' => 'array',
             'is_active' => 'boolean',
             'is_locked' => 'boolean',
         ];
@@ -94,9 +100,9 @@ class Sector extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->fit(Fit::Crop, 600, 400)->format('webp');
-        $this->addMediaConversion('medium')->fit(Fit::Crop, 1200, 800)->format('webp');
-        $this->addMediaConversion('og')->fit(Fit::Crop, 1200, 630)->format('webp');
+        $this->addMediaConversion('thumb')->nonQueued()->fit(Fit::Crop, 600, 400)->format('webp');
+        $this->addMediaConversion('medium')->nonQueued()->fit(Fit::Crop, 1200, 800)->format('webp');
+        $this->addMediaConversion('og')->nonQueued()->fit(Fit::Crop, 1200, 630)->format('webp');
     }
 
     /**

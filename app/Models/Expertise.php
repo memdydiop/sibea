@@ -96,8 +96,8 @@ class Expertise extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')->fit(Fit::Crop, 600, 400)->format('webp');
-        $this->addMediaConversion('medium')->fit(Fit::Crop, 1200, 800)->format('webp');
-        $this->addMediaConversion('og')->fit(Fit::Crop, 1200, 630)->format('webp');
+        $this->addMediaConversion('thumb')->nonQueued()->fit(Fit::Crop, 600, 400)->format('webp');
+        $this->addMediaConversion('medium')->nonQueued()->fit(Fit::Crop, 1200, 800)->format('webp');
+        $this->addMediaConversion('og')->nonQueued()->fit(Fit::Crop, 1200, 630)->format('webp');
     }
 }

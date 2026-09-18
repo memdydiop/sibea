@@ -19,6 +19,10 @@ class RolesPermissionsSeeder extends Seeder
             'manage_expertises',
             'manage_services',
             'manage_projects',
+            'manage_testimonials',
+            'manage_statistics',
+            'manage_settings',
+            'manage_pages',
             'manage_leads',
             'manage_users',
             'manage_roles',
@@ -32,8 +36,8 @@ class RolesPermissionsSeeder extends Seeder
 
         $matrix = [
             'Super administrateur' => $permissions,
-            'Administrateur' => ['view_dashboard', 'manage_sectors', 'manage_expertises', 'manage_services', 'manage_projects', 'manage_leads', 'manage_users', 'view_sectors', 'view_projects'],
-            'Éditeur' => ['view_dashboard', 'manage_sectors', 'manage_expertises', 'manage_services', 'manage_projects', 'view_sectors', 'view_projects'],
+            'Administrateur' => ['view_dashboard', 'manage_sectors', 'manage_expertises', 'manage_services', 'manage_projects', 'manage_testimonials', 'manage_statistics', 'manage_settings', 'manage_pages', 'manage_leads', 'manage_users', 'view_sectors', 'view_projects'],
+            'Éditeur' => ['view_dashboard', 'manage_sectors', 'manage_expertises', 'manage_services', 'manage_projects', 'manage_testimonials', 'manage_statistics', 'manage_pages', 'view_sectors', 'view_projects'],
             'Commercial' => ['view_dashboard', 'manage_leads', 'view_sectors', 'view_projects'],
         ];
 

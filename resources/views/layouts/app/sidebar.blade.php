@@ -3,7 +3,7 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
+    <body class="theme-admin min-h-screen bg-white dark:bg-zinc-800">
         <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('admin.dashboard') }}" wire:navigate />
@@ -24,6 +24,9 @@
                         <flux:sidebar.item icon="building-office-2" :href="route('admin.sectors')" :current="request()->routeIs('admin.sectors')" wire:navigate>
                             Secteurs
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="map" :href="route('admin.sector-pages')" :current="request()->routeIs('admin.sector-pages')" wire:navigate>
+                            Pages secteur
+                        </flux:sidebar.item>
                     @endcan
                     @can('manage_expertises')
                         <flux:sidebar.item icon="academic-cap" :href="route('admin.expertises')" :current="request()->routeIs('admin.expertises')" wire:navigate>
@@ -38,6 +41,26 @@
                     @can('manage_projects')
                         <flux:sidebar.item icon="photo" :href="route('admin.projects')" :current="request()->routeIs('admin.projects')" wire:navigate>
                             Réalisations
+                        </flux:sidebar.item>
+                    @endcan
+                    @can('manage_testimonials')
+                        <flux:sidebar.item icon="chat-bubble-left-right" :href="route('admin.testimonials')" :current="request()->routeIs('admin.testimonials')" wire:navigate>
+                            Témoignages
+                        </flux:sidebar.item>
+                    @endcan
+                    @can('manage_statistics')
+                        <flux:sidebar.item icon="chart-bar" :href="route('admin.statistics')" :current="request()->routeIs('admin.statistics')" wire:navigate>
+                            Chiffres clés
+                        </flux:sidebar.item>
+                    @endcan
+                    @can('manage_pages')
+                        <flux:sidebar.item icon="document-text" :href="route('admin.pages')" :current="request()->routeIs('admin.pages')" wire:navigate>
+                            Pages
+                        </flux:sidebar.item>
+                    @endcan
+                    @can('manage_settings')
+                        <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
+                            Paramètres du site
                         </flux:sidebar.item>
                     @endcan
                     @can('manage_leads')
@@ -61,12 +84,8 @@
             <flux:spacer />
 
             <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
+                <flux:sidebar.item icon="globe-alt" :href="route('home')" target="_blank">
+                    Voir le site
                 </flux:sidebar.item>
             </flux:sidebar.nav>
 

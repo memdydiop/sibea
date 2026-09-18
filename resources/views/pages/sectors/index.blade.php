@@ -26,12 +26,18 @@ new #[Layout('layouts::public')] class extends Component
 
 <div>
     <section class="on-dark relative bg-nuit text-white overflow-hidden">
-        <img src="{{ asset('images/heroes/secteurs.jpg') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+        <img src="{{ setting_media_url('visuals.hero.sectors') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
         <div class="absolute inset-0" style="background: linear-gradient(90deg, rgba(11,31,51,0.92) 0%, rgba(11,31,51,0.65) 100%);"></div>
-        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-12">
-            <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">GROUPE SIBEA</div>
-            <h1 class="font-display font-extrabold text-4xl mb-6">Secteurs d’activité</h1>
-            <p class="text-white/80 text-lg max-w-2xl leading-relaxed">Quatre secteurs, une même exigence de qualité et de durabilité.</p>
+        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
+            <nav aria-label="Fil d’Ariane" class="mb-8">
+                <ol class="flex flex-wrap items-center gap-2 text-sm text-white/60">
+                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre">Accueil</a></li>
+                    <li aria-hidden="true">/</li>
+                    <li class="text-white/90" aria-current="page">{{ setting('sectors.hero.title') }}</li>
+                </ol>
+            </nav>
+            <h1 class="font-display font-extrabold text-4xl lg:text-6xl mb-6 max-w-4xl">{{ setting('sectors.hero.title') }}</h1>
+            <p class="text-white/80 text-lg max-w-2xl leading-relaxed">{{ setting('sectors.hero.subtitle') }}</p>
         </div>
     </section>
 
@@ -73,20 +79,14 @@ new #[Layout('layouts::public')] class extends Component
                             <p class="mt-3 text-sm leading-relaxed text-ardoise">{{ $sector->hero_description ?? $sector->short_description ?? $sector->description }}</p>
                         @endif
 
-                        <div @class([
-                            'mt-auto flex flex-wrap items-center gap-3 pt-6',
-                            'justify-between' => $sector->projects_count > 0,
-                            'justify-end' => $sector->projects_count === 0,
-                        ])>
-                            @if($sector->projects_count > 0)
-                                <a
-                                    href="{{ route('projects.index', ['sector_id' => $sector->id]) }}"
-                                    class="inline-flex items-center gap-2 font-display text-sm font-semibold text-cuivre transition-colors hover:text-cuivre focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
-                                >
-                                    Voir les réalisations
-                                    <span aria-hidden="true">→</span>
-                                </a>
-                            @endif
+                        <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
+                            <a
+                                href="{{ route('sectors.show', $sector->slug) }}"
+                                class="inline-flex items-center gap-2 font-display text-sm font-semibold text-cuivre transition-colors hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"
+                            >
+                                Découvrir le secteur
+                                <span aria-hidden="true">→</span>
+                            </a>
                             <a
                                 href="{{ route('contact') }}"
                                 class="inline-flex items-center gap-2 rounded-full bg-nuit px-4 py-2 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cuivre focus-visible:ring-offset-2"

@@ -60,7 +60,9 @@
         --color-ardoise: #5f6670;
         --color-bordure: #e4e7eb;
         --color-cuivre: #f2b300;
-        --color-accroche: #9a6400;
+    --color-accroche: #9a6400;
+    --color-foret: #3a6f3a;
+    --color-foret-clair: #8fcb8f;
         --color-petrole: #1f4e79;
         --color-accent: var(--color-cuivre);
         --color-accent-content: var(--color-accroche);
@@ -72,6 +74,13 @@
         --color-accroche: #f2b300;
         --color-cuivre: #f2b300;
         --color-accent-content: #f2b300;
+    }
+
+    /* Administration : accent de marque (jaune/or) */
+    .theme-admin {
+        --color-accent: #f2b300;
+        --color-accent-content: #f2b300;
+        --color-accent-foreground: #16181b;
     }
 }
 
@@ -107,30 +116,6 @@ select:focus[data-flux-control] {
 [data-flux-main] {
     @apply p-0!;
 }
-
-@keyframes marquee {
-    from {
-        transform: translateX(0);
-    }
-    to {
-        transform: translateX(-50%);
-    }
-}
-
-.animate-marquee {
-    animation: marquee 30s linear infinite;
-}
-
-.marquee-hover:hover .animate-marquee {
-    animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .animate-marquee {
-        animation: none;
-    }
-}
-
 @keyframes reveal-up {
     from {
         opacity: 0;
@@ -155,4 +140,32 @@ select:focus[data-flux-control] {
     .reveal-up {
         animation: none;
     }
+}
+
+.page-content h2 {
+    @apply mt-10 mb-4 font-display text-2xl font-bold text-nuit;
+}
+
+.page-content h3 {
+    @apply mt-8 mb-3 font-display text-xl font-bold text-nuit;
+}
+
+.page-content p {
+    @apply mb-4 leading-relaxed text-ardoise;
+}
+
+.page-content a {
+    @apply text-cuivre underline;
+}
+
+.page-content ul {
+    @apply mb-4 list-disc space-y-1 pl-6 text-ardoise;
+}
+
+.page-content ol {
+    @apply mb-4 list-decimal space-y-1 pl-6 text-ardoise;
+}
+
+.page-content strong {
+    @apply font-semibold text-nuit;
 }

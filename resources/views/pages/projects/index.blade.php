@@ -39,13 +39,18 @@ new #[Layout('layouts::public')] class extends Component
 
 <div>
     <section class="on-dark relative bg-nuit text-white overflow-hidden">
-        <img src="{{ asset('images/heroes/realisations.jpg') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+        <img src="{{ setting_media_url('visuals.hero.projects') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
         <div class="absolute inset-0" style="background: linear-gradient(90deg, rgba(11,31,51,0.92) 0%, rgba(11,31,51,0.65) 100%);"></div>
-        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-12">
-            <div class="text-cuivre font-display font-semibold tracking-widest text-sm mb-4">GROUPE SIBEA</div>
-            <h1 class="font-display font-extrabold text-4xl mb-6">Réalisations</h1>
-            <p class="text-white/80 text-lg max-w-2xl leading-relaxed">Découvrez nos projets livrés et en cours.</p>
-
+        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
+            <nav aria-label="Fil d’Ariane" class="mb-8">
+                <ol class="flex flex-wrap items-center gap-2 text-sm text-white/60">
+                    <li><a href="{{ route('home') }}" class="transition-colors hover:text-cuivre">Accueil</a></li>
+                    <li aria-hidden="true">/</li>
+                    <li class="text-white/90" aria-current="page">{{ setting('projects.hero.title') }}</li>
+                </ol>
+            </nav>
+            <h1 class="font-display font-extrabold text-4xl lg:text-6xl mb-6 max-w-4xl">{{ setting('projects.hero.title') }}</h1>
+            <p class="text-white/80 text-lg max-w-2xl leading-relaxed">{{ setting('projects.hero.subtitle') }}</p>
         </div>
     </section>
 
@@ -71,8 +76,8 @@ new #[Layout('layouts::public')] class extends Component
                 <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cuivre/10" aria-hidden="true">
                     <svg class="h-7 w-7 text-cuivre" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </span>
-                <div class="font-display font-extrabold text-xl mb-2">Aucune réalisation publiée</div>
-                <p class="text-ardoise">Nos réalisations seront publiées prochainement.</p>
+                <div class="font-display font-extrabold text-xl mb-2">{{ setting('projects.empty.title') }}</div>
+                <p class="text-ardoise">{{ setting('projects.empty.text') }}</p>
             </div>
         @else
             <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 transition-opacity" wire:loading.class="opacity-40">

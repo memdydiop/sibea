@@ -28,7 +28,6 @@ class SectorFactory extends Factory
             'hero_title' => fake()->sentence(4),
             'hero_description' => fake()->sentence(10),
             'hero_cta_label' => 'Découvrir',
-            'hero_is_active' => true,
             'is_active' => true,
             'is_locked' => false,
             'sort_order' => 0,

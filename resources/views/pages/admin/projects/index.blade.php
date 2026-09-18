@@ -266,6 +266,76 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
         $this->authorize('delete', $project);
         $project->delete();
     }
+
+    #[Computed]
+    public function editingProject(): ?Project
+    {
+        if ($this->editingId === null) {
+            return null;
+        }
+
+        return Project::with('media')->find($this->editingId);
+    }
+
+    public function removeCover(): void
+    {
+        $project = $this->editingProject;
+
+        if ($project === null) {
+            return;
+        }
+
+        $this->authorize('update', $project);
+        $project->clearMediaCollection('cover');
+        $this->coverPreview = null;
+        unset($this->editingProject);
+    }
+
+    public function deleteMedia(int $mediaId): void
+    {
+        $project = $this->editingProject;
+
+        if ($project === null) {
+            return;
+        }
+
+        $this->authorize('update', $project);
+        $project->media()->whereKey($mediaId)->first()?->delete();
+        unset($this->editingProject);
+    }
+
+    public function moveMedia(int $mediaId, string $direction): void
+    {
+        $project = $this->editingProject;
+
+        if ($project === null || ! in_array($direction, ['up', 'down'], true)) {
+            return;
+        }
+
+        $this->authorize('update', $project);
+
+        $media = $project->media()->whereKey($mediaId)->first();
+
+        if ($media === null) {
+            return;
+        }
+
+        $siblings = $project->getMedia($media->collection_name)->values();
+        $index = $siblings->search(fn ($item) => $item->id === $media->id);
+        $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
+
+        if ($index === false || $targetIndex < 0 || $targetIndex >= $siblings->count()) {
+            return;
+        }
+
+        $siblings->each(fn ($item, $position) => $item->updateQuietly(['order_column' => $position + 1]));
+
+        $target = $siblings[$targetIndex];
+        $media->updateQuietly(['order_column' => $targetIndex + 1]);
+        $target->updateQuietly(['order_column' => $index + 1]);
+
+        unset($this->editingProject);
+    }
 };
 ?>
 
@@ -482,6 +552,53 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
                     <flux:error name="documents" />
                 </flux:field>
             </div>
+
+            @if($this->editingProject && ($this->editingProject->hasMedia('cover') || $this->editingProject->hasMedia('gallery') || $this->editingProject->hasMedia('documents')))
+                <div class="space-y-4 rounded-lg border border-zinc-200 dark:border-zinc-700 p-4">
+                    <div class="text-sm font-semibold">Médias existants</div>
+
+                    @if($existingCover = $this->editingProject->getFirstMedia('cover'))
+                        <div class="flex items-center gap-3">
+                            <img src="{{ $existingCover->getUrl('thumb') }}" alt="" class="h-12 w-20 rounded object-cover">
+                            <span class="text-sm text-zinc-500">Couverture</span>
+                            <flux:button size="xs" variant="danger" class="ml-auto" wire:click="removeCover" wire:confirm="Retirer la couverture ?">Retirer</flux:button>
+                        </div>
+                    @endif
+
+                    @if($this->editingProject->getMedia('gallery')->isNotEmpty())
+                        <div>
+                            <div class="mb-2 text-xs text-zinc-500">Galerie — déplacer ou supprimer</div>
+                            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                @foreach($this->editingProject->getMedia('gallery') as $media)
+                                    <div wire:key="gallery-media-{{ $media->id }}" class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-1">
+                                        <img src="{{ $media->getUrl('thumb') }}" alt="" class="h-16 w-full rounded object-cover">
+                                        <div class="mt-1 flex items-center justify-between gap-1">
+                                            <flux:button size="xs" icon="chevron-left" wire:click="moveMedia({{ $media->id }}, 'up')" aria-label="Déplacer vers la gauche" />
+                                            <flux:button size="xs" icon="chevron-right" wire:click="moveMedia({{ $media->id }}, 'down')" aria-label="Déplacer vers la droite" />
+                                            <flux:button size="xs" variant="danger" icon="trash" wire:click="deleteMedia({{ $media->id }})" wire:confirm="Supprimer cette image ?" aria-label="Supprimer l’image" />
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($this->editingProject->getMedia('documents')->isNotEmpty())
+                        <div>
+                            <div class="mb-2 text-xs text-zinc-500">Documents</div>
+                            <ul class="space-y-2">
+                                @foreach($this->editingProject->getMedia('documents') as $document)
+                                    <li wire:key="document-media-{{ $document->id }}" class="flex items-center gap-3 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-sm">
+                                        <span class="flex-1 truncate">{{ $document->name }}</span>
+                                        <span class="text-xs text-zinc-500">{{ $document->human_readable_size }}</span>
+                                        <flux:button size="xs" variant="danger" wire:click="deleteMedia({{ $document->id }})" wire:confirm="Supprimer ce document ?">Supprimer</flux:button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                </div>
+            @endif
 
             <div class="grid sm:grid-cols-3 gap-4">
                 <flux:field>
