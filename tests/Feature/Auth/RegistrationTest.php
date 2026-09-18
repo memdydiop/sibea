@@ -25,3 +25,13 @@ test('new users can register', function () {
 
     $this->assertAuthenticated();
 });
+
+test('login screen renders without the sign up link when registration is disabled', function () {
+    config(['fortify.features' => []]);
+
+    $response = $this->get(route('login'));
+
+    $response->assertOk()
+        ->assertSee('Log in to your account')
+        ->assertDontSee('Sign up');
+});
