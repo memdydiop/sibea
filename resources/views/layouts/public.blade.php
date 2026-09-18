@@ -79,7 +79,7 @@
                 @if($headerLinks['contact'])
                     <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.link.contact.label') }}</a>
                 @endif
-                <a x-on:click="open = false" href="{{ route('login') }}" target="_blank" rel="noopener" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre">{{ setting('header.login_label') }}</a>
+                <a x-on:click="open = false" href="{{ route('login') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.login_label') }}</a>
             </div>
         </nav>
     </header>
