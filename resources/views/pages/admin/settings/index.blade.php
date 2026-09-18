@@ -252,8 +252,8 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
 };
 ?>
 
-<div class="p-6" x-data="{ tab: 'general' }">
-    <div class="sticky top-0 z-20 -mx-6 mb-6 border-b border-bordure bg-casse/95 px-6 pb-3 pt-1 backdrop-blur">
+<div class="px-6 pb-6" x-data="{ tab: 'general' }">
+    <div class="sticky top-0 z-20 -mx-6 mb-6 border-b border-bordure bg-casse/95 px-6 pb-3 pt-6 backdrop-blur">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
                 <flux:heading size="xl">Paramètres du site</flux:heading>
@@ -279,16 +279,14 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
 
     <form wire:submit="save" class="space-y-6">
         <div x-show="tab === 'general'" class="grid items-start gap-6 lg:grid-cols-2">
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Identité</flux:heading>
+            <x-admin.card title="Identité">
                 <flux:field>
                     <flux:label>Nom affiché (surtitres)</flux:label>
                     <flux:input wire:model="texts.site_name" type="text" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Textes du hero</flux:heading>
+            <x-admin.card title="Textes du hero">
                 <flux:field>
                     <flux:label>Titre</flux:label>
                     <flux:input wire:model="texts.hero_title" type="text" />
@@ -301,10 +299,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Bouton principal</flux:label>
                     <flux:input wire:model="texts.hero_primary_label" type="text" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Footer</flux:heading>
+            <x-admin.card title="Footer">
                 <flux:field>
                     <flux:label>Baseline</flux:label>
                     <flux:input wire:model="texts.footer_tagline" type="text" />
@@ -313,10 +310,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Copyright (sans l’année)</flux:label>
                     <flux:input wire:model="texts.footer_copyright" type="text" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Section secteurs</flux:heading>
+            <x-admin.card title="Section secteurs">
                 <flux:field>
                     <flux:label>Titre</flux:label>
                     <flux:input wire:model="texts.sectors_title" type="text" />
@@ -325,10 +321,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Sous-titre</flux:label>
                     <flux:textarea wire:model="texts.sectors_subtitle" rows="2" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Section expertises</flux:heading>
+            <x-admin.card title="Section expertises">
                 <flux:field>
                     <flux:label>Titre</flux:label>
                     <flux:input wire:model="texts.expertises_title" type="text" />
@@ -360,10 +355,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:input wire:model="texts.expertise_cta_whatsapp_label" type="text" />
                     <flux:description>Le bouton n’apparaît que si un numéro WhatsApp est renseigné dans Contact &amp; localisation.</flux:description>
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Bloc Le Groupe (accueil)</flux:heading>
+            <x-admin.card title="Bloc Le Groupe (accueil)">
                 <flux:field>
                     <flux:label>Titre</flux:label>
                     <flux:input wire:model="texts.group_title" type="text" />
@@ -380,10 +374,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Libellé du bouton</flux:label>
                     <flux:input wire:model="texts.group_button" type="text" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Section réalisations & témoignages</flux:heading>
+            <x-admin.card title="Section réalisations & témoignages">
                 <flux:field>
                     <flux:label>Titre réalisations</flux:label>
                     <flux:input wire:model="texts.projects_title" type="text" />
@@ -392,10 +385,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Titre témoignages</flux:label>
                     <flux:input wire:model="texts.testimonials_title" type="text" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Section RSE</flux:heading>
+            <x-admin.card title="Section RSE">
                 <flux:field>
                     <flux:label>Titre</flux:label>
                     <flux:input wire:model="texts.rse_title" type="text" />
@@ -408,10 +400,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Libellé du bouton</flux:label>
                     <flux:input wire:model="texts.rse_button" type="text" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4 lg:col-span-2">
-                <flux:heading size="lg">Notre méthode</flux:heading>
+            <x-admin.card title="Notre méthode" class="lg:col-span-2">
                 <flux:field>
                     <flux:label>Titre de la section</flux:label>
                     <flux:input wire:model="texts.method_title" type="text" />
@@ -430,10 +421,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     @endforeach
                 </div>
                 <flux:button size="sm" icon="plus" wire:click="addMethodStep">Ajouter une étape</flux:button>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Appel à l’action final</flux:heading>
+            <x-admin.card title="Appel à l’action final">
                 <flux:field>
                     <flux:label>Titre</flux:label>
                     <flux:input wire:model="texts.cta_title" type="text" />
@@ -446,12 +436,11 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Bouton</flux:label>
                     <flux:input wire:model="texts.cta_button" type="text" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
         </div>
 
         <div x-show="tab === 'header'" class="grid items-start gap-6 lg:grid-cols-2">
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Logo</flux:heading>
+            <x-admin.card title="Logo">
                 <div class="flex items-center gap-4">
                     <img src="{{ setting_media_url('visuals.logo') }}" alt="" class="h-12 w-auto rounded bg-white p-1">
                     <div class="flex-1">
@@ -460,10 +449,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     </div>
                     <flux:button size="sm" variant="danger" wire:click="removeVisual('logo')">Retirer</flux:button>
                 </div>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Menu principal</flux:heading>
+            <x-admin.card title="Menu principal">
                 <div class="space-y-3">
                     @foreach([
                         'sectors' => ['hint' => 'Secteurs d’activité', 'property' => 'header_sectors_label'],
@@ -480,20 +468,18 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                         </div>
                     @endforeach
                 </div>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Connexion administration</flux:heading>
+            <x-admin.card title="Connexion administration">
                 <flux:field>
                     <flux:label>Libellé du lien</flux:label>
                     <flux:input wire:model="texts.header_login_label" type="text" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
         </div>
 
         <div x-show="tab === 'pages'" class="grid items-start gap-6 lg:grid-cols-2">
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Page secteurs d’activité</flux:heading>
+            <x-admin.card title="Page secteurs d’activité">
                 <flux:field>
                     <flux:label>Titre</flux:label>
                     <flux:input wire:model="texts.sectors_hero_title" type="text" />
@@ -502,10 +488,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Sous-titre</flux:label>
                     <flux:textarea wire:model="texts.sectors_hero_subtitle" rows="2" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Page expertises</flux:heading>
+            <x-admin.card title="Page expertises">
                 <flux:field>
                     <flux:label>Titre</flux:label>
                     <flux:input wire:model="texts.expertises_hero_title" type="text" />
@@ -524,10 +509,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                         <flux:input wire:model="texts.expertises_cta_subtitle" type="text" />
                     </flux:field>
                 </div>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Page réalisations</flux:heading>
+            <x-admin.card title="Page réalisations">
                 <flux:field>
                     <flux:label>Titre</flux:label>
                     <flux:input wire:model="texts.projects_hero_title" type="text" />
@@ -546,12 +530,11 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                         <flux:input wire:model="texts.projects_empty_text" type="text" />
                     </flux:field>
                 </div>
-            </flux:card>
+            </x-admin.card>
         </div>
 
         <div x-show="tab === 'contact'" class="grid items-start gap-6 lg:grid-cols-2">
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Coordonnées</flux:heading>
+            <x-admin.card title="Coordonnées">
                 <flux:field>
                     <flux:label>Sous-titre de la page contact</flux:label>
                     <flux:input wire:model="texts.contact_hero_subtitle" type="text" />
@@ -587,10 +570,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Message WhatsApp pré-rempli</flux:label>
                     <flux:textarea wire:model="texts.contact_whatsapp_message" rows="2" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Localisation</flux:heading>
+            <x-admin.card title="Localisation">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <flux:field>
                         <flux:label>Latitude</flux:label>
@@ -603,10 +585,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                         <flux:error name="texts.contact_longitude" />
                     </flux:field>
                 </div>
-            </flux:card>
+            </x-admin.card>
 
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Implantation</flux:heading>
+            <x-admin.card title="Implantation">
                 <flux:field>
                     <flux:label>Titre du bloc</flux:label>
                     <flux:input wire:model="texts.office_title" type="text" />
@@ -619,12 +600,11 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Description</flux:label>
                     <flux:textarea wire:model="texts.office_description" rows="3" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
         </div>
 
         <div x-show="tab === 'seo'" class="grid items-start gap-6 lg:grid-cols-2">
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">Référencement par défaut</flux:heading>
+            <x-admin.card title="Référencement par défaut">
                 <flux:field>
                     <flux:label>Titre meta</flux:label>
                     <flux:input wire:model="texts.seo_title" type="text" />
@@ -633,12 +613,11 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Description meta</flux:label>
                     <flux:textarea wire:model="texts.seo_description" rows="3" />
                 </flux:field>
-            </flux:card>
+            </x-admin.card>
         </div>
 
         <div x-show="tab === 'visuals'" class="grid items-start gap-6 lg:grid-cols-2">
-            <flux:card class="space-y-4 lg:col-span-2">
-                <flux:heading size="lg">Images de fond des heroes</flux:heading>
+            <x-admin.card title="Images de fond des heroes" class="lg:col-span-2">
                 <div class="grid gap-6 sm:grid-cols-2">
                     @foreach([
                         'hero_home' => ['label' => 'Accueil', 'key' => 'visuals.hero.home'],
@@ -678,7 +657,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                         </div>
                     @endforeach
                 </div>
-            </flux:card>
+            </x-admin.card>
         </div>
 
         <div class="flex justify-end">
