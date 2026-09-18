@@ -69,7 +69,8 @@ test('creates an expertise with cover upload and pivots', function () {
         ->and($expertise->benefits)->toBe(['Solidité', 'Durabilité'])
         ->and($expertise->sectors->pluck('id')->all())->toBe([$sector->id])
         ->and($expertise->services->pluck('id')->all())->toBe([$service->id])
-        ->and($expertise->hasMedia('cover'))->toBeTrue();
+        ->and($expertise->hasMedia('cover'))->toBeTrue()
+        ->and($expertise->getFirstMedia('cover')->file_name)->toEndWith('.webp');
 });
 
 test('truncates long original file names', function () {
@@ -93,7 +94,7 @@ test('truncates long original file names', function () {
     expect($media)->not->toBeNull()
         ->and(strlen($media->file_name))->toBeLessThanOrEqual(255)
         ->and(strlen($media->name))->toBeLessThanOrEqual(255)
-        ->and($media->file_name)->toEndWith('.jpg');
+        ->and($media->file_name)->toEndWith('.webp');
 });
 
 test('rejects oversized uploads', function () {

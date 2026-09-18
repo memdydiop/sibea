@@ -53,6 +53,8 @@ test('creates a project with gallery and pivots', function () {
         ->and($project->status)->toBe(ProjectStatus::Livre)
         ->and($project->sectors->pluck('id')->all())->toBe([$sector->id])
         ->and($project->hasMedia('cover'))->toBeTrue()
+        ->and($project->getFirstMedia('cover')->file_name)->toEndWith('.webp')
+        ->and($project->getMedia('gallery')->every(fn ($media) => str_ends_with($media->file_name, '.webp')))->toBeTrue()
         ->and($project->getMedia('gallery'))->toHaveCount(2);
 });
 
@@ -89,7 +91,8 @@ test('saves editorial content, coordinates and documents', function () {
         ->and($project->testimonial_author)->toBe('Président de coopérative')
         ->and($project->latitude)->toBe(6.8776)
         ->and($project->longitude)->toBe(-6.4502)
-        ->and($project->hasMedia('documents'))->toBeTrue();
+        ->and($project->hasMedia('documents'))->toBeTrue()
+        ->and($project->getFirstMedia('documents')->file_name)->toEndWith('.pdf');
 });
 
 test('manages existing project media', function () {
