@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\AddsMediaFromUploads;
 use App\Models\Expertise;
 use App\Models\Sector;
 use App\Models\Service;
@@ -14,7 +15,7 @@ use Livewire\WithPagination;
 
 new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
 {
-    use WithFileUploads, WithPagination;
+    use AddsMediaFromUploads, WithFileUploads, WithPagination;
 
     public string $search = '';
 
@@ -166,11 +167,11 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
 
         if ($this->cover) {
             $expertise->clearMediaCollection('cover');
-            $expertise->addMedia($this->cover->getRealPath())->usingFileName($this->cover->getClientOriginalName())->toMediaCollection('cover');
+            static::addMediaFromUpload($expertise, $this->cover, 'cover');
         }
         if ($this->icon) {
             $expertise->clearMediaCollection('icon');
-            $expertise->addMedia($this->icon->getRealPath())->usingFileName($this->icon->getClientOriginalName())->toMediaCollection('icon');
+            static::addMediaFromUpload($expertise, $this->icon, 'icon');
         }
 
         $this->showForm = false;

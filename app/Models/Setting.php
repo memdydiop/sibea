@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\AddsMediaFromUploads;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -19,7 +20,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 #[Fillable(['key', 'value'])]
 class Setting extends Model implements HasMedia
 {
-    use InteractsWithMedia;
+    use AddsMediaFromUploads, InteractsWithMedia;
 
     public static function get(string $key, ?string $default = null): ?string
     {
@@ -79,9 +80,7 @@ class Setting extends Model implements HasMedia
     {
         $setting = static::firstOrCreate(['key' => $key]);
         $setting->clearMediaCollection('file');
-        $setting->addMedia($file->getRealPath())
-            ->usingFileName($file->getClientOriginalName())
-            ->toMediaCollection('file');
+        static::addMediaFromUpload($setting, $file, 'file');
         static::flushCache();
     }
 

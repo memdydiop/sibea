@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\AddsMediaFromUploads;
 use App\Models\Sector;
 use App\Models\Setting;
 use Livewire\Attributes\Layout;
@@ -9,7 +10,7 @@ use Livewire\WithFileUploads;
 
 new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Component
 {
-    use WithFileUploads;
+    use AddsMediaFromUploads, WithFileUploads;
 
     private const TEXT_SETTINGS = [
         'site_name' => 'general.site_name',
@@ -248,9 +249,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             if (! empty($this->heroImages[$id])) {
                 $image = $this->heroImages[$id];
                 $sector->clearMediaCollection('hero');
-                $sector->addMedia($image->getRealPath())
-                    ->usingFileName($image->getClientOriginalName())
-                    ->toMediaCollection('hero');
+                static::addMediaFromUpload($sector, $image, 'hero');
                 unset($this->heroImages[$id]);
             }
         }

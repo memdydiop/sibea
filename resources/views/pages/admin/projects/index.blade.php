@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\AddsMediaFromUploads;
 use App\Enums\ProjectStatus;
 use App\Models\Expertise;
 use App\Models\Project;
@@ -16,7 +17,7 @@ use Livewire\WithPagination;
 
 new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 {
-    use WithFileUploads, WithPagination;
+    use AddsMediaFromUploads, WithFileUploads, WithPagination;
 
     public string $search = '';
 
@@ -237,13 +238,13 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
         if ($this->cover) {
             $project->clearMediaCollection('cover');
-            $project->addMedia($this->cover->getRealPath())->usingFileName($this->cover->getClientOriginalName())->toMediaCollection('cover');
+            static::addMediaFromUpload($project, $this->cover, 'cover');
         }
         foreach ($this->gallery as $photo) {
-            $project->addMedia($photo->getRealPath())->usingFileName($photo->getClientOriginalName())->toMediaCollection('gallery');
+            static::addMediaFromUpload($project, $photo, 'gallery');
         }
         foreach ($this->documents as $document) {
-            $project->addMedia($document->getRealPath())->usingFileName($document->getClientOriginalName())->toMediaCollection('documents');
+            static::addMediaFromUpload($project, $document, 'documents');
         }
 
         $this->showForm = false;
