@@ -2,6 +2,7 @@
 
 use App\Concerns\AddsMediaFromUploads;
 use App\Models\Setting;
+use Flux\Flux;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -116,8 +117,6 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
 
     public $hero_privacy = null;
 
-    public bool $saved = false;
-
     public function mount(): void
     {
         $this->authorize('manage', Setting::class);
@@ -134,11 +133,6 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             'projects' => setting('header.link.projects.visible') === '1',
             'contact' => setting('header.link.contact.visible') === '1',
         ];
-    }
-
-    public function updated(): void
-    {
-        $this->saved = false;
     }
 
     public function addMethodStep(): void
@@ -168,7 +162,18 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
         }
 
         Setting::removeFile($key);
-        $this->saved = true;
+        Flux::toast(variant: 'success', text: 'Visuel retiré.');
+    }
+
+    public function hasVisual(string $property): bool
+    {
+        $key = self::VISUAL_SETTINGS[$property] ?? null;
+
+        if ($key === null) {
+            return false;
+        }
+
+        return Setting::where('key', $key)->first()?->hasMedia('file') ?? false;
     }
 
     public function save(): void
@@ -211,7 +216,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             }
         }
 
-        $this->saved = true;
+        Flux::toast(variant: 'success', text: 'Paramètres enregistrés.');
     }
 
     /**
@@ -248,32 +253,32 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
 ?>
 
 <div class="p-6" x-data="{ tab: 'general' }">
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <flux:heading size="xl">Paramètres du site</flux:heading>
-            <flux:subheading>Textes, coordonnées, SEO et visuels du site vitrine.</flux:subheading>
+    <div class="sticky top-0 z-20 -mx-6 mb-6 border-b border-bordure bg-casse/95 px-6 pb-3 pt-1 backdrop-blur">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <flux:heading size="xl">Paramètres du site</flux:heading>
+                <flux:subheading>Textes, coordonnées, SEO et visuels du site vitrine.</flux:subheading>
+            </div>
+            <div class="flex items-center gap-3">
+                <span wire:dirty class="text-xs font-medium text-ardoise">Modifications non enregistrées</span>
+                <flux:button variant="primary" wire:click="save" icon="check" wire:loading.attr="disabled" wire:target="save">Enregistrer</flux:button>
+            </div>
         </div>
-        <flux:button variant="primary" wire:click="save" icon="check">Enregistrer</flux:button>
-    </div>
 
-    @if($saved)
-        <flux:callout variant="success" icon="check-circle" class="mb-6">Paramètres enregistrés.</flux:callout>
-    @endif
-
-    <div class="mb-6 flex flex-wrap gap-2">
-        @foreach(['general' => 'Général & accueil', 'pages' => 'Pages', 'header' => 'Header', 'contact' => 'Contact & localisation', 'seo' => 'SEO', 'visuals' => 'Visuels'] as $key => $label)
-            <button
-                type="button"
-                x-on:click="tab = '{{ $key }}'"
-                x-bind:class="tab === '{{ $key }}' ? 'border-cuivre bg-cuivre text-nuit' : 'border-zinc-200 text-zinc-600 hover:border-cuivre dark:border-zinc-700 dark:text-zinc-300'"
-                class="rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors"
-            >{{ $label }}</button>
-        @endforeach
-
+        <div class="mt-3 flex flex-wrap gap-2">
+            @foreach(['general' => 'Général & accueil', 'pages' => 'Pages', 'header' => 'Header', 'contact' => 'Contact & localisation', 'seo' => 'SEO', 'visuals' => 'Visuels'] as $key => $label)
+                <button
+                    type="button"
+                    x-on:click="tab = '{{ $key }}'"
+                    x-bind:class="tab === '{{ $key }}' ? 'border-cuivre bg-cuivre text-nuit' : 'border-zinc-200 text-zinc-600 hover:border-cuivre dark:border-zinc-700 dark:text-zinc-300'"
+                    class="rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors"
+                >{{ $label }}</button>
+            @endforeach
+        </div>
     </div>
 
     <form wire:submit="save" class="space-y-6">
-        <div x-show="tab === 'general'" class="space-y-6">
+        <div x-show="tab === 'general'" class="grid items-start gap-6 lg:grid-cols-2">
             <flux:card class="space-y-4">
                 <flux:heading size="lg">Identité</flux:heading>
                 <flux:field>
@@ -405,7 +410,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                 </flux:field>
             </flux:card>
 
-            <flux:card class="space-y-4">
+            <flux:card class="space-y-4 lg:col-span-2">
                 <flux:heading size="lg">Notre méthode</flux:heading>
                 <flux:field>
                     <flux:label>Titre de la section</flux:label>
@@ -444,7 +449,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             </flux:card>
         </div>
 
-        <div x-show="tab === 'header'" class="space-y-6">
+        <div x-show="tab === 'header'" class="grid items-start gap-6 lg:grid-cols-2">
             <flux:card class="space-y-4">
                 <flux:heading size="lg">Logo</flux:heading>
                 <div class="flex items-center gap-4">
@@ -486,7 +491,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             </flux:card>
         </div>
 
-        <div x-show="tab === 'pages'" class="space-y-6">
+        <div x-show="tab === 'pages'" class="grid items-start gap-6 lg:grid-cols-2">
             <flux:card class="space-y-4">
                 <flux:heading size="lg">Page secteurs d’activité</flux:heading>
                 <flux:field>
@@ -544,7 +549,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             </flux:card>
         </div>
 
-        <div x-show="tab === 'contact'" class="space-y-6">
+        <div x-show="tab === 'contact'" class="grid items-start gap-6 lg:grid-cols-2">
             <flux:card class="space-y-4">
                 <flux:heading size="lg">Coordonnées</flux:heading>
                 <flux:field>
@@ -617,7 +622,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             </flux:card>
         </div>
 
-        <div x-show="tab === 'seo'" class="space-y-6">
+        <div x-show="tab === 'seo'" class="grid items-start gap-6 lg:grid-cols-2">
             <flux:card class="space-y-4">
                 <flux:heading size="lg">Référencement par défaut</flux:heading>
                 <flux:field>
@@ -631,8 +636,8 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             </flux:card>
         </div>
 
-        <div x-show="tab === 'visuals'" class="space-y-6">
-            <flux:card class="space-y-4">
+        <div x-show="tab === 'visuals'" class="grid items-start gap-6 lg:grid-cols-2">
+            <flux:card class="space-y-4 lg:col-span-2">
                 <flux:heading size="lg">Images de fond des heroes</flux:heading>
                 <div class="grid gap-6 sm:grid-cols-2">
                     @foreach([
@@ -645,12 +650,31 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                         'hero_legal' => ['label' => 'Mentions légales', 'key' => 'visuals.hero.legal'],
                         'hero_privacy' => ['label' => 'Politique de confidentialité', 'key' => 'visuals.hero.privacy'],
                     ] as $property => $visual)
-                        <div wire:key="visual-{{ $property }}" class="space-y-2">
-                            <div class="text-sm font-medium">{{ $visual['label'] }}</div>
-                            <img src="{{ setting_media_url($visual['key']) }}" alt="" class="h-24 w-full rounded object-cover">
+                        <div wire:key="visual-{{ $property }}" class="space-y-2 rounded-lg border border-bordure bg-casse/40 p-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="text-sm font-medium">{{ $visual['label'] }}</div>
+                                @if($this->hasVisual($property))
+                                    <flux:badge size="sm" color="green">Personnalisée</flux:badge>
+                                @else
+                                    <flux:badge size="sm" color="zinc">Par défaut</flux:badge>
+                                @endif
+                            </div>
+
+                            @if($this->{$property})
+                                <img src="{{ $this->{$property}->temporaryUrl() }}" alt="" class="h-24 w-full rounded object-cover">
+                            @else
+                                <img src="{{ setting_media_url($visual['key']) }}" alt="" class="h-24 w-full rounded object-cover">
+                            @endif
+
                             <input type="file" wire:model="{{ $property }}" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
                             <flux:error name="{{ $property }}" />
-                            <flux:button size="xs" variant="danger" wire:click="removeVisual('{{ $property }}')">Retirer</flux:button>
+
+                            <div class="flex items-center justify-between">
+                                <span wire:loading wire:target="{{ $property }}" class="text-xs font-medium text-cuivre">Téléversement…</span>
+                                @if($this->hasVisual($property))
+                                    <flux:button size="xs" variant="danger" wire:click="removeVisual('{{ $property }}')">Retirer</flux:button>
+                                @endif
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -658,7 +682,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
         </div>
 
         <div class="flex justify-end">
-            <flux:button type="submit" variant="primary" icon="check">Enregistrer</flux:button>
+            <flux:button type="submit" variant="primary" icon="check" wire:loading.attr="disabled" wire:target="save">Enregistrer</flux:button>
         </div>
     </form>
 </div>
