@@ -1,10 +1,10 @@
 <?php
 
 use App\Concerns\AddsMediaFromUploads;
-use App\Support\UniqueSlug;
 use App\Models\Expertise;
 use App\Models\Sector;
 use App\Models\Service;
+use App\Support\UniqueSlug;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -52,6 +52,8 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
 
     public ?string $coverPreview = null;
 
+    public ?string $iconPreview = null;
+
     public function mount(): void
     {
         $this->authorize('viewAny', Expertise::class);
@@ -61,6 +63,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
     public function expertises()
     {
         return Expertise::query()
+            ->with('sectors')
             ->when($this->search, fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($this->search).'%']))
             ->ordered()
             ->paginate(10);
@@ -76,6 +79,12 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
     public function services()
     {
         return Service::active()->ordered()->get();
+    }
+
+    #[Computed]
+    public function editedExpertise(): ?Expertise
+    {
+        return $this->editingId ? Expertise::find($this->editingId) : null;
     }
 
     public function updatedSearch(): void
@@ -102,8 +111,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
     public function create(): void
     {
         $this->authorize('create', Expertise::class);
-        $this->reset(['editingId', 'name', 'slug', 'short_description', 'description', 'benefits_text', 'process_text', 'sort_order', 'sector_ids', 'service_ids', 'cover', 'icon', 'coverPreview']);
-        $this->is_active = true;
+        $this->resetForm();
         $this->showForm = true;
     }
 
@@ -111,6 +119,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
     {
         $expertise = Expertise::with(['sectors', 'services'])->findOrFail($id);
         $this->authorize('update', $expertise);
+
         $this->editingId = $expertise->id;
         $this->name = $expertise->name;
         $this->slug = $expertise->slug;
@@ -123,20 +132,9 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         $this->sector_ids = $expertise->sectors->pluck('id')->all();
         $this->service_ids = $expertise->services->pluck('id')->all();
         $this->coverPreview = $expertise->getFirstMediaUrl('cover') ?: null;
+        $this->iconPreview = $expertise->getFirstMediaUrl('icon') ?: null;
         $this->reset(['cover', 'icon']);
         $this->showForm = true;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function linesToArray(?string $text): array
-    {
-        return collect(preg_split('/\r?\n/', $text ?? ''))
-            ->map(fn ($line) => trim($line))
-            ->filter()
-            ->values()
-            ->all();
     }
 
     public function save(): void
@@ -183,14 +181,40 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
             $expertise->clearMediaCollection('cover');
             static::addMediaFromUpload($expertise, $this->cover, 'cover');
         }
+
         if ($this->icon) {
             $expertise->clearMediaCollection('icon');
             static::addMediaFromUpload($expertise, $this->icon, 'icon');
         }
 
         $this->showForm = false;
-        $this->reset(['editingId', 'name', 'slug', 'short_description', 'description', 'benefits_text', 'process_text', 'sort_order', 'sector_ids', 'service_ids', 'cover', 'icon', 'coverPreview']);
-        $this->is_active = true;
+        $this->resetForm();
+    }
+
+    public function removeCover(): void
+    {
+        if ($this->editingId === null) {
+            return;
+        }
+
+        $expertise = Expertise::findOrFail($this->editingId);
+        $this->authorize('update', $expertise);
+        $expertise->clearMediaCollection('cover');
+        $this->cover = null;
+        $this->coverPreview = null;
+    }
+
+    public function removeIcon(): void
+    {
+        if ($this->editingId === null) {
+            return;
+        }
+
+        $expertise = Expertise::findOrFail($this->editingId);
+        $this->authorize('update', $expertise);
+        $expertise->clearMediaCollection('icon');
+        $this->icon = null;
+        $this->iconPreview = null;
     }
 
     public function toggleActive(int $id): void
@@ -205,6 +229,30 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         $expertise = Expertise::findOrFail($id);
         $this->authorize('delete', $expertise);
         $expertise->delete();
+    }
+
+    private function resetForm(): void
+    {
+        $this->reset([
+            'editingId', 'name', 'slug', 'short_description', 'description',
+            'benefits_text', 'process_text', 'sort_order', 'sector_ids', 'service_ids',
+            'cover', 'icon', 'coverPreview', 'iconPreview',
+        ]);
+
+        $this->is_active = true;
+        unset($this->editedExpertise);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function linesToArray(?string $text): array
+    {
+        return collect(preg_split('/\r?\n/', $text ?? ''))
+            ->map(fn ($line) => trim($line))
+            ->filter()
+            ->values()
+            ->all();
     }
 };
 ?>
@@ -226,6 +274,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         <flux:table.columns>
             <flux:table.column>Visuel</flux:table.column>
             <flux:table.column>Nom</flux:table.column>
+            <flux:table.column>Secteurs</flux:table.column>
             <flux:table.column>Statut</flux:table.column>
             <flux:table.column align="end">Actions</flux:table.column>
         </flux:table.columns>
@@ -234,13 +283,22 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
             @foreach($this->expertises as $expertise)
                 <flux:table.row wire:key="expertise-row-{{ $expertise->id }}">
                     <flux:table.cell>
-                        @if($expertise->getFirstMediaUrl('cover'))
-                            <img src="{{ $expertise->getFirstMediaUrl('cover') }}" alt="" class="h-10 w-16 object-cover rounded">
+                        @if($expertise->getFirstMediaUrl('cover', 'thumb'))
+                            <img src="{{ $expertise->getFirstMediaUrl('cover', 'thumb') }}" alt="" class="h-10 w-16 object-cover rounded">
                         @else
                             <span class="text-zinc-400">—</span>
                         @endif
                     </flux:table.cell>
                     <flux:table.cell variant="strong">{{ $expertise->name }}</flux:table.cell>
+                    <flux:table.cell>
+                        <div class="flex flex-wrap gap-1">
+                            @forelse($expertise->sectors as $sector)
+                                <flux:badge size="sm">{{ $sector->name }}</flux:badge>
+                            @empty
+                                <span class="text-xs text-zinc-400">—</span>
+                            @endforelse
+                        </div>
+                    </flux:table.cell>
                     <flux:table.cell>
                         @if($expertise->is_active)
                             <flux:badge size="sm" color="green">Actif</flux:badge>
@@ -262,14 +320,25 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         </flux:table.rows>
     </flux:table>
 
-    <flux:modal wire:model="showForm" class="md:w-[44rem]">
-        <form wire:submit="save" class="space-y-5">
+    <flux:modal wire:model="showForm" class="md:w-[48rem]">
+        <form wire:submit="save" class="space-y-5" x-data="{ tab: 'contenu' }">
             <div>
                 <flux:heading size="lg">{{ $editingId ? 'Modifier l’expertise' : 'Nouvelle expertise' }}</flux:heading>
                 <flux:subheading>Contenus, visuels (max 5 Mo) et associations.</flux:subheading>
             </div>
 
-            <div class="grid sm:grid-cols-2 gap-4">
+            <div class="flex flex-wrap gap-2">
+                @foreach(['contenu' => 'Contenu', 'visuels' => 'Visuels', 'associations' => 'Associations'] as $key => $label)
+                    <button
+                        type="button"
+                        x-on:click="tab = '{{ $key }}'"
+                        x-bind:class="tab === '{{ $key }}' ? 'border-cuivre bg-cuivre text-nuit' : 'border-zinc-200 text-zinc-600 hover:border-cuivre dark:border-zinc-700 dark:text-zinc-300'"
+                        class="rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors"
+                    >{{ $label }}</button>
+                @endforeach
+            </div>
+
+            <div x-show="tab === 'contenu'" class="space-y-4">
                 <flux:field>
                     <flux:label>Nom *</flux:label>
                     <flux:input wire:model="name" type="text" />
@@ -277,101 +346,130 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>Slug *</flux:label>
-                    <flux:input wire:model="slug" type="text" />
-                    <flux:description>Généré automatiquement depuis le nom si laissé vide.</flux:description>
-                    <flux:error name="slug" />
+                    <flux:label>Description courte</flux:label>
+                    <flux:textarea wire:model="short_description" rows="2" />
+                    <flux:description>Affichée sur les cartes et les listes.</flux:description>
+                    <flux:error name="short_description" />
                 </flux:field>
+
+                <flux:field>
+                    <flux:label>Description complète</flux:label>
+                    <flux:textarea wire:model="description" rows="4" />
+                    <flux:error name="description" />
+                </flux:field>
+
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <flux:field>
+                        <flux:label>Bénéfices</flux:label>
+                        <flux:textarea wire:model="benefits_text" rows="4" />
+                        <flux:description>Un bénéfice par ligne.</flux:description>
+                        <flux:error name="benefits_text" />
+                    </flux:field>
+
+                    <flux:field>
+                        <flux:label>Étapes d’intervention</flux:label>
+                        <flux:textarea wire:model="process_text" rows="4" />
+                        <flux:description>Une étape par ligne, dans l’ordre.</flux:description>
+                        <flux:error name="process_text" />
+                    </flux:field>
+                </div>
             </div>
 
-            <flux:field>
-                <flux:label>Description courte</flux:label>
-                <flux:textarea wire:model="short_description" rows="2" />
-                <flux:error name="short_description" />
-            </flux:field>
+            <div x-show="tab === 'visuels'" class="space-y-4">
+                <div class="grid gap-6 sm:grid-cols-2">
+                    <flux:field>
+                        <flux:label>Image de couverture (max 5 Mo)</flux:label>
+                        <div class="space-y-2">
+                            @if($cover)
+                                <img src="{{ $cover->temporaryUrl() }}" alt="" class="h-24 w-36 rounded object-cover">
+                            @elseif($coverPreview)
+                                <img src="{{ $coverPreview }}" alt="" class="h-24 w-36 rounded object-cover">
+                            @else
+                                <div class="flex h-24 w-36 items-center justify-center rounded bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800">Aucune image</div>
+                            @endif
+                            <input type="file" wire:model="cover" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
+                            <flux:error name="cover" />
+                            @if($editingId && ($coverPreview || $cover))
+                                <flux:button size="xs" variant="danger" wire:click="removeCover">Retirer l’image</flux:button>
+                            @endif
+                        </div>
+                    </flux:field>
 
-            <flux:field>
-                <flux:label>Description complète</flux:label>
-                <flux:textarea wire:model="description" rows="4" />
-                <flux:error name="description" />
-            </flux:field>
-
-            <div class="grid sm:grid-cols-2 gap-4">
-                <flux:field>
-                    <flux:label>Bénéfices (un par ligne)</flux:label>
-                    <flux:textarea wire:model="benefits_text" rows="3" />
-                    <flux:error name="benefits_text" />
-                </flux:field>
-
-                <flux:field>
-                    <flux:label>Étapes d’intervention (une par ligne)</flux:label>
-                    <flux:textarea wire:model="process_text" rows="3" />
-                    <flux:error name="process_text" />
-                </flux:field>
+                    <flux:field>
+                        <flux:label>Icône (max 5 Mo)</flux:label>
+                        <div class="space-y-2">
+                            @if($icon)
+                                <img src="{{ $icon->temporaryUrl() }}" alt="" class="h-16 w-16 rounded bg-surface object-contain p-1">
+                            @elseif($iconPreview)
+                                <img src="{{ $iconPreview }}" alt="" class="h-16 w-16 rounded bg-surface object-contain p-1">
+                            @else
+                                <div class="flex h-16 w-16 items-center justify-center rounded bg-zinc-100 text-[10px] text-zinc-400 dark:bg-zinc-800">Aucune</div>
+                            @endif
+                            <input type="file" wire:model="icon" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
+                            <flux:error name="icon" />
+                            @if($editingId && ($iconPreview || $icon))
+                                <flux:button size="xs" variant="danger" wire:click="removeIcon">Retirer l’icône</flux:button>
+                            @endif
+                        </div>
+                    </flux:field>
+                </div>
+                <flux:callout icon="information-circle" class="text-sm">
+                    Les images sont converties en WebP automatiquement à l’enregistrement.
+                </flux:callout>
             </div>
 
-            <div class="grid sm:grid-cols-2 gap-4">
-                <flux:field>
-                    <flux:label>Image de couverture (max 5 Mo)</flux:label>
-                    @if($coverPreview)
-                        <img src="{{ $coverPreview }}" alt="" class="h-16 w-24 object-cover rounded mb-2">
-                    @endif
-                    <input type="file" wire:model="cover" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
-                    <flux:error name="cover" />
-                </flux:field>
+            <div x-show="tab === 'associations'" class="space-y-4">
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <flux:field>
+                        <flux:label>Secteurs concernés</flux:label>
+                        <div class="grid gap-2 mt-1">
+                            @forelse($this->sectors as $sector)
+                                <label class="flex items-center gap-2 text-sm">
+                                    <flux:checkbox wire:model="sector_ids" :value="$sector->id" />
+                                    {{ $sector->name }}
+                                </label>
+                            @empty
+                                <span class="text-sm text-zinc-400">Aucun secteur actif.</span>
+                            @endforelse
+                        </div>
+                        <flux:error name="sector_ids" />
+                    </flux:field>
 
-                <flux:field>
-                    <flux:label>Icône (max 5 Mo)</flux:label>
-                    <input type="file" wire:model="icon" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
-                    <flux:error name="icon" />
-                </flux:field>
-            </div>
+                    <flux:field>
+                        <flux:label>Services associés</flux:label>
+                        <div class="grid gap-2 mt-1">
+                            @forelse($this->services as $service)
+                                <label class="flex items-center gap-2 text-sm">
+                                    <flux:checkbox wire:model="service_ids" :value="$service->id" />
+                                    {{ $service->name }}
+                                </label>
+                            @empty
+                                <span class="text-sm text-zinc-400">Aucun service actif.</span>
+                            @endforelse
+                        </div>
+                        <flux:error name="service_ids" />
+                    </flux:field>
+                </div>
 
-            <div class="grid sm:grid-cols-2 gap-4">
-                <flux:field>
-                    <flux:label>Secteurs concernés</flux:label>
-                    <div class="grid gap-2 mt-1">
-                        @foreach($this->sectors as $sector)
-                            <label class="flex items-center gap-2 text-sm">
-                                <flux:checkbox wire:model="sector_ids" :value="$sector->id" />
-                                {{ $sector->name }}
-                            </label>
-                        @endforeach
-                    </div>
-                    <flux:error name="sector_ids" />
-                </flux:field>
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <flux:field>
+                        <flux:label>Ordre</flux:label>
+                        <flux:input wire:model="sort_order" type="number" min="0" />
+                        <flux:description>Plus petit = affiché en premier.</flux:description>
+                        <flux:error name="sort_order" />
+                    </flux:field>
 
-                <flux:field>
-                    <flux:label>Services associés</flux:label>
-                    <div class="grid gap-2 mt-1">
-                        @foreach($this->services as $service)
-                            <label class="flex items-center gap-2 text-sm">
-                                <flux:checkbox wire:model="service_ids" :value="$service->id" />
-                                {{ $service->name }}
-                            </label>
-                        @endforeach
-                    </div>
-                    <flux:error name="service_ids" />
-                </flux:field>
-            </div>
-
-            <div class="grid sm:grid-cols-2 gap-4">
-                <flux:field>
-                    <flux:label>Ordre</flux:label>
-                    <flux:input wire:model="sort_order" type="number" min="0" />
-                    <flux:error name="sort_order" />
-                </flux:field>
-
-                <flux:field variant="inline">
-                    <flux:switch wire:model="is_active" />
-                    <flux:label>Actif</flux:label>
-                </flux:field>
+                    <flux:field variant="inline">
+                        <flux:switch wire:model="is_active" />
+                        <flux:label>Actif</flux:label>
+                    </flux:field>
+                </div>
             </div>
 
             <div class="flex gap-2">
                 <flux:spacer />
                 <flux:button variant="ghost" wire:click="$set('showForm', false)">Annuler</flux:button>
-                <flux:button type="submit" variant="primary">Enregistrer</flux:button>
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled">Enregistrer</flux:button>
             </div>
         </form>
     </flux:modal>

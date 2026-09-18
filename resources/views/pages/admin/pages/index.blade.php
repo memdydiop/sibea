@@ -168,20 +168,11 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
                 <flux:subheading>Le contenu accepte le Markdown (titres `##`, listes, liens, gras).</flux:subheading>
             </div>
 
-            <div class="grid sm:grid-cols-2 gap-4">
-                <flux:field>
-                    <flux:label>Titre *</flux:label>
-                    <flux:input wire:model.live.debounce.400ms="title" type="text" />
-                    <flux:error name="title" />
-                </flux:field>
-
-                <flux:field>
-                    <flux:label>Slug *</flux:label>
-                    <flux:input wire:model="slug" type="text" />
-                    <flux:description>Généré automatiquement depuis le titre si laissé vide.</flux:description>
-                    <flux:error name="slug" />
-                </flux:field>
-            </div>
+            <flux:field>
+                <flux:label>Titre *</flux:label>
+                <flux:input wire:model.live.debounce.400ms="title" type="text" />
+                <flux:error name="title" />
+            </flux:field>
 
             <flux:field>
                 <flux:label>Contenu</flux:label>
