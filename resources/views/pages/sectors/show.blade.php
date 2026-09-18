@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Sector;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -13,7 +15,10 @@ new #[Layout('layouts::public')] class extends Component
     {
         abort_unless($this->sector->is_active, 404);
 
-        $this->sector->load('expertises');
+        $description = Str::squish((string) ($this->sector->description ?: $this->sector->short_description));
+
+        View::share('title', $this->sector->name.' — '.setting('general.site_name'));
+        View::share('description', $description !== '' ? Str::limit($description, 160, '') : null);
     }
 
     #[Computed]

@@ -399,20 +399,11 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
             </div>
 
             <div x-show="tab === 'identite'" class="space-y-4">
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <flux:field>
-                        <flux:label>Nom *</flux:label>
-                        <flux:input wire:model="name" type="text" />
-                        <flux:error name="name" />
-                    </flux:field>
-
-                    <flux:field>
-                        <flux:label>Slug *</flux:label>
-                        <flux:input wire:model="slug" type="text" />
-                        <flux:description>Généré automatiquement depuis le nom si laissé vide.</flux:description>
-                        <flux:error name="slug" />
-                    </flux:field>
-                </div>
+                <flux:field>
+                    <flux:label>Nom *</flux:label>
+                    <flux:input wire:model="name" type="text" />
+                    <flux:error name="name" />
+                </flux:field>
 
                 <flux:field>
                     <flux:label>Description courte</flux:label>
@@ -421,8 +412,9 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>Description complète</flux:label>
+                    <flux:label>Description complète (SEO)</flux:label>
                     <flux:textarea wire:model="description" rows="4" />
+                    <flux:description>Utilisée comme meta description de la page secteur (moteurs de recherche). N’apparaît pas dans le corps de page.</flux:description>
                     <flux:error name="description" />
                 </flux:field>
 

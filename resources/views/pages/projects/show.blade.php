@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Project;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -12,6 +14,11 @@ new #[Layout('layouts::public')] class extends Component
     public function mount(): void
     {
         abort_if(! $this->project->is_published, 404);
+
+        $description = Str::squish((string) ($this->project->short_description ?: $this->project->description));
+
+        View::share('title', $this->project->title.' — '.setting('general.site_name'));
+        View::share('description', $description !== '' ? Str::limit($description, 160, '') : null);
 
         $this->project->load(['sectors', 'expertises', 'services']);
     }
