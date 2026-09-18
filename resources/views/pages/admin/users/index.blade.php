@@ -98,6 +98,7 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs')] class extends Component
             $user->email = $validated['email'];
             if (filled($validated['password'])) {
                 $user->password = $validated['password'];
+                $user->password_changed_at = null;
             }
             $user->save();
             $user->syncRoles($validated['role_names'] ?? []);

@@ -93,7 +93,8 @@ test('password can be updated', function () {
 
     $response->assertHasNoErrors();
 
-    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
+    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue()
+        ->and($user->password_changed_at)->not->toBeNull();
 });
 
 test('correct password must be provided to update password', function () {

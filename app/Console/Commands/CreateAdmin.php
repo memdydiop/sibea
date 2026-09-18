@@ -71,6 +71,7 @@ class CreateAdmin extends Command
             $user->forceFill([
                 'name' => $name,
                 'password' => $password,
+                'password_changed_at' => null,
                 'email_verified_at' => $user->email_verified_at ?? now(),
             ])->save();
 

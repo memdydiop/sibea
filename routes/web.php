@@ -53,7 +53,7 @@ Route::get('/sitemap.xml', function () {
 })->name('sitemap');
 
 // Administration (V1)
-Route::middleware(['auth'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'password.changed'])->prefix('admin')->group(function () {
     Route::livewire('/', 'pages::admin.dashboard')->name('admin.dashboard');
     Route::livewire('/secteurs', 'pages::admin.sectors.index')->name('admin.sectors');
     Route::livewire('/contenus-secteurs', 'pages::admin.sector-pages.index')->name('admin.sector-pages');

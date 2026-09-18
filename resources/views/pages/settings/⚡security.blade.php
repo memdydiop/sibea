@@ -81,6 +81,7 @@ new #[Title('Security settings')] class extends Component {
 
         Auth::user()->update([
             'password' => $validated['password'],
+            'password_changed_at' => now(),
         ]);
 
         $this->reset('current_password', 'password', 'password_confirmation');

@@ -15,6 +15,7 @@ test('creates a super administrator', function () {
     expect($user)->not->toBeNull()
         ->and($user->hasRole('Super administrateur'))->toBeTrue()
         ->and($user->email_verified_at)->not->toBeNull()
+        ->and($user->password_changed_at)->toBeNull()
         ->and(Hash::check('mot-de-passe-solide', $user->password))->toBeTrue();
 });
 
