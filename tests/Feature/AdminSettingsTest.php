@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Sector;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -87,47 +86,6 @@ test('removes a visual', function () {
         ->call('removeVisual', 'logo');
 
     expect($setting->fresh()->hasMedia('file'))->toBeFalse();
-});
-
-test('updates sector hero content', function () {
-    $sector = Sector::factory()->create([
-        'name' => 'BTP',
-        'hero_title' => 'Ancien titre',
-    ]);
-
-    Livewire::actingAs(settingsManager())
-        ->test('pages::admin.settings.index')
-        ->set("slides.{$sector->id}.hero_title", 'Nouveau titre')
-        ->set("slides.{$sector->id}.hero_description", 'Nouvelle description')
-        ->set("slides.{$sector->id}.hero_cta_label", 'Découvrir')
-        ->call('save')
-        ->assertHasNoErrors();
-
-    $sector->refresh();
-
-    expect($sector->hero_title)->toBe('Nouveau titre')
-        ->and($sector->hero_description)->toBe('Nouvelle description')
-        ->and($sector->hero_cta_label)->toBe('Découvrir');
-});
-
-test('uploads and removes a hero image from the settings page', function () {
-    Storage::fake('public');
-    $sector = Sector::factory()->create(['name' => 'BTP']);
-    $manager = settingsManager();
-
-    Livewire::actingAs($manager)
-        ->test('pages::admin.settings.index')
-        ->set("heroImages.{$sector->id}", UploadedFile::fake()->image('hero.jpg'))
-        ->call('save')
-        ->assertHasNoErrors();
-
-    expect($sector->fresh()->hasMedia('hero'))->toBeTrue();
-
-    Livewire::actingAs($manager)
-        ->test('pages::admin.settings.index')
-        ->call('removeHeroImage', $sector->id);
-
-    expect($sector->fresh()->hasMedia('hero'))->toBeFalse();
 });
 
 test('updates header labels and link visibility', function () {

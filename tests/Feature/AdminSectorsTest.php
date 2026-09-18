@@ -2,6 +2,8 @@
 
 use App\Models\Sector;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -110,6 +112,61 @@ test('searches sectors by name', function () {
         ->set('search', 'voir')
         ->assertSee('Voirie')
         ->assertDontSee('Assainissement');
+});
+
+test('updates sector hero, page content and image from the merged form', function () {
+    Storage::fake('public');
+    $sector = Sector::factory()->create(['name' => 'BTP', 'slug' => 'btp', 'hero_title' => 'Ancien titre']);
+
+    Livewire::actingAs(sectorAdmin())
+        ->test('pages::admin.sectors.index')
+        ->call('edit', $sector->id)
+        ->set('hero_title', 'Nouveau titre')
+        ->set('hero_description', 'Nouvelle description')
+        ->set('hero_cta_label', 'Découvrir')
+        ->set('intro_title', 'Une expertise globale.')
+        ->set('intro_text', 'Texte introductif.')
+        ->set('cards', [['title' => 'VRD', 'text' => 'Voirie et réseaux.']])
+        ->set('figures', [['value' => '120', 'label' => 'km de voies']])
+        ->set('cta_title', 'Un projet en vue ?')
+        ->set('cta_text', 'Parlons-en.')
+        ->set('cta_label', 'Solliciter une étude')
+        ->set('heroImage', UploadedFile::fake()->image('hero.jpg'))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $sector->refresh();
+
+    expect($sector->hero_title)->toBe('Nouveau titre')
+        ->and($sector->hero_description)->toBe('Nouvelle description')
+        ->and($sector->hero_cta_label)->toBe('Découvrir')
+        ->and($sector->page_intro_title)->toBe('Une expertise globale.')
+        ->and($sector->page_intro_text)->toBe('Texte introductif.')
+        ->and($sector->page_cards)->toBe([['title' => 'VRD', 'text' => 'Voirie et réseaux.']])
+        ->and($sector->page_figures)->toBe([['value' => '120', 'label' => 'km de voies']])
+        ->and($sector->page_cta_title)->toBe('Un projet en vue ?')
+        ->and($sector->page_cta_label)->toBe('Solliciter une étude')
+        ->and($sector->hasMedia('hero'))->toBeTrue()
+        ->and($sector->getFirstMedia('hero')->file_name)->toEndWith('.webp');
+});
+
+test('removes the sector hero image', function () {
+    Storage::fake('public');
+    $sector = Sector::factory()->create();
+    $sector->addMediaFromString(fakeJpeg())->usingFileName('hero.jpg')->toMediaCollection('hero');
+
+    Livewire::actingAs(sectorAdmin())
+        ->test('pages::admin.sectors.index')
+        ->call('edit', $sector->id)
+        ->call('removeHeroImage');
+
+    expect($sector->fresh()->hasMedia('hero'))->toBeFalse();
+});
+
+test('redirects the legacy sector pages url', function () {
+    $this->actingAs(sectorAdmin())
+        ->get('/admin/contenus-secteurs')
+        ->assertRedirect('/admin/secteurs');
 });
 
 test('invalidates public sectors cache on toggle', function () {

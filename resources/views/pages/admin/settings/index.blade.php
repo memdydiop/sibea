@@ -1,7 +1,6 @@
 <?php
 
 use App\Concerns\AddsMediaFromUploads;
-use App\Models\Sector;
 use App\Models\Setting;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -91,14 +90,6 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
     /** @var array<int, array{title: string, text: string}> */
     public array $method_steps = [];
 
-    /**
-     * @var array<int, array{hero_title: string|null, hero_description: string|null, hero_cta_label: string|null}>
-     */
-    public array $slides = [];
-
-    /** @var array<int, mixed> */
-    public array $heroImages = [];
-
     /** @var array<string, bool> */
     public array $headerLinks = [
         'sectors' => true,
@@ -143,19 +134,6 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             'projects' => setting('header.link.projects.visible') === '1',
             'contact' => setting('header.link.contact.visible') === '1',
         ];
-
-        foreach (Sector::active()->ordered()->get() as $sector) {
-            $this->slides[$sector->id] = [
-                'hero_title' => $sector->hero_title,
-                'hero_description' => $sector->hero_description,
-                'hero_cta_label' => $sector->hero_cta_label,
-            ];
-        }
-    }
-
-    public function heroSectors()
-    {
-        return Sector::active()->ordered()->get();
     }
 
     public function updated(): void
@@ -212,10 +190,6 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             'hero_contact' => ['nullable', 'image', 'max:5120'],
             'hero_legal' => ['nullable', 'image', 'max:5120'],
             'hero_privacy' => ['nullable', 'image', 'max:5120'],
-            'slides.*.hero_title' => ['nullable', 'string', 'max:255'],
-            'slides.*.hero_description' => ['nullable', 'string'],
-            'slides.*.hero_cta_label' => ['nullable', 'string', 'max:255'],
-            'heroImages.*' => ['nullable', 'image', 'max:5120'],
             'headerLinks' => ['array'],
             'headerLinks.*' => ['boolean'],
         ]);
@@ -237,32 +211,6 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             }
         }
 
-        foreach ($this->slides as $id => $slide) {
-            $sector = Sector::findOrFail($id);
-
-            $sector->update([
-                'hero_title' => $slide['hero_title'] ?: null,
-                'hero_description' => $slide['hero_description'] ?: null,
-                'hero_cta_label' => $slide['hero_cta_label'] ?: null,
-            ]);
-
-            if (! empty($this->heroImages[$id])) {
-                $image = $this->heroImages[$id];
-                $sector->clearMediaCollection('hero');
-                static::addMediaFromUpload($sector, $image, 'hero');
-                unset($this->heroImages[$id]);
-            }
-        }
-
-        $this->saved = true;
-    }
-
-    public function removeHeroImage(int $sectorId): void
-    {
-        $sector = Sector::findOrFail($sectorId);
-
-        $sector->clearMediaCollection('hero');
-        unset($this->heroImages[$sectorId]);
         $this->saved = true;
     }
 
@@ -594,49 +542,6 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     </flux:field>
                 </div>
             </flux:card>
-            <flux:heading size="lg">Hero des secteurs d’activité</flux:heading>
-
-            @foreach($this->heroSectors() as $sector)
-                <flux:card wire:key="hero-slide-{{ $sector->id }}" class="space-y-4">
-                    <flux:heading size="lg">Hero — {{ $sector->name }}</flux:heading>
-
-                    <div class="grid gap-4 sm:grid-cols-[16rem_1fr]">
-                        <div class="space-y-2">
-                            @php($upload = $heroImages[$sector->id] ?? null)
-                            @if($upload)
-                                <img src="{{ $upload->temporaryUrl() }}" alt="" class="h-32 w-full rounded object-cover">
-                            @elseif($sector->getFirstMediaUrl('hero', 'thumb'))
-                                <img src="{{ $sector->getFirstMediaUrl('hero', 'thumb') }}" alt="" class="h-32 w-full rounded object-cover">
-                            @else
-                                <div class="flex h-32 w-full items-center justify-center rounded bg-nuit text-xs text-white/60">Aucune image</div>
-                            @endif
-                            <input type="file" wire:model="heroImages.{{ $sector->id }}" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
-                            <flux:error name="heroImages.{{ $sector->id }}" />
-                            <flux:button size="xs" variant="danger" wire:click="removeHeroImage({{ $sector->id }})">Retirer l’image</flux:button>
-                        </div>
-
-                        <div class="space-y-4">
-                            <flux:field>
-                                <flux:label>Titre</flux:label>
-                                <flux:input wire:model="slides.{{ $sector->id }}.hero_title" type="text" />
-                                <flux:error name="slides.{{ $sector->id }}.hero_title" />
-                            </flux:field>
-                            <flux:field>
-                                <flux:label>Description</flux:label>
-                                <flux:textarea wire:model="slides.{{ $sector->id }}.hero_description" rows="2" />
-                                <flux:error name="slides.{{ $sector->id }}.hero_description" />
-                            </flux:field>
-                            <flux:field>
-                                <flux:label>Libellé du bouton</flux:label>
-                                <flux:input wire:model="slides.{{ $sector->id }}.hero_cta_label" type="text" />
-                                <flux:error name="slides.{{ $sector->id }}.hero_cta_label" />
-                            </flux:field>
-                        </div>
-                    </div>
-                </flux:card>
-            @endforeach
-
-
         </div>
 
         <div x-show="tab === 'contact'" class="space-y-6">

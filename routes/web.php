@@ -56,7 +56,7 @@ Route::get('/sitemap.xml', function () {
 Route::middleware(['auth', 'password.changed'])->prefix('admin')->group(function () {
     Route::livewire('/', 'pages::admin.dashboard')->name('admin.dashboard');
     Route::livewire('/secteurs', 'pages::admin.sectors.index')->name('admin.sectors');
-    Route::livewire('/contenus-secteurs', 'pages::admin.sector-pages.index')->name('admin.sector-pages');
+    Route::redirect('/contenus-secteurs', '/admin/secteurs');
     Route::livewire('/expertises', 'pages::admin.expertises.index')->name('admin.expertises');
     Route::livewire('/services', 'pages::admin.services.index')->name('admin.services');
     Route::livewire('/realisations', 'pages::admin.projects.index')->name('admin.projects');

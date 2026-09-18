@@ -24,9 +24,6 @@
                         <flux:sidebar.item icon="building-office-2" :href="route('admin.sectors')" :current="request()->routeIs('admin.sectors')" wire:navigate>
                             Secteurs
                         </flux:sidebar.item>
-                        <flux:sidebar.item icon="map" :href="route('admin.sector-pages')" :current="request()->routeIs('admin.sector-pages')" wire:navigate>
-                            Pages secteur
-                        </flux:sidebar.item>
                     @endcan
                     @can('manage_expertises')
                         <flux:sidebar.item icon="academic-cap" :href="route('admin.expertises')" :current="request()->routeIs('admin.expertises')" wire:navigate>
