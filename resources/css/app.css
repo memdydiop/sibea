@@ -94,6 +94,8 @@
         border-color: var(--color-gray-200, currentColor);
     }
 }
+@layer components {
+}
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
     @apply grid gap-2;
@@ -103,10 +105,15 @@
     @apply  !mb-0 !leading-tight;
 }
 
+[data-flux-control]{
+    @apply rounded border-[#e7e9eb] shadow-none hover:border-[#a1a9b1]
+;
+}
+
 input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
-    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+    @apply outline-hidden;
 }
 
 /* \[:where(&)\]:size-4 {
