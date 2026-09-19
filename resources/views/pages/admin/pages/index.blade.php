@@ -14,6 +14,12 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
 {
     use WithPagination;
 
+    public string $search = '';
+
+    public string $statusFilter = '';
+
+    public int $perPage = 10;
+
     public bool $showForm = false;
 
     public ?int $editingId = null;
@@ -34,7 +40,27 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
     #[Computed]
     public function pages()
     {
-        return Page::query()->orderBy('title')->paginate(10);
+        return Page::query()
+            ->when($this->search, fn ($query) => $query->whereRaw('LOWER(title) LIKE ?', ['%'.mb_strtolower($this->search).'%']))
+            ->when($this->statusFilter === 'published', fn ($query) => $query->where('is_published', true))
+            ->when($this->statusFilter === 'draft', fn ($query) => $query->where('is_published', false))
+            ->orderBy('title')
+            ->paginate($this->perPage);
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
     }
 
     public function updatedTitle(): void
@@ -119,13 +145,32 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
 <div class="p-6">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-            <flux:heading size="xl">Pages éditoriales</flux:heading>
+            <flux:heading size="xl" class="mb-0!">Pages éditoriales</flux:heading>
             <flux:subheading>Contenus des pages légales et pages libres (Markdown).</flux:subheading>
         </div>
-        <flux:button variant="primary" wire:click="create" icon="plus">Nouvelle page</flux:button>
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('admin.dashboard')" wire:navigate>Dashboard</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Pages</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
     </div>
 
-    <flux:table :paginate="$this->pages">
+    <x-admin.card title="Pages" :padded="false">
+
+        <x-slot:actions>
+            <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouvelle page" tooltip="Nouvelle page" />
+        </x-slot:actions>
+
+        <x-admin.toolbar search-placeholder="Rechercher une page…">
+            <x-slot:filters>
+                <flux:select wire:model.live="statusFilter" size="sm">
+                    <option value="">Toutes</option>
+                    <option value="published">Publié</option>
+                    <option value="draft">Brouillon</option>
+                </flux:select>
+            </x-slot:filters>
+        </x-admin.toolbar>
+
+        <flux:table :paginate="$this->pages">
         <flux:table.columns>
             <flux:table.column>Titre</flux:table.column>
             <flux:table.column>Adresse</flux:table.column>
@@ -148,18 +193,25 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button size="sm" wire:click="togglePublish({{ $page->id }})">
-                                {{ $page->is_published ? 'Dépublier' : 'Publier' }}
-                            </flux:button>
-                            <flux:button size="sm" wire:click="edit({{ $page->id }})">Modifier</flux:button>
-                            <flux:button size="sm" variant="danger" wire:click="delete({{ $page->id }})" wire:confirm="Supprimer cette page ?">Supprimer</flux:button>
+                        <div class="flex justify-end gap-1">
+                            <flux:button size="xs" variant="filled"
+                                icon="{{ $page->is_published ? 'eye-slash' : 'eye' }}"
+                                wire:click="togglePublish({{ $page->id }})"
+                                aria-label="{{ $page->is_published ? 'Dépublier' : 'Publier' }}"
+                                tooltip="{{ $page->is_published ? 'Dépublier' : 'Publier' }}" />
+                            <flux:button size="xs" variant="filled" icon="pencil"
+                                wire:click="edit({{ $page->id }})" aria-label="Modifier" tooltip="Modifier" />
+                            <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                wire:click="delete({{ $page->id }})" wire:confirm="Supprimer cette page ?"
+                                aria-label="Supprimer" tooltip="Supprimer" />
                         </div>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach
         </flux:table.rows>
-    </flux:table>
+        </flux:table>
+
+    </x-admin.card>
 
     <flux:modal wire:model="showForm" class="md:w-[48rem]">
         <form wire:submit="save" class="space-y-5">

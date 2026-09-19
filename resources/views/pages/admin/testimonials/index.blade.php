@@ -11,6 +11,12 @@ new #[Layout('layouts::app')] #[Title('Témoignages')] class extends Component
 {
     use WithPagination;
 
+    public string $search = '';
+
+    public string $statusFilter = '';
+
+    public int $perPage = 10;
+
     public bool $showForm = false;
 
     public ?int $editingId = null;
@@ -35,7 +41,29 @@ new #[Layout('layouts::app')] #[Title('Témoignages')] class extends Component
     #[Computed]
     public function testimonials()
     {
-        return Testimonial::query()->ordered()->paginate(10);
+        return Testimonial::query()
+            ->when($this->search, fn ($query) => $query->where(fn ($subQuery) => $subQuery
+                ->whereRaw('LOWER(author_name) LIKE ?', ['%'.mb_strtolower($this->search).'%'])
+                ->orWhereRaw('LOWER(content) LIKE ?', ['%'.mb_strtolower($this->search).'%'])))
+            ->when($this->statusFilter === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($this->statusFilter === 'inactive', fn ($query) => $query->where('is_active', false))
+            ->ordered()
+            ->paginate($this->perPage);
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
     }
 
     public function create(): void
@@ -104,13 +132,32 @@ new #[Layout('layouts::app')] #[Title('Témoignages')] class extends Component
 <div class="p-6">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-            <flux:heading size="xl">Témoignages</flux:heading>
+            <flux:heading size="xl" class="mb-0!">Témoignages</flux:heading>
             <flux:subheading>Citations clients affichées sur la page d’accueil.</flux:subheading>
         </div>
-        <flux:button variant="primary" wire:click="create" icon="plus">Nouveau témoignage</flux:button>
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('admin.dashboard')" wire:navigate>Dashboard</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Témoignages</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
     </div>
 
-    <flux:table :paginate="$this->testimonials">
+    <x-admin.card title="Témoignages" :padded="false">
+
+        <x-slot:actions>
+            <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouveau témoignage" tooltip="Nouveau témoignage" />
+        </x-slot:actions>
+
+        <x-admin.toolbar search-placeholder="Rechercher un témoignage…">
+            <x-slot:filters>
+                <flux:select wire:model.live="statusFilter" size="sm">
+                    <option value="">Tous les statuts</option>
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                </flux:select>
+            </x-slot:filters>
+        </x-admin.toolbar>
+
+        <flux:table :paginate="$this->testimonials">
         <flux:table.columns>
             <flux:table.column>Auteur</flux:table.column>
             <flux:table.column>Extrait</flux:table.column>
@@ -142,18 +189,25 @@ new #[Layout('layouts::app')] #[Title('Témoignages')] class extends Component
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button size="sm" wire:click="toggleActive({{ $testimonial->id }})">
-                                {{ $testimonial->is_active ? 'Désactiver' : 'Activer' }}
-                            </flux:button>
-                            <flux:button size="sm" wire:click="edit({{ $testimonial->id }})">Modifier</flux:button>
-                            <flux:button size="sm" variant="danger" wire:click="delete({{ $testimonial->id }})" wire:confirm="Supprimer ce témoignage ?">Supprimer</flux:button>
+                        <div class="flex justify-end gap-1">
+                            <flux:button size="xs" variant="filled"
+                                icon="{{ $testimonial->is_active ? 'eye-slash' : 'eye' }}"
+                                wire:click="toggleActive({{ $testimonial->id }})"
+                                aria-label="{{ $testimonial->is_active ? 'Désactiver' : 'Activer' }}"
+                                tooltip="{{ $testimonial->is_active ? 'Désactiver' : 'Activer' }}" />
+                            <flux:button size="xs" variant="filled" icon="pencil"
+                                wire:click="edit({{ $testimonial->id }})" aria-label="Modifier" tooltip="Modifier" />
+                            <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                wire:click="delete({{ $testimonial->id }})" wire:confirm="Supprimer ce témoignage ?"
+                                aria-label="Supprimer" tooltip="Supprimer" />
                         </div>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach
         </flux:table.rows>
-    </flux:table>
+        </flux:table>
+
+    </x-admin.card>
 
     <flux:modal wire:model="showForm" class="md:w-[40rem]">
         <form wire:submit="save" class="space-y-5">

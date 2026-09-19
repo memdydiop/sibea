@@ -92,3 +92,31 @@ test('forbids statistics admin without permission', function () {
 
     $this->actingAs($user)->get(route('admin.statistics'))->assertForbidden();
 });
+
+test('searches statistics by label and key', function () {
+    Statistic::factory()->create(['label' => 'Projets Livres Recherche', 'key' => 'projets-livres-recherche', 'value' => '250']);
+    Statistic::factory()->create(['label' => 'Autre Indicateur', 'key' => 'autre-indicateur', 'value' => '10']);
+
+    Livewire::actingAs(statisticManager())
+        ->test('pages::admin.statistics.index')
+        ->set('search', 'livres')
+        ->assertSee('Projets Livres Recherche')
+        ->assertDontSee('Autre Indicateur')
+        ->set('search', 'projets-livres-recherche')
+        ->assertSee('Projets Livres Recherche')
+        ->assertDontSee('Autre Indicateur');
+});
+
+test('filters statistics by status', function () {
+    Statistic::factory()->create(['label' => 'Statistique Active Test', 'key' => 'statistique-active-test', 'value' => '1', 'is_active' => true]);
+    Statistic::factory()->create(['label' => 'Statistique Inactive Test', 'key' => 'statistique-inactive-test', 'value' => '2', 'is_active' => false]);
+
+    Livewire::actingAs(statisticManager())
+        ->test('pages::admin.statistics.index')
+        ->set('statusFilter', 'active')
+        ->assertSee('Statistique Active Test')
+        ->assertDontSee('Statistique Inactive Test')
+        ->set('statusFilter', 'inactive')
+        ->assertSee('Statistique Inactive Test')
+        ->assertDontSee('Statistique Active Test');
+});

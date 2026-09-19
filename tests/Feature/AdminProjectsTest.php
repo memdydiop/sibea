@@ -144,3 +144,17 @@ test('forbids projects admin without permission', function () {
 
     $this->actingAs($user)->get(route('admin.projects'))->assertForbidden();
 });
+
+test('filters projects by publication status', function () {
+    Project::factory()->create(['title' => 'Projet Publie Vitrine', 'is_published' => true]);
+    Project::factory()->create(['title' => 'Projet Brouillon Atelier', 'is_published' => false]);
+
+    Livewire::actingAs(projectManager())
+        ->test('pages::admin.projects.index')
+        ->set('statusFilter', 'published')
+        ->assertSee('Projet Publie Vitrine')
+        ->assertDontSee('Projet Brouillon Atelier')
+        ->set('statusFilter', 'draft')
+        ->assertSee('Projet Brouillon Atelier')
+        ->assertDontSee('Projet Publie Vitrine');
+});

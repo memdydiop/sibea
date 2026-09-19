@@ -22,6 +22,10 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
     public string $search = '';
 
+    public string $statusFilter = '';
+
+    public int $perPage = 10;
+
     public bool $showForm = false;
 
     public ?int $editingId = null;
@@ -100,8 +104,10 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
         return Project::query()
             ->with('sectors')
             ->when($this->search, fn ($query) => $query->whereRaw('LOWER(title) LIKE ?', ['%'.mb_strtolower($this->search).'%']))
+            ->when($this->statusFilter === 'published', fn ($query) => $query->where('is_published', true))
+            ->when($this->statusFilter === 'draft', fn ($query) => $query->where('is_published', false))
             ->latest()
-            ->paginate(10);
+            ->paginate($this->perPage);
     }
 
     #[Computed]
@@ -123,6 +129,16 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
     }
 
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
     {
         $this->resetPage();
     }
@@ -357,17 +373,32 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 <div class="p-6">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-            <flux:heading size="xl">Réalisations</flux:heading>
+            <flux:heading size="xl" class="mb-0!">Réalisations</flux:heading>
             <flux:subheading>Projets publiés sur le site vitrine.</flux:subheading>
         </div>
-        <flux:button variant="primary" wire:click="create" icon="plus">Nouvelle réalisation</flux:button>
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('admin.dashboard')" wire:navigate>Dashboard</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Réalisations</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
     </div>
 
-    <div class="mb-4 max-w-sm">
-        <flux:input wire:model.live="search" type="search" placeholder="Rechercher une réalisation…" />
-    </div>
+    <x-admin.card title="Réalisations" :padded="false">
 
-    <flux:table :paginate="$this->projects">
+        <x-slot:actions>
+            <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouvelle réalisation" tooltip="Nouvelle réalisation" />
+        </x-slot:actions>
+
+        <x-admin.toolbar search-placeholder="Rechercher une réalisation…">
+            <x-slot:filters>
+                <flux:select wire:model.live="statusFilter" size="sm">
+                    <option value="">Toutes</option>
+                    <option value="published">Publié</option>
+                    <option value="draft">Brouillon</option>
+                </flux:select>
+            </x-slot:filters>
+        </x-admin.toolbar>
+
+        <flux:table :paginate="$this->projects">
         <flux:table.columns>
             <flux:table.column>Titre</flux:table.column>
             <flux:table.column>Secteurs</flux:table.column>
@@ -394,18 +425,25 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button size="sm" wire:click="togglePublish({{ $project->id }})">
-                                {{ $project->is_published ? 'Dépublier' : 'Publier' }}
-                            </flux:button>
-                            <flux:button size="sm" wire:click="edit({{ $project->id }})">Modifier</flux:button>
-                            <flux:button size="sm" variant="danger" wire:click="delete({{ $project->id }})" wire:confirm="Supprimer cette réalisation ?">Supprimer</flux:button>
+                        <div class="flex justify-end gap-1">
+                            <flux:button size="xs" variant="filled"
+                                icon="{{ $project->is_published ? 'eye-slash' : 'eye' }}"
+                                wire:click="togglePublish({{ $project->id }})"
+                                aria-label="{{ $project->is_published ? 'Dépublier' : 'Publier' }}"
+                                tooltip="{{ $project->is_published ? 'Dépublier' : 'Publier' }}" />
+                            <flux:button size="xs" variant="filled" icon="pencil"
+                                wire:click="edit({{ $project->id }})" aria-label="Modifier" tooltip="Modifier" />
+                            <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                wire:click="delete({{ $project->id }})" wire:confirm="Supprimer cette réalisation ?"
+                                aria-label="Supprimer" tooltip="Supprimer" />
                         </div>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach
         </flux:table.rows>
-    </flux:table>
+        </flux:table>
+
+    </x-admin.card>
 
     <flux:modal wire:model="showForm" class="md:w-[46rem]">
         <form wire:submit="save" class="space-y-5">

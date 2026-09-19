@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Models\Project;
 use App\Models\User;
@@ -65,4 +66,57 @@ test('dashboard hides recent content without the matching permissions', function
         ->assertOk()
         ->assertDontSee('Prospect Caché')
         ->assertDontSee('Projet Caché');
+});
+
+test('dashboard shows pending alerts', function () {
+    foreach (['view_dashboard', 'manage_leads', 'view_projects'] as $name) {
+        Permission::create(['name' => $name, 'guard_name' => 'web']);
+    }
+    $role = Role::create(['name' => 'Alertes', 'guard_name' => 'web']);
+    $role->givePermissionTo(['view_dashboard', 'manage_leads', 'view_projects']);
+    $user = User::factory()->create()->assignRole($role);
+
+    Lead::factory()->create(['status' => LeadStatus::Nouveau]);
+    Project::factory()->create(['is_published' => false]);
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('À traiter')
+        ->assertSee('prospect(s) nouveau(x)')
+        ->assertSee('brouillon');
+});
+
+test('dashboard hides alerts when nothing is pending', function () {
+    foreach (['view_dashboard', 'manage_leads', 'view_projects'] as $name) {
+        Permission::create(['name' => $name, 'guard_name' => 'web']);
+    }
+    $role = Role::create(['name' => 'Calme', 'guard_name' => 'web']);
+    $role->givePermissionTo(['view_dashboard', 'manage_leads', 'view_projects']);
+    $user = User::factory()->create()->assignRole($role);
+
+    Lead::factory()->create(['status' => LeadStatus::Converti]);
+    Project::factory()->create(['is_published' => true]);
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertDontSee('À traiter');
+});
+
+test('dashboard lists recent activity', function () {
+    foreach (['view_dashboard', 'view_projects'] as $name) {
+        Permission::create(['name' => $name, 'guard_name' => 'web']);
+    }
+    $role = Role::create(['name' => 'Activité', 'guard_name' => 'web']);
+    $role->givePermissionTo(['view_dashboard', 'view_projects']);
+    $user = User::factory()->create()->assignRole($role);
+
+    Project::factory()->create(['title' => 'Projet Actif Récent']);
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('Activité récente')
+        ->assertSee('Projet Actif Récent');
 });

@@ -132,3 +132,18 @@ test('logs status and assignment changes in history', function () {
     expect($actions)->toContain('status_changed')
         ->and($actions)->toContain('assigned');
 });
+
+test('paginates leads with per page setting', function () {
+    foreach (range(1, 6) as $index) {
+        Lead::factory()->create([
+            'email' => "lead{$index}@example.com",
+            'created_at' => now()->subMinutes($index - 1),
+        ]);
+    }
+
+    Livewire::actingAs(leadsManager())
+        ->test('pages::admin.leads.index')
+        ->set('perPage', 5)
+        ->assertSee('lead1@example.com')
+        ->assertDontSee('lead6@example.com');
+});

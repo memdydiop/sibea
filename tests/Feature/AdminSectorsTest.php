@@ -230,3 +230,29 @@ test('invalidates public sectors cache on toggle', function () {
 
     $this->get(route('home'))->assertDontSee('CacheTest');
 });
+
+test('filters sectors by status', function () {
+    Sector::factory()->create(['name' => 'Secteur Actif Test', 'slug' => 'secteur-actif-test', 'is_active' => true]);
+    Sector::factory()->create(['name' => 'Secteur Inactif Test', 'slug' => 'secteur-inactif-test', 'is_active' => false]);
+
+    Livewire::actingAs(sectorAdmin())
+        ->test('pages::admin.sectors.index')
+        ->set('statusFilter', 'active')
+        ->assertSee('Secteur Actif Test')
+        ->assertDontSee('Secteur Inactif Test')
+        ->set('statusFilter', 'inactive')
+        ->assertSee('Secteur Inactif Test')
+        ->assertDontSee('Secteur Actif Test');
+});
+
+test('paginates sectors with custom per page', function () {
+    foreach (range(1, 6) as $i) {
+        Sector::factory()->create(['name' => "Secteur Pagination {$i}", 'slug' => "secteur-pagination-{$i}"]);
+    }
+
+    Livewire::actingAs(sectorAdmin())
+        ->test('pages::admin.sectors.index')
+        ->set('perPage', 5)
+        ->assertSee('Secteur Pagination 1')
+        ->assertDontSee('Secteur Pagination 6');
+});

@@ -3,8 +3,13 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="theme-admin min-h-screen bg-[#f6f7fb] dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <body class="theme-admin min-h-screen bg-[#EBF3F4] dark:bg-zinc-800">
+        @php
+            $newLeadsCount = auth()->user()->can('manage_leads') ? \App\Models\Lead::where('status', \App\Enums\LeadStatus::Nouveau)->count() : 0;
+            $draftProjectsCount = auth()->user()->can('manage_projects') ? \App\Models\Project::where('is_published', false)->count() : 0;
+            $draftPagesCount = auth()->user()->can('manage_pages') ? \App\Models\Page::where('is_published', false)->count() : 0;
+        @endphp
+        <flux:sidebar sticky collapsible="mobile" class="border-e border-white/10 bg-ynex dark:border-white/10 dark:bg-ynex">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('admin.dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
@@ -19,7 +24,8 @@
             </flux:sidebar.nav>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group heading="Contenus" class="grid">
+                @canany(['manage_sectors', 'manage_expertises', 'manage_services', 'manage_projects', 'manage_testimonials', 'manage_statistics', 'manage_pages'])
+                    <flux:sidebar.group heading="Contenus" icon="squares-2x2" expandable :expanded="true" class="grid">
                     @can('manage_sectors')
                         <flux:sidebar.item icon="building-office-2" :href="route('admin.sectors')" :current="request()->routeIs('admin.sectors')" wire:navigate>
                             Secteurs
@@ -36,7 +42,7 @@
                         </flux:sidebar.item>
                     @endcan
                     @can('manage_projects')
-                        <flux:sidebar.item icon="photo" :href="route('admin.projects')" :current="request()->routeIs('admin.projects')" wire:navigate>
+                        <flux:sidebar.item icon="photo" :href="route('admin.projects')" :current="request()->routeIs('admin.projects')" wire:navigate :badge="$draftProjectsCount > 0 ? $draftProjectsCount : null" badge-color="zinc">
                             Réalisations
                         </flux:sidebar.item>
                     @endcan
@@ -51,20 +57,27 @@
                         </flux:sidebar.item>
                     @endcan
                     @can('manage_pages')
-                        <flux:sidebar.item icon="document-text" :href="route('admin.pages')" :current="request()->routeIs('admin.pages')" wire:navigate>
+                        <flux:sidebar.item icon="document-text" :href="route('admin.pages')" :current="request()->routeIs('admin.pages')" wire:navigate :badge="$draftPagesCount > 0 ? $draftPagesCount : null" badge-color="zinc">
                             Pages
                         </flux:sidebar.item>
                     @endcan
-                    @can('manage_settings')
-                        <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
-                            Paramètres du site
-                        </flux:sidebar.item>
-                    @endcan
-                    @can('manage_leads')
-                        <flux:sidebar.item icon="users" :href="route('admin.leads')" :current="request()->routeIs('admin.leads')" wire:navigate>
-                            Prospects
-                        </flux:sidebar.item>
-                    @endcan
+                </flux:sidebar.group>
+            @endcanany
+            </flux:sidebar.nav>
+
+            @can('manage_leads')
+            <flux:sidebar.nav>
+                <flux:sidebar.group heading="Prospects" icon="users" class="grid">
+                    <flux:sidebar.item icon="inbox" :href="route('admin.leads')" :current="request()->routeIs('admin.leads')" wire:navigate :badge="$newLeadsCount > 0 ? $newLeadsCount : null" badge-color="red">
+                        Prospects
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+            </flux:sidebar.nav>
+            @endcan
+
+            @canany(['manage_users', 'manage_roles', 'manage_settings'])
+            <flux:sidebar.nav>
+                <flux:sidebar.group heading="Administration" icon="cog-6-tooth" expandable :expanded="false" class="grid">
                     @can('manage_users')
                         <flux:sidebar.item icon="user-group" :href="route('admin.users')" :current="request()->routeIs('admin.users')" wire:navigate>
                             Utilisateurs
@@ -75,8 +88,14 @@
                             Rôles
                         </flux:sidebar.item>
                     @endcan
+                    @can('manage_settings')
+                        <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
+                            Paramètres du site
+                        </flux:sidebar.item>
+                    @endcan
                 </flux:sidebar.group>
             </flux:sidebar.nav>
+            @endcanany
 
             <flux:spacer />
 

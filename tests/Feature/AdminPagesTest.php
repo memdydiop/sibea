@@ -73,3 +73,28 @@ test('forbids pages admin without permission', function () {
 
     $this->actingAs($user)->get(route('admin.pages'))->assertForbidden();
 });
+
+test('filters pages by publication status', function () {
+    Page::factory()->create(['title' => 'Page Publiee Vitrine', 'is_published' => true]);
+    Page::factory()->create(['title' => 'Page Brouillon Atelier', 'is_published' => false]);
+
+    Livewire::actingAs(pagesManager())
+        ->test('pages::admin.pages.index')
+        ->set('statusFilter', 'published')
+        ->assertSee('Page Publiee Vitrine')
+        ->assertDontSee('Page Brouillon Atelier')
+        ->set('statusFilter', 'draft')
+        ->assertSee('Page Brouillon Atelier')
+        ->assertDontSee('Page Publiee Vitrine');
+});
+
+test('searches pages by title', function () {
+    Page::factory()->create(['title' => 'Mentions Legales du Site']);
+    Page::factory()->create(['title' => 'Charte Graphique Interne']);
+
+    Livewire::actingAs(pagesManager())
+        ->test('pages::admin.pages.index')
+        ->set('search', 'Mentions')
+        ->assertSee('Mentions Legales du Site')
+        ->assertDontSee('Charte Graphique Interne');
+});

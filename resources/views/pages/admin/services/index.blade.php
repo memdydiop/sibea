@@ -17,6 +17,10 @@ new #[Layout('layouts::app')] #[Title('Services')] class extends Component
 
     public string $search = '';
 
+    public string $statusFilter = '';
+
+    public int $perPage = 10;
+
     public bool $showForm = false;
 
     public ?int $editingId = null;
@@ -47,8 +51,10 @@ new #[Layout('layouts::app')] #[Title('Services')] class extends Component
         return Service::query()
             ->with('expertises')
             ->when($this->search, fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($this->search).'%']))
+            ->when($this->statusFilter === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($this->statusFilter === 'inactive', fn ($query) => $query->where('is_active', false))
             ->ordered()
-            ->paginate(10);
+            ->paginate($this->perPage);
     }
 
     #[Computed]
@@ -58,6 +64,16 @@ new #[Layout('layouts::app')] #[Title('Services')] class extends Component
     }
 
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
     {
         $this->resetPage();
     }
@@ -153,17 +169,32 @@ new #[Layout('layouts::app')] #[Title('Services')] class extends Component
 <div class="p-6">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-            <flux:heading size="xl">Services</flux:heading>
+            <flux:heading size="xl" class="mb-0!">Services</flux:heading>
             <flux:subheading>Prestations concrètes rattachées aux expertises.</flux:subheading>
         </div>
-        <flux:button variant="primary" wire:click="create" icon="plus">Nouveau service</flux:button>
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('admin.dashboard')" wire:navigate>Dashboard</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Services</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
     </div>
 
-    <div class="mb-4 max-w-sm">
-        <flux:input wire:model.live="search" type="search" placeholder="Rechercher un service…" />
-    </div>
+    <x-admin.card title="Services" :padded="false">
 
-    <flux:table :paginate="$this->services">
+        <x-slot:actions>
+            <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouveau service" tooltip="Nouveau service" />
+        </x-slot:actions>
+
+        <x-admin.toolbar search-placeholder="Rechercher un service…">
+            <x-slot:filters>
+                <flux:select wire:model.live="statusFilter" size="sm">
+                    <option value="">Tous les statuts</option>
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                </flux:select>
+            </x-slot:filters>
+        </x-admin.toolbar>
+
+        <flux:table :paginate="$this->services">
         <flux:table.columns>
             <flux:table.column>Nom</flux:table.column>
             <flux:table.column>Expertises</flux:table.column>
@@ -190,18 +221,18 @@ new #[Layout('layouts::app')] #[Title('Services')] class extends Component
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button size="sm" wire:click="toggleActive({{ $service->id }})">
-                                {{ $service->is_active ? 'Désactiver' : 'Activer' }}
-                            </flux:button>
-                            <flux:button size="sm" wire:click="edit({{ $service->id }})">Modifier</flux:button>
-                            <flux:button size="sm" variant="danger" wire:click="delete({{ $service->id }})" wire:confirm="Supprimer ce service ?">Supprimer</flux:button>
+                        <div class="flex justify-end gap-1">
+                            <flux:button size="xs" variant="filled" icon="{{ $service->is_active ? 'eye-slash' : 'eye' }}" wire:click="toggleActive({{ $service->id }})" aria-label="{{ $service->is_active ? 'Désactiver' : 'Activer' }}" tooltip="{{ $service->is_active ? 'Désactiver' : 'Activer' }}" />
+                            <flux:button size="xs" variant="filled" icon="pencil" wire:click="edit({{ $service->id }})" aria-label="Modifier" tooltip="Modifier" />
+                            <flux:button size="xs" variant="filled" color="red" icon="trash" wire:click="delete({{ $service->id }})" wire:confirm="Supprimer ce service ?" aria-label="Supprimer" tooltip="Supprimer" />
                         </div>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach
         </flux:table.rows>
     </flux:table>
+
+    </x-admin.card>
 
     <flux:modal wire:model="showForm" class="md:w-[40rem]">
         <form wire:submit="save" class="space-y-5">

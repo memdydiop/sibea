@@ -37,6 +37,9 @@
 
     --color-accroche: #9a6400;
 
+    /* Fond sidebar façon YNEX (menu dark du thème de référence). */
+    --color-ynex: #111c43;
+
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
@@ -76,8 +79,10 @@
         --color-accent-content: #f2b300;
     }
 
-    /* Administration : accent de marque (jaune/or) */
+    /* Administration : typo Montserrat et accent de marque (jaune/or) */
     .theme-admin {
+        --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+        font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
         --color-accent: #f2b300;
         --color-accent-content: #f2b300;
         --color-accent-foreground: #16181b;
@@ -95,6 +100,29 @@
     }
 }
 @layer components {
+    [data-flux-columns] {
+        @apply bg-[#EBF3F4]/70
+    }
+
+    [data-flux-columns] [data-flux-column] {
+        @apply border-none
+    }
+
+    [data-flux-column], [data-flux-cell]{
+        @apply py-1.5!
+    }
+
+    [data-flux-column]:first-child, [data-flux-cell]:first-child {
+        @apply ps-5!
+    }
+
+    [data-flux-column]:last-child, [data-flux-cell]:last-child {
+        @apply pe-5!
+    }
+
+    [data-flux-pagination] {
+        @apply px-5 pb-3
+    }
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
@@ -122,6 +150,51 @@ select:focus[data-flux-control] {
 
 [data-flux-main] {
     @apply p-0!;
+}
+
+/* Sidebar admin façon YNEX (tokens extraits du thème : fond #111c43). */
+.theme-admin [data-flux-sidebar-header] {
+    min-height: 3.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-admin [data-flux-sidebar-item] {
+    height: auto;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #a3aed1;
+}
+
+.theme-admin [data-flux-sidebar-item]:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.theme-admin [data-flux-sidebar-item][data-current],
+.theme-admin [data-flux-sidebar-item][data-current]:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+}
+
+.theme-admin [data-flux-sidebar-item] svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+/* Rubriques façon YNEX : .6rem, capitales espacées, atténuées. */
+.theme-admin [data-flux-sidebar-group] > div:first-child,
+.theme-admin [class*="disclosure-button"] > span {
+    text-transform: uppercase;
+    letter-spacing: 0.065rem;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #a3aed1;
+    opacity: 0.5;
 }
 @keyframes reveal-up {
     from {

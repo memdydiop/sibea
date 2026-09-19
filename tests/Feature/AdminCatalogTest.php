@@ -158,3 +158,43 @@ test('forbids expertises admin without permission', function () {
 
     $this->actingAs($user)->get(route('admin.expertises'))->assertForbidden();
 });
+
+test('filters expertises by status', function () {
+    Expertise::factory()->create(['name' => 'Expertise Active Test', 'slug' => 'expertise-active-test', 'is_active' => true]);
+    Expertise::factory()->create(['name' => 'Expertise Inactive Test', 'slug' => 'expertise-inactive-test', 'is_active' => false]);
+
+    Livewire::actingAs(catalogManager(['manage_expertises']))
+        ->test('pages::admin.expertises.index')
+        ->set('statusFilter', 'active')
+        ->assertSee('Expertise Active Test')
+        ->assertDontSee('Expertise Inactive Test')
+        ->set('statusFilter', 'inactive')
+        ->assertSee('Expertise Inactive Test')
+        ->assertDontSee('Expertise Active Test');
+});
+
+test('paginates expertises with custom per page', function () {
+    foreach (range(1, 6) as $i) {
+        Expertise::factory()->create(['name' => "Expertise Pagination {$i}", 'slug' => "expertise-pagination-{$i}"]);
+    }
+
+    Livewire::actingAs(catalogManager(['manage_expertises']))
+        ->test('pages::admin.expertises.index')
+        ->set('perPage', 5)
+        ->assertSee('Expertise Pagination 1')
+        ->assertDontSee('Expertise Pagination 6');
+});
+
+test('filters services by status', function () {
+    Service::factory()->create(['name' => 'Service Actif Test', 'slug' => 'service-actif-test', 'is_active' => true]);
+    Service::factory()->create(['name' => 'Service Inactif Test', 'slug' => 'service-inactif-test', 'is_active' => false]);
+
+    Livewire::actingAs(catalogManager(['manage_services']))
+        ->test('pages::admin.services.index')
+        ->set('statusFilter', 'active')
+        ->assertSee('Service Actif Test')
+        ->assertDontSee('Service Inactif Test')
+        ->set('statusFilter', 'inactive')
+        ->assertSee('Service Inactif Test')
+        ->assertDontSee('Service Actif Test');
+});

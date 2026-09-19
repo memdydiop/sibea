@@ -21,6 +21,10 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
 
     public string $search = '';
 
+    public string $statusFilter = '';
+
+    public int $perPage = 10;
+
     public bool $showForm = false;
 
     public string $tab = 'contenu';
@@ -68,8 +72,10 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         return Expertise::query()
             ->with('sectors')
             ->when($this->search, fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($this->search).'%']))
+            ->when($this->statusFilter === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($this->statusFilter === 'inactive', fn ($query) => $query->where('is_active', false))
             ->ordered()
-            ->paginate(10);
+            ->paginate($this->perPage);
     }
 
     #[Computed]
@@ -91,6 +97,16 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
     }
 
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
     {
         $this->resetPage();
     }
@@ -312,17 +328,32 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
 <div class="p-6">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-            <flux:heading size="xl">Expertises</flux:heading>
+            <flux:heading size="xl" class="mb-0!">Expertises</flux:heading>
             <flux:subheading>Savoir-faire, visuels et associations secteurs / services.</flux:subheading>
         </div>
-        <flux:button variant="primary" wire:click="create" icon="plus">Nouvelle expertise</flux:button>
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('admin.dashboard')" wire:navigate>Dashboard</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Expertises</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
     </div>
 
-    <div class="mb-4 max-w-sm">
-        <flux:input wire:model.live="search" type="search" placeholder="Rechercher une expertise…" />
-    </div>
+    <x-admin.card title="Expertises" :padded="false">
 
-    <flux:table :paginate="$this->expertises">
+        <x-slot:actions>
+            <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouvelle expertise" tooltip="Nouvelle expertise" />
+        </x-slot:actions>
+
+        <x-admin.toolbar search-placeholder="Rechercher une expertise…">
+            <x-slot:filters>
+                <flux:select wire:model.live="statusFilter" size="sm">
+                    <option value="">Tous les statuts</option>
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                </flux:select>
+            </x-slot:filters>
+        </x-admin.toolbar>
+
+        <flux:table :paginate="$this->expertises">
         <flux:table.columns>
             <flux:table.column>Visuel</flux:table.column>
             <flux:table.column>Nom</flux:table.column>
@@ -359,18 +390,18 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button size="sm" wire:click="toggleActive({{ $expertise->id }})">
-                                {{ $expertise->is_active ? 'Désactiver' : 'Activer' }}
-                            </flux:button>
-                            <flux:button size="sm" wire:click="edit({{ $expertise->id }})">Modifier</flux:button>
-                            <flux:button size="sm" variant="danger" wire:click="delete({{ $expertise->id }})" wire:confirm="Supprimer cette expertise ?">Supprimer</flux:button>
+                        <div class="flex justify-end gap-1">
+                            <flux:button size="xs" variant="filled" icon="{{ $expertise->is_active ? 'eye-slash' : 'eye' }}" wire:click="toggleActive({{ $expertise->id }})" aria-label="{{ $expertise->is_active ? 'Désactiver' : 'Activer' }}" tooltip="{{ $expertise->is_active ? 'Désactiver' : 'Activer' }}" />
+                            <flux:button size="xs" variant="filled" icon="pencil" wire:click="edit({{ $expertise->id }})" aria-label="Modifier" tooltip="Modifier" />
+                            <flux:button size="xs" variant="filled" color="red" icon="trash" wire:click="delete({{ $expertise->id }})" wire:confirm="Supprimer cette expertise ?" aria-label="Supprimer" tooltip="Supprimer" />
                         </div>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach
         </flux:table.rows>
     </flux:table>
+
+    </x-admin.card>
 
     <flux:modal wire:model="showForm" class="md:w-[48rem]">
         <form wire:submit="save" class="space-y-5" wire:key="expertise-form-{{ $tab }}" x-data="{ tab: @js($tab) }">

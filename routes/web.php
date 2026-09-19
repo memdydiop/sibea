@@ -52,6 +52,9 @@ Route::get('/sitemap.xml', function () {
     return $sitemap->toResponse(request());
 })->name('sitemap');
 
+// Invitation : définition du mot de passe (lien signé, 7 jours)
+Route::livewire('/invitation/{user}', 'pages::invitation')->middleware('signed')->name('invitation.accept');
+
 // Administration (V1)
 Route::middleware(['auth', 'password.changed'])->prefix('admin')->group(function () {
     Route::livewire('/', 'pages::admin.dashboard')->name('admin.dashboard');

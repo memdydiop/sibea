@@ -13,6 +13,12 @@ new #[Layout('layouts::app')] #[Title('Chiffres clés')] class extends Component
 {
     use WithPagination;
 
+    public string $search = '';
+
+    public string $statusFilter = '';
+
+    public int $perPage = 10;
+
     public bool $showForm = false;
 
     public ?int $editingId = null;
@@ -35,7 +41,29 @@ new #[Layout('layouts::app')] #[Title('Chiffres clés')] class extends Component
     #[Computed]
     public function statistics()
     {
-        return Statistic::query()->ordered()->paginate(10);
+        return Statistic::query()
+            ->when($this->search, fn ($query) => $query->where(fn ($subQuery) => $subQuery
+                ->whereRaw('LOWER(label) LIKE ?', ['%'.mb_strtolower($this->search).'%'])
+                ->orWhereRaw('LOWER(key) LIKE ?', ['%'.mb_strtolower($this->search).'%'])))
+            ->when($this->statusFilter === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($this->statusFilter === 'inactive', fn ($query) => $query->where('is_active', false))
+            ->ordered()
+            ->paginate($this->perPage);
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
     }
 
     public function updatedLabel(): void
@@ -109,13 +137,32 @@ new #[Layout('layouts::app')] #[Title('Chiffres clés')] class extends Component
 <div class="p-6">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-            <flux:heading size="xl">Chiffres clés</flux:heading>
+            <flux:heading size="xl" class="mb-0!">Chiffres clés</flux:heading>
             <flux:subheading>Indicateurs affichés dans la bande de statistiques de l’accueil.</flux:subheading>
         </div>
-        <flux:button variant="primary" wire:click="create" icon="plus">Nouveau chiffre</flux:button>
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('admin.dashboard')" wire:navigate>Dashboard</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Chiffres clés</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
     </div>
 
-    <flux:table :paginate="$this->statistics">
+    <x-admin.card title="Chiffres clés" :padded="false">
+
+        <x-slot:actions>
+            <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouveau chiffre" tooltip="Nouveau chiffre" />
+        </x-slot:actions>
+
+        <x-admin.toolbar search-placeholder="Rechercher un chiffre clé…">
+            <x-slot:filters>
+                <flux:select wire:model.live="statusFilter" size="sm">
+                    <option value="">Tous les statuts</option>
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                </flux:select>
+            </x-slot:filters>
+        </x-admin.toolbar>
+
+        <flux:table :paginate="$this->statistics">
         <flux:table.columns>
             <flux:table.column>Valeur</flux:table.column>
             <flux:table.column>Libellé</flux:table.column>
@@ -142,18 +189,25 @@ new #[Layout('layouts::app')] #[Title('Chiffres clés')] class extends Component
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button size="sm" wire:click="toggleActive({{ $statistic->id }})">
-                                {{ $statistic->is_active ? 'Désactiver' : 'Activer' }}
-                            </flux:button>
-                            <flux:button size="sm" wire:click="edit({{ $statistic->id }})">Modifier</flux:button>
-                            <flux:button size="sm" variant="danger" wire:click="delete({{ $statistic->id }})" wire:confirm="Supprimer ce chiffre clé ?">Supprimer</flux:button>
+                        <div class="flex justify-end gap-1">
+                            <flux:button size="xs" variant="filled"
+                                icon="{{ $statistic->is_active ? 'eye-slash' : 'eye' }}"
+                                wire:click="toggleActive({{ $statistic->id }})"
+                                aria-label="{{ $statistic->is_active ? 'Désactiver' : 'Activer' }}"
+                                tooltip="{{ $statistic->is_active ? 'Désactiver' : 'Activer' }}" />
+                            <flux:button size="xs" variant="filled" icon="pencil"
+                                wire:click="edit({{ $statistic->id }})" aria-label="Modifier" tooltip="Modifier" />
+                            <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                wire:click="delete({{ $statistic->id }})" wire:confirm="Supprimer ce chiffre clé ?"
+                                aria-label="Supprimer" tooltip="Supprimer" />
                         </div>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach
         </flux:table.rows>
-    </flux:table>
+        </flux:table>
+
+    </x-admin.card>
 
     <flux:modal wire:model="showForm" class="md:w-[36rem]">
         <form wire:submit="save" class="space-y-5">

@@ -12,11 +12,14 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
-new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
-{
+new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
     use AddsMediaFromUploads, WithFileUploads, WithPagination;
 
     public string $search = '';
+
+    public string $statusFilter = '';
+
+    public int $perPage = 10;
 
     public bool $showForm = false;
 
@@ -69,9 +72,11 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
     public function sectors()
     {
         return Sector::query()
-            ->when($this->search, fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($this->search).'%']))
+            ->when($this->search, fn($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%' . mb_strtolower($this->search) . '%']))
+            ->when($this->statusFilter === 'active', fn($query) => $query->where('is_active', true))
+            ->when($this->statusFilter === 'inactive', fn($query) => $query->where('is_active', false))
             ->ordered()
-            ->paginate(10);
+            ->paginate($this->perPage);
     }
 
     #[Computed]
@@ -85,15 +90,23 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
         $this->resetPage();
     }
 
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedName(): void
     {
         $isAutomaticSlug = $this->editingId === null;
 
-        if (! $isAutomaticSlug) {
+        if (!$isAutomaticSlug) {
             $sector = Sector::find($this->editingId);
-            $isAutomaticSlug = $sector !== null
-                && $this->slug === $sector->slug
-                && $sector->slug === Str::slug($sector->name);
+            $isAutomaticSlug = $sector !== null && $this->slug === $sector->slug && $sector->slug === Str::slug($sector->name);
         }
 
         if ($isAutomaticSlug) {
@@ -253,7 +266,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
     {
         $sector = Sector::findOrFail($id);
         $this->authorize('update', $sector);
-        $sector->update(['is_active' => ! $sector->is_active]);
+        $sector->update(['is_active' => !$sector->is_active]);
         Sector::flushActiveListCache();
     }
 
@@ -267,12 +280,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
 
     private function resetForm(): void
     {
-        $this->reset([
-            'editingId', 'name', 'slug', 'short_description', 'description',
-            'is_active', 'is_locked', 'sort_order',
-            'hero_title', 'hero_description', 'hero_cta_label', 'heroImage',
-            'intro_title', 'intro_text', 'cards', 'figures', 'cta_title', 'cta_text', 'cta_label',
-        ]);
+        $this->reset(['editingId', 'name', 'slug', 'short_description', 'description', 'is_active', 'is_locked', 'sort_order', 'hero_title', 'hero_description', 'hero_cta_label', 'heroImage', 'intro_title', 'intro_text', 'cards', 'figures', 'cta_title', 'cta_text', 'cta_label']);
 
         $this->is_active = true;
         $this->is_locked = false;
@@ -296,7 +304,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
 
                 return $row;
             })
-            ->filter(fn ($row) => implode('', $row) !== '')
+            ->filter(fn($row) => implode('', $row) !== '')
             ->values()
             ->all();
     }
@@ -308,7 +316,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
     {
         $target = $direction === 'up' ? $index - 1 : $index + 1;
 
-        if (! isset($items[$index]) || ! isset($items[$target])) {
+        if (!isset($items[$index]) || !isset($items[$target])) {
             return;
         }
 
@@ -321,80 +329,101 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
 <div class="p-6">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-            <flux:heading size="xl">Secteurs d’activité</flux:heading>
+            <flux:heading size="xl" class="mb-0!">Secteurs d’activité</flux:heading>
             <flux:subheading>Identité, hero et contenu des pages sectorielles, au même endroit.</flux:subheading>
         </div>
-        <flux:button variant="primary" wire:click="create" icon="plus">Nouveau secteur</flux:button>
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('admin.dashboard')" wire:navigate>Dashboard</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Secteurs d’activité</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
     </div>
 
-    <div class="mb-4 max-w-sm">
-        <flux:input wire:model.live="search" type="search" placeholder="Rechercher un secteur…" />
-    </div>
+    <x-admin.card title="Secteurs" :padded="false">
 
-    <flux:table :paginate="$this->sectors">
+        <x-slot:actions>
+            <flux:button variant="primary" size="sm" wire:click="create" icon="plus"/>
+        </x-slot:actions>
+
+        <x-admin.toolbar search-placeholder="Rechercher un secteur…">
+            <x-slot:filters>
+                <flux:select wire:model.live="statusFilter" size="sm">
+                    <option value="">Tous les statuts</option>
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                </flux:select>
+            </x-slot:filters>
+        </x-admin.toolbar>
+
+        <flux:table :paginate="$this->sectors">
         <flux:table.columns>
             <flux:table.column>Nom</flux:table.column>
-            <flux:table.column>Slug</flux:table.column>
-            <flux:table.column>Hero</flux:table.column>
-            <flux:table.column>Statut</flux:table.column>
-            <flux:table.column>Ordre</flux:table.column>
-            <flux:table.column align="end">Actions</flux:table.column>
-        </flux:table.columns>
+                <flux:table.column>Slug</flux:table.column>
+                <flux:table.column>Hero</flux:table.column>
+                <flux:table.column>Statut</flux:table.column>
+                <flux:table.column>Ordre</flux:table.column>
+                <flux:table.column align="end">Actions</flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @foreach($this->sectors as $sector)
-                <flux:table.row wire:key="sector-row-{{ $sector->id }}">
-                    <flux:table.cell variant="strong">{{ $sector->name }}</flux:table.cell>
-                    <flux:table.cell>{{ $sector->slug }}</flux:table.cell>
-                    <flux:table.cell>
-                        @if($hero = $sector->getFirstMediaUrl('hero', 'thumb'))
-                            <img src="{{ $hero }}" alt="" class="h-10 w-16 rounded object-cover">
-                        @else
-                            <span class="text-xs text-zinc-400">Aucune</span>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex gap-1">
-                            @if($sector->is_active)
-                                <flux:badge size="sm" color="green">Actif</flux:badge>
+            <flux:table.rows>
+                @foreach ($this->sectors as $sector)
+                    <flux:table.row wire:key="sector-row-{{ $sector->id }}">
+                        <flux:table.cell variant="strong">{{ $sector->name }}</flux:table.cell>
+                        <flux:table.cell>{{ $sector->slug }}</flux:table.cell>
+                        <flux:table.cell>
+                            @if ($hero = $sector->getFirstMediaUrl('hero', 'thumb'))
+                                <img src="{{ $hero }}" alt="" class="h-10 w-16 rounded object-cover">
                             @else
-                                <flux:badge size="sm" color="zinc">Inactif</flux:badge>
+                                <span class="text-xs text-zinc-400">Aucune</span>
                             @endif
-                            @if($sector->is_locked)
-                                <flux:badge size="sm" color="zinc">Verrouillé</flux:badge>
-                            @endif
-                        </div>
-                    </flux:table.cell>
-                    <flux:table.cell>{{ $sector->sort_order }}</flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button size="sm" wire:click="toggleActive({{ $sector->id }})">
-                                {{ $sector->is_active ? 'Désactiver' : 'Activer' }}
-                            </flux:button>
-                            <flux:button size="sm" wire:click="edit({{ $sector->id }})">Modifier</flux:button>
-                            <flux:button size="sm" variant="danger" wire:click="delete({{ $sector->id }})" wire:confirm="Supprimer ce secteur ?">Supprimer</flux:button>
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforeach
-        </flux:table.rows>
-    </flux:table>
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex gap-1">
+                                @if ($sector->is_active)
+                                    <flux:badge size="sm" color="green">Actif</flux:badge>
+                                @else
+                                    <flux:badge size="sm" color="zinc">Inactif</flux:badge>
+                                @endif
+                                @if ($sector->is_locked)
+                                    <flux:badge size="sm" color="zinc">Verrouillé</flux:badge>
+                                @endif
+                            </div>
+                        </flux:table.cell>
+                        <flux:table.cell>{{ $sector->sort_order }}</flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex justify-end gap-1">
+                                <flux:button size="xs" variant="filled"
+                                    icon="{{ $sector->is_active ? 'eye-slash' : 'eye' }}"
+                                    wire:click="toggleActive({{ $sector->id }})"
+                                    aria-label="{{ $sector->is_active ? 'Désactiver' : 'Activer' }}"
+                                    tooltip="{{ $sector->is_active ? 'Désactiver' : 'Activer' }}" />
+                                <flux:button size="xs" variant="filled" icon="pencil"
+                                    wire:click="edit({{ $sector->id }})" aria-label="Modifier" tooltip="Modifier" />
+                                <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                    wire:click="delete({{ $sector->id }})" wire:confirm="Supprimer ce secteur ?"
+                                    aria-label="Supprimer" tooltip="Supprimer" />
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+        </flux:table>
+
+    </x-admin.card>
 
     <flux:modal wire:model="showForm" class="md:w-[52rem]">
         <form wire:submit="save" class="space-y-5" x-data="{ tab: 'identite' }">
             <div>
-                <flux:heading size="lg">{{ $editingId ? 'Modifier le secteur' : 'Nouveau secteur' }}</flux:heading>
+                <flux:heading size="lg">{{ $editingId ? 'Modifier le secteur' : 'Nouveau secteur' }}
+                </flux:heading>
                 <flux:subheading>Les sections vides ne sont pas affichées sur le site public.</flux:subheading>
             </div>
 
             <div class="flex flex-wrap gap-2">
-                @foreach(['identite' => 'Identité', 'hero' => 'Hero', 'contenu' => 'Contenu de page'] as $key => $label)
-                    <button
-                        type="button"
-                        x-on:click="tab = '{{ $key }}'"
-                        x-bind:class="tab === '{{ $key }}' ? 'border-cuivre bg-cuivre text-nuit' : 'border-zinc-200 text-zinc-600 hover:border-cuivre dark:border-zinc-700 dark:text-zinc-300'"
-                        class="rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors"
-                    >{{ $label }}</button>
+                @foreach (['identite' => 'Identité', 'hero' => 'Hero', 'contenu' => 'Contenu de page'] as $key => $label)
+                    <button type="button" x-on:click="tab = '{{ $key }}'"
+                        x-bind:class="tab === '{{ $key }}' ? 'border-cuivre bg-cuivre text-nuit' :
+                            'border-zinc-200 text-zinc-600 hover:border-cuivre dark:border-zinc-700 dark:text-zinc-300'"
+                        class="rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors">{{ $label }}</button>
                 @endforeach
             </div>
 
@@ -414,7 +443,8 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
                 <flux:field>
                     <flux:label>Description complète (SEO)</flux:label>
                     <flux:textarea wire:model="description" rows="4" />
-                    <flux:description>Utilisée comme meta description de la page secteur (moteurs de recherche). N’apparaît pas dans le corps de page.</flux:description>
+                    <flux:description>Utilisée comme meta description de la page secteur (moteurs de recherche).
+                        N’apparaît pas dans le corps de page.</flux:description>
                     <flux:error name="description" />
                 </flux:field>
 
@@ -440,17 +470,23 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
             <div x-show="tab === 'hero'" class="space-y-4">
                 <div class="grid gap-4 sm:grid-cols-[16rem_1fr]">
                     <div class="space-y-2">
-                        @if($heroImage)
-                            <img src="{{ $heroImage->temporaryUrl() }}" alt="" class="h-32 w-full rounded object-cover">
+                        @if ($heroImage)
+                            <img src="{{ $heroImage->temporaryUrl() }}" alt=""
+                                class="h-32 w-full rounded object-cover">
                         @elseif($this->editedSector?->getFirstMediaUrl('hero', 'thumb'))
-                            <img src="{{ $this->editedSector->getFirstMediaUrl('hero', 'thumb') }}" alt="" class="h-32 w-full rounded object-cover">
+                            <img src="{{ $this->editedSector->getFirstMediaUrl('hero', 'thumb') }}" alt=""
+                                class="h-32 w-full rounded object-cover">
                         @else
-                            <div class="flex h-32 w-full items-center justify-center rounded bg-nuit text-xs text-white/60">Aucune image</div>
+                            <div
+                                class="flex h-32 w-full items-center justify-center rounded bg-nuit text-xs text-white/60">
+                                Aucune image</div>
                         @endif
-                        <input type="file" wire:model="heroImage" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
+                        <input type="file" wire:model="heroImage" accept="image/*"
+                            class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
                         <flux:error name="heroImage" />
-                        @if($editingId)
-                            <flux:button size="xs" variant="danger" wire:click="removeHeroImage">Retirer l’image</flux:button>
+                        @if ($editingId)
+                            <flux:button size="xs" variant="danger" wire:click="removeHeroImage">Retirer l’image
+                            </flux:button>
                         @endif
                     </div>
 
@@ -483,7 +519,8 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
                     </flux:field>
                     <flux:field>
                         <flux:label>Libellé du bouton final</flux:label>
-                        <flux:input wire:model="cta_label" type="text" placeholder="Ex. Solliciter une étude technique" />
+                        <flux:input wire:model="cta_label" type="text"
+                            placeholder="Ex. Solliciter une étude technique" />
                         <flux:error name="cta_label" />
                     </flux:field>
                 </div>
@@ -497,16 +534,21 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <flux:label>Domaines d’expertise (cartes)</flux:label>
-                        <flux:button size="sm" icon="plus" wire:click="addCard">Ajouter une carte</flux:button>
+                        <flux:button size="sm" icon="plus" wire:click="addCard">Ajouter une carte
+                        </flux:button>
                     </div>
-                    @foreach($cards as $index => $card)
-                        <div wire:key="card-{{ $index }}" class="grid gap-3 rounded-lg border border-zinc-200 p-3 sm:grid-cols-[1fr_2fr_auto] dark:border-zinc-700">
+                    @foreach ($cards as $index => $card)
+                        <div wire:key="card-{{ $index }}"
+                            class="grid gap-3 rounded-lg border border-zinc-200 p-3 sm:grid-cols-[1fr_2fr_auto] dark:border-zinc-700">
                             <flux:input wire:model="cards.{{ $index }}.title" placeholder="Titre (ex. VRD)" />
                             <flux:input wire:model="cards.{{ $index }}.text" placeholder="Description" />
                             <div class="flex items-center gap-1">
-                                <flux:button size="xs" icon="chevron-up" wire:click="moveCard({{ $index }}, 'up')" aria-label="Monter" />
-                                <flux:button size="xs" icon="chevron-down" wire:click="moveCard({{ $index }}, 'down')" aria-label="Descendre" />
-                                <flux:button size="xs" variant="danger" icon="trash" wire:click="removeCard({{ $index }})" aria-label="Supprimer" />
+                                <flux:button size="xs" icon="chevron-up"
+                                    wire:click="moveCard({{ $index }}, 'up')" aria-label="Monter" />
+                                <flux:button size="xs" icon="chevron-down"
+                                    wire:click="moveCard({{ $index }}, 'down')" aria-label="Descendre" />
+                                <flux:button size="xs" variant="danger" icon="trash"
+                                    wire:click="removeCard({{ $index }})" aria-label="Supprimer" />
                             </div>
                         </div>
                     @endforeach
@@ -516,16 +558,23 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <flux:label>Chiffres clés (max 4, laisser vide si non disponible)</flux:label>
-                        <flux:button size="sm" icon="plus" wire:click="addFigure">Ajouter un chiffre</flux:button>
+                        <flux:button size="sm" icon="plus" wire:click="addFigure">Ajouter un chiffre
+                        </flux:button>
                     </div>
-                    @foreach($figures as $index => $figure)
-                        <div wire:key="figure-{{ $index }}" class="grid gap-3 rounded-lg border border-zinc-200 p-3 sm:grid-cols-[1fr_2fr_auto] dark:border-zinc-700">
-                            <flux:input wire:model="figures.{{ $index }}.value" placeholder="Valeur (ex. 120)" />
-                            <flux:input wire:model="figures.{{ $index }}.label" placeholder="Libellé (ex. km de voies aménagées)" />
+                    @foreach ($figures as $index => $figure)
+                        <div wire:key="figure-{{ $index }}"
+                            class="grid gap-3 rounded-lg border border-zinc-200 p-3 sm:grid-cols-[1fr_2fr_auto] dark:border-zinc-700">
+                            <flux:input wire:model="figures.{{ $index }}.value"
+                                placeholder="Valeur (ex. 120)" />
+                            <flux:input wire:model="figures.{{ $index }}.label"
+                                placeholder="Libellé (ex. km de voies aménagées)" />
                             <div class="flex items-center gap-1">
-                                <flux:button size="xs" icon="chevron-up" wire:click="moveFigure({{ $index }}, 'up')" aria-label="Monter" />
-                                <flux:button size="xs" icon="chevron-down" wire:click="moveFigure({{ $index }}, 'down')" aria-label="Descendre" />
-                                <flux:button size="xs" variant="danger" icon="trash" wire:click="removeFigure({{ $index }})" aria-label="Supprimer" />
+                                <flux:button size="xs" icon="chevron-up"
+                                    wire:click="moveFigure({{ $index }}, 'up')" aria-label="Monter" />
+                                <flux:button size="xs" icon="chevron-down"
+                                    wire:click="moveFigure({{ $index }}, 'down')" aria-label="Descendre" />
+                                <flux:button size="xs" variant="danger" icon="trash"
+                                    wire:click="removeFigure({{ $index }})" aria-label="Supprimer" />
                             </div>
                         </div>
                     @endforeach
@@ -553,4 +602,5 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component
             </div>
         </form>
     </flux:modal>
+
 </div>

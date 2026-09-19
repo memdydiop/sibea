@@ -15,6 +15,8 @@ new #[Layout('layouts::app')] #[Title('Rôles')] class extends Component
 
     public string $search = '';
 
+    public int $perPage = 15;
+
     public bool $showForm = false;
 
     public ?int $editingId = null;
@@ -36,7 +38,7 @@ new #[Layout('layouts::app')] #[Title('Rôles')] class extends Component
             ->withCount(['permissions', 'users'])
             ->when($this->search, fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($this->search).'%']))
             ->orderBy('name')
-            ->paginate(15);
+            ->paginate($this->perPage);
     }
 
     #[Computed]
@@ -46,6 +48,11 @@ new #[Layout('layouts::app')] #[Title('Rôles')] class extends Component
     }
 
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
     {
         $this->resetPage();
     }
@@ -102,40 +109,52 @@ new #[Layout('layouts::app')] #[Title('Rôles')] class extends Component
 <div class="p-6">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-            <flux:heading size="xl">Rôles</flux:heading>
+            <flux:heading size="xl" class="mb-0!">Rôles</flux:heading>
             <flux:subheading>Rôles d’accès et leurs permissions.</flux:subheading>
         </div>
-        <flux:button variant="primary" wire:click="create" icon="plus">Nouveau rôle</flux:button>
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('admin.dashboard')" wire:navigate>Dashboard</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Rôles</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
     </div>
 
-    <div class="mb-4 max-w-sm">
-        <flux:input wire:model.live="search" type="search" placeholder="Rechercher un rôle…" />
-    </div>
+    <x-admin.card title="Rôles" :padded="false">
 
-    <flux:table :paginate="$this->roles">
+        <x-slot:actions>
+            <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouveau rôle" tooltip="Nouveau rôle" />
+        </x-slot:actions>
+
+        <x-admin.toolbar search-placeholder="Rechercher un rôle…" />
+
+        <flux:table :paginate="$this->roles">
         <flux:table.columns>
             <flux:table.column>Nom</flux:table.column>
-            <flux:table.column>Permissions</flux:table.column>
-            <flux:table.column>Utilisateurs</flux:table.column>
-            <flux:table.column align="end">Actions</flux:table.column>
-        </flux:table.columns>
+                <flux:table.column>Permissions</flux:table.column>
+                <flux:table.column>Utilisateurs</flux:table.column>
+                <flux:table.column align="end">Actions</flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @foreach($this->roles as $role)
-                <flux:table.row wire:key="role-row-{{ $role->id }}">
-                    <flux:table.cell variant="strong">{{ $role->name }}</flux:table.cell>
-                    <flux:table.cell>{{ $role->permissions_count }}</flux:table.cell>
-                    <flux:table.cell>{{ $role->users_count }}</flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button size="sm" wire:click="edit({{ $role->id }})">Modifier</flux:button>
-                            <flux:button size="sm" variant="danger" wire:click="delete({{ $role->id }})" wire:confirm="Supprimer ce rôle ?">Supprimer</flux:button>
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforeach
-        </flux:table.rows>
-    </flux:table>
+            <flux:table.rows>
+                @foreach ($this->roles as $role)
+                    <flux:table.row wire:key="role-row-{{ $role->id }}">
+                        <flux:table.cell variant="strong">{{ $role->name }}</flux:table.cell>
+                        <flux:table.cell>{{ $role->permissions_count }}</flux:table.cell>
+                        <flux:table.cell>{{ $role->users_count }}</flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex justify-end gap-1">
+                                <flux:button size="xs" variant="filled" icon="pencil"
+                                    wire:click="edit({{ $role->id }})" aria-label="Modifier" tooltip="Modifier" />
+                                <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                    wire:click="delete({{ $role->id }})" wire:confirm="Supprimer ce rôle ?"
+                                    aria-label="Supprimer" tooltip="Supprimer" />
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+        </flux:table>
+
+    </x-admin.card>
 
     <flux:modal wire:model="showForm" class="md:w-[32rem]">
         <form wire:submit="save" class="space-y-5">

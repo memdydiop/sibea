@@ -24,6 +24,8 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 
     public ?int $sectorFilter = null;
 
+    public int $perPage = 15;
+
     public bool $showForm = false;
 
     public bool $showCreate = false;
@@ -86,7 +88,7 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
             ->when($this->statusFilter, fn ($query) => $query->where('status', $this->statusFilter))
             ->when($this->sectorFilter, fn ($query) => $query->where('sector_id', $this->sectorFilter))
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage);
     }
 
     public function updatedSearch(): void
@@ -100,6 +102,11 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     }
 
     public function updatedSectorFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
     {
         $this->resetPage();
     }
@@ -237,32 +244,40 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 <div class="p-6">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-            <flux:heading size="xl">Prospects</flux:heading>
+            <flux:heading size="xl" class="mb-0!">Prospects</flux:heading>
             <flux:subheading>Demandes reçues depuis le site public.</flux:subheading>
         </div>
-        <div class="flex gap-2">
-            <flux:button variant="primary" wire:click="create" icon="plus">Nouveau prospect</flux:button>
-            <flux:button variant="ghost" wire:click="purge" wire:confirm="Purger les prospects de plus de 3 ans ?">Purger +3 ans</flux:button>
-        </div>
+        <flux:breadcrumbs>
+            <flux:breadcrumbs.item :href="route('admin.dashboard')" wire:navigate>Dashboard</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Prospects</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
     </div>
 
-    <div class="grid sm:grid-cols-3 gap-3 mb-4">
-        <flux:input wire:model.live="search" type="search" placeholder="Nom ou email…" />
-        <flux:select wire:model.live="statusFilter">
-            <option value="">Tous les statuts</option>
-            @foreach(LeadStatus::cases() as $case)
-                <option value="{{ $case->value }}">{{ $case->label() }}</option>
-            @endforeach
-        </flux:select>
-        <flux:select wire:model.live="sectorFilter">
-            <option value="">Tous les secteurs</option>
-            @foreach($this->sectors as $sector)
-                <option value="{{ $sector->id }}">{{ $sector->name }}</option>
-            @endforeach
-        </flux:select>
-    </div>
+    <x-admin.card title="Prospects" :padded="false">
 
-    <flux:table :paginate="$this->leads">
+        <x-slot:actions>
+            <flux:button variant="ghost" size="sm" wire:click="purge" wire:confirm="Purger les prospects de plus de 3 ans ?" aria-label="Purger les prospects de plus de 3 ans" tooltip="Purger les prospects de plus de 3 ans">Purger +3 ans</flux:button>
+            <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouveau prospect" tooltip="Nouveau prospect" />
+        </x-slot:actions>
+
+        <x-admin.toolbar search-placeholder="Nom ou email…">
+            <x-slot:filters>
+                <flux:select wire:model.live="statusFilter" size="sm">
+                    <option value="">Tous les statuts</option>
+                    @foreach(LeadStatus::cases() as $case)
+                        <option value="{{ $case->value }}">{{ $case->label() }}</option>
+                    @endforeach
+                </flux:select>
+                <flux:select wire:model.live="sectorFilter" size="sm">
+                    <option value="">Tous les secteurs</option>
+                    @foreach($this->sectors as $sector)
+                        <option value="{{ $sector->id }}">{{ $sector->name }}</option>
+                    @endforeach
+                </flux:select>
+            </x-slot:filters>
+        </x-admin.toolbar>
+
+        <flux:table :paginate="$this->leads">
         <flux:table.columns>
             <flux:table.column>Nom</flux:table.column>
             <flux:table.column>Email</flux:table.column>
@@ -287,15 +302,17 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                     </flux:table.cell>
                     <flux:table.cell>{{ $lead->assignedTo?->name ?? '—' }}</flux:table.cell>
                     <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button size="sm" wire:click="edit({{ $lead->id }})">Traiter</flux:button>
-                            <flux:button size="sm" variant="danger" wire:click="delete({{ $lead->id }})" wire:confirm="Supprimer ce prospect ?">Supprimer</flux:button>
+                        <div class="flex justify-end gap-1">
+                            <flux:button size="xs" variant="filled" icon="pencil" wire:click="edit({{ $lead->id }})" aria-label="Modifier" tooltip="Modifier" />
+                            <flux:button size="xs" variant="filled" color="red" icon="trash" wire:click="delete({{ $lead->id }})" wire:confirm="Supprimer ce prospect ?" aria-label="Supprimer" tooltip="Supprimer" />
                         </div>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach
         </flux:table.rows>
     </flux:table>
+
+    </x-admin.card>
 
     <flux:modal wire:model="showForm" class="md:w-[32rem]">
         <form wire:submit="save" class="space-y-5">
