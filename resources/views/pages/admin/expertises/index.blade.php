@@ -55,11 +55,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
 
     public $cover = null;
 
-    public $icon = null;
-
     public ?string $coverPreview = null;
-
-    public ?string $iconPreview = null;
 
     public function mount(): void
     {
@@ -151,8 +147,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         $this->sector_ids = $expertise->sectors->pluck('id')->all();
         $this->service_ids = $expertise->services->pluck('id')->all();
         $this->coverPreview = $expertise->getFirstMediaUrl('cover') ?: null;
-        $this->iconPreview = $expertise->getFirstMediaUrl('icon') ?: null;
-        $this->reset(['cover', 'icon']);
+        $this->reset(['cover']);
         $this->showForm = true;
     }
 
@@ -167,7 +162,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         $data = $validated;
         $data['benefits'] = $this->linesToArray($validated['benefits_text'] ?? null) ?: null;
         $data['process_steps'] = $this->linesToArray($validated['process_text'] ?? null) ?: null;
-        unset($data['benefits_text'], $data['process_text'], $data['cover'], $data['icon'], $data['sector_ids'], $data['service_ids']);
+        unset($data['benefits_text'], $data['process_text'], $data['cover'], $data['sector_ids'], $data['service_ids']);
 
         if ($this->editingId) {
             $expertise = Expertise::findOrFail($this->editingId);
@@ -186,11 +181,6 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
             static::addMediaFromUpload($expertise, $this->cover, 'cover');
         }
 
-        if ($this->icon) {
-            $expertise->clearMediaCollection('icon');
-            static::addMediaFromUpload($expertise, $this->icon, 'icon');
-        }
-
         $this->showForm = false;
         $this->resetForm();
     }
@@ -206,19 +196,6 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         $expertise->clearMediaCollection('cover');
         $this->cover = null;
         $this->coverPreview = null;
-    }
-
-    public function removeIcon(): void
-    {
-        if ($this->editingId === null) {
-            return;
-        }
-
-        $expertise = Expertise::findOrFail($this->editingId);
-        $this->authorize('update', $expertise);
-        $expertise->clearMediaCollection('icon');
-        $this->icon = null;
-        $this->iconPreview = null;
     }
 
     public function toggleActive(int $id): void
@@ -240,7 +217,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
      */
     private const TAB_FIELDS = [
         'contenu' => ['name', 'slug', 'short_description', 'description', 'benefits_text', 'process_text'],
-        'visuels' => ['cover', 'icon'],
+        'visuels' => ['cover'],
         'associations' => ['sector_ids', 'service_ids', 'sort_order', 'is_active'],
     ];
 
@@ -264,7 +241,6 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
                 'service_ids' => ['array'],
                 'service_ids.*' => ['exists:services,id'],
                 'cover' => ['nullable', 'image', 'max:5120'],
-                'icon' => ['nullable', 'image', 'max:5120'],
             ]);
         } catch (ValidationException $exception) {
             $this->tab = $this->tabForErrors($exception->validator->errors()->keys());
@@ -303,7 +279,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
         $this->reset([
             'editingId', 'name', 'slug', 'short_description', 'description',
             'benefits_text', 'process_text', 'sort_order', 'sector_ids', 'service_ids',
-            'cover', 'icon', 'coverPreview', 'iconPreview',
+            'cover', 'coverPreview',
         ]);
 
         $this->tab = 'contenu';
@@ -464,43 +440,23 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
             </div>
 
             <div x-show="tab === 'visuels'" class="space-y-4">
-                <div class="grid gap-6 sm:grid-cols-2">
-                    <flux:field>
-                        <flux:label>Image de couverture (max 5 Mo)</flux:label>
-                        <div class="space-y-2">
-                            @if($cover)
-                                <img src="{{ $cover->temporaryUrl() }}" alt="" class="h-24 w-36 rounded object-cover">
-                            @elseif($coverPreview)
-                                <img src="{{ $coverPreview }}" alt="" class="h-24 w-36 rounded object-cover">
-                            @else
-                                <div class="flex h-24 w-36 items-center justify-center rounded bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800">Aucune image</div>
-                            @endif
-                            <input type="file" wire:model="cover" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
-                            <flux:error name="cover" />
-                            @if($editingId && ($coverPreview || $cover))
-                                <flux:button size="xs" variant="danger" wire:click="removeCover">Retirer l’image</flux:button>
-                            @endif
-                        </div>
-                    </flux:field>
-
-                    <flux:field>
-                        <flux:label>Icône (max 5 Mo)</flux:label>
-                        <div class="space-y-2">
-                            @if($icon)
-                                <img src="{{ $icon->temporaryUrl() }}" alt="" class="h-16 w-16 rounded bg-surface object-contain p-1">
-                            @elseif($iconPreview)
-                                <img src="{{ $iconPreview }}" alt="" class="h-16 w-16 rounded bg-surface object-contain p-1">
-                            @else
-                                <div class="flex h-16 w-16 items-center justify-center rounded bg-zinc-100 text-[10px] text-zinc-400 dark:bg-zinc-800">Aucune</div>
-                            @endif
-                            <input type="file" wire:model="icon" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
-                            <flux:error name="icon" />
-                            @if($editingId && ($iconPreview || $icon))
-                                <flux:button size="xs" variant="danger" wire:click="removeIcon">Retirer l’icône</flux:button>
-                            @endif
-                        </div>
-                    </flux:field>
-                </div>
+                <flux:field>
+                    <flux:label>Image de couverture (max 5 Mo)</flux:label>
+                    <div class="space-y-2">
+                        @if($cover)
+                            <img src="{{ $cover->temporaryUrl() }}" alt="" class="h-24 w-36 rounded object-cover">
+                        @elseif($coverPreview)
+                            <img src="{{ $coverPreview }}" alt="" class="h-24 w-36 rounded object-cover">
+                        @else
+                            <div class="flex h-24 w-36 items-center justify-center rounded bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800">Aucune image</div>
+                        @endif
+                        <input type="file" wire:model="cover" accept="image/*" class="block w-full text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
+                        <flux:error name="cover" />
+                        @if($editingId && ($coverPreview || $cover))
+                            <flux:button size="xs" variant="danger" wire:click="removeCover">Retirer l’image</flux:button>
+                        @endif
+                    </div>
+                </flux:field>
                 <flux:callout icon="information-circle" class="text-sm">
                     Les images sont converties en WebP automatiquement à l’enregistrement.
                 </flux:callout>
@@ -555,10 +511,10 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
             </div>
 
             <div class="flex items-center gap-2">
-                <span wire:loading wire:target="cover,icon" class="text-xs font-medium text-cuivre">Téléversement en cours…</span>
+                <span wire:loading wire:target="cover" class="text-xs font-medium text-cuivre">Téléversement en cours…</span>
                 <flux:spacer />
                 <flux:button variant="ghost" wire:click="$set('showForm', false)">Annuler</flux:button>
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="cover,icon,save">Enregistrer</flux:button>
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="cover,save">Enregistrer</flux:button>
             </div>
         </form>
     </flux:modal>

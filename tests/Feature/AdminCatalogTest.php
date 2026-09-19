@@ -60,7 +60,6 @@ test('creates an expertise with cover upload and pivots', function () {
         ->set('sector_ids', [$sector->id])
         ->set('service_ids', [$service->id])
         ->set('cover', UploadedFile::fake()->image('cover.jpg'))
-        ->set('icon', UploadedFile::fake()->image('icon.png'))
         ->call('save')
         ->assertHasNoErrors();
 
@@ -71,27 +70,22 @@ test('creates an expertise with cover upload and pivots', function () {
         ->and($expertise->sectors->pluck('id')->all())->toBe([$sector->id])
         ->and($expertise->services->pluck('id')->all())->toBe([$service->id])
         ->and($expertise->hasMedia('cover'))->toBeTrue()
-        ->and($expertise->getFirstMedia('cover')->file_name)->toEndWith('.webp')
-        ->and($expertise->hasMedia('icon'))->toBeTrue()
-        ->and($expertise->getFirstMedia('icon')->file_name)->toEndWith('.webp');
+        ->and($expertise->getFirstMedia('cover')->file_name)->toEndWith('.webp');
 });
 
-test('removes expertise cover and icon', function () {
+test('removes expertise cover', function () {
     Storage::fake('public');
     $expertise = Expertise::factory()->create();
     $expertise->addMediaFromString(fakeJpeg())->usingFileName('cover.jpg')->toMediaCollection('cover');
-    $expertise->addMediaFromString(fakeJpeg())->usingFileName('icon.jpg')->toMediaCollection('icon');
 
     Livewire::actingAs(catalogManager(['manage_expertises']))
         ->test('pages::admin.expertises.index')
         ->call('edit', $expertise->id)
-        ->call('removeCover')
-        ->call('removeIcon');
+        ->call('removeCover');
 
     $expertise->refresh();
 
-    expect($expertise->hasMedia('cover'))->toBeFalse()
-        ->and($expertise->hasMedia('icon'))->toBeFalse();
+    expect($expertise->hasMedia('cover'))->toBeFalse();
 });
 
 test('truncates long original file names', function () {

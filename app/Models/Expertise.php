@@ -90,7 +90,6 @@ class Expertise extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('cover')->singleFile();
-        $this->addMediaCollection('icon')->singleFile();
         $this->addMediaCollection('og_image')->singleFile();
     }
 
