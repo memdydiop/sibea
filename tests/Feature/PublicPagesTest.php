@@ -76,6 +76,13 @@ test('le-groupe page shows the uploaded president photo', function () {
         ->assertSee('Photo du Président', false);
 });
 
+test('engagements page exposes the enriched commitments', function () {
+    $this->get('/pages/engagements')
+        ->assertOk()
+        ->assertSee('Souveraineté alimentaire')
+        ->assertSee('Éthique et transparence');
+});
+
 test('home group quote shows the president name', function () {
     Setting::put('group.president.name', 'Nom Prénom — Président Directeur Général');
 
