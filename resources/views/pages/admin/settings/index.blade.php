@@ -20,7 +20,6 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
         'header_expertises_label' => 'header.link.expertises.label',
         'header_projects_label' => 'header.link.projects.label',
         'header_contact_label' => 'header.link.contact.label',
-        'header_login_label' => 'header.login_label',
         'seo_title' => 'seo.title',
         'seo_description' => 'seo.description',
         'hero_title' => 'home.hero.title',
@@ -494,13 +493,6 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                         </div>
                     @endforeach
                 </div>
-            </x-admin.card>
-
-            <x-admin.card title="Connexion administration">
-                <flux:field>
-                    <flux:label>Libellé du lien</flux:label>
-                    <flux:input wire:model="texts.header_login_label" type="text" />
-                </flux:field>
             </x-admin.card>
         </div>
 

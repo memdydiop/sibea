@@ -96,6 +96,7 @@ test('legal pages expose complete information', function () {
         ->assertSee('Directeur de la publication')
         ->assertSee('Propriété intellectuelle')
         ->assertSee('Limitation de responsabilité')
+        ->assertSee('Utilisation du site')
         ->assertSee('Droit applicable');
 
     $this->get(route('privacy'))
@@ -134,12 +135,11 @@ test('shows custom settings on the public site', function () {
 
 test('renders header labels and respects link visibility', function () {
     Setting::put('header.link.projects.label', 'Nos chantiers');
-    Setting::put('header.login_label', 'Espace admin');
 
     $this->get(route('contact'))
         ->assertOk()
         ->assertSee('Nos chantiers')
-        ->assertSee('Espace admin');
+        ->assertDontSee('Se connecter');
 
     Setting::put('header.link.projects.visible', '0');
     Setting::put('header.link.projects.label', 'Chantiers cachés');

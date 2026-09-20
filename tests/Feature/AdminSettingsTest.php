@@ -104,13 +104,11 @@ test('updates header labels and link visibility', function () {
     Livewire::actingAs(settingsManager())
         ->test('pages::admin.settings.index')
         ->set('texts.header_projects_label', 'Nos chantiers')
-        ->set('texts.header_login_label', 'Espace admin')
         ->set('headerLinks.expertises', false)
         ->call('save')
         ->assertHasNoErrors();
 
     expect(setting('header.link.projects.label'))->toBe('Nos chantiers')
-        ->and(setting('header.login_label'))->toBe('Espace admin')
         ->and(setting('header.link.expertises.visible'))->toBe('0')
         ->and(setting('header.link.sectors.visible'))->toBe('1');
 });

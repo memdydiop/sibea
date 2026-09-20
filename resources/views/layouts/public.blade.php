@@ -51,7 +51,6 @@
                 @endif
             </nav>
             <div class="flex items-center gap-3">
-                <flux:button variant="ghost" href="{{ route('admin.dashboard') }}" target="_blank" rel="noopener" icon="cog-6-tooth" :tooltip="setting('header.login_label') ?: 'Administration'" :aria-label="(setting('header.login_label') ?: 'Administration').' (nouvel onglet)'" class="hidden sm:inline-flex text-white! hover:text-cuivre!" />
                 <button
                     x-on:click="open = !open"
                     :aria-expanded="open"
@@ -80,7 +79,6 @@
                 @if($headerLinks['contact'])
                     <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.link.contact.label') }}</a>
                 @endif
-                <a x-on:click="open = false" href="{{ route('admin.dashboard') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre inline-flex items-center gap-2" wire:navigate><flux:icon.cog-6-tooth class="size-5" />{{ setting('header.login_label') }}</a>
             </div>
         </nav>
     </header>
