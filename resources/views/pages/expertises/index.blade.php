@@ -46,7 +46,7 @@ new #[Layout('layouts::public')] class extends Component
 
 <div>
     <section class="on-dark relative bg-nuit text-white overflow-hidden">
-        <img src="{{ setting_media_url('visuals.hero.expertises') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+        <img src="{{ setting_media_url('visuals.hero.expertises') }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="eager" decoding="async" fetchpriority="high">
         <div class="absolute inset-0" style="background: linear-gradient(90deg, rgba(11,31,51,0.92) 0%, rgba(11,31,51,0.65) 100%);"></div>
         <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-14">
             <nav aria-label="Fil d’Ariane" class="mb-8">
