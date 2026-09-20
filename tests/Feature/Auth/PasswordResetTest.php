@@ -63,3 +63,20 @@ test('password can be reset with valid token', function () {
         return true;
     });
 });
+
+test('password reset email is written in French', function () {
+    Notification::fake();
+
+    $user = User::factory()->create();
+
+    $this->post(route('password.request'), ['email' => $user->email]);
+
+    Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+        $mail = $notification->toMail($user)->render();
+
+        expect(str_contains($mail, 'Vous recevez cet email car nous avons reçu une demande'))->toBeTrue()
+            ->and(str_contains($mail, 'You are receiving this email'))->toBeFalse();
+
+        return true;
+    });
+});

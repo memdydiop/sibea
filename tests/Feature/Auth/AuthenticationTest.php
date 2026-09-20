@@ -9,6 +9,13 @@ test('login screen can be rendered', function () {
     $response->assertOk();
 });
 
+test('login screen is displayed in French', function () {
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertSee('Connectez-vous à votre compte')
+        ->assertSee('Se souvenir de moi');
+});
+
 test('users can authenticate using the login screen', function () {
     $user = User::factory()->create();
 

@@ -32,6 +32,6 @@ test('login screen renders without the sign up link when registration is disable
     $response = $this->get(route('login'));
 
     $response->assertOk()
-        ->assertSee('Log in to your account')
-        ->assertDontSee('Sign up');
+        ->assertSee('Connectez-vous à votre compte')
+        ->assertDontSee('S’inscrire');
 });

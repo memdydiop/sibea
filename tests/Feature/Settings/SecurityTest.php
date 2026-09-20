@@ -26,10 +26,10 @@ test('security settings page can be rendered', function () {
 
     $response->assertOk();
 
-    $response->assertSee('Passkeys');
-    $response->assertSee('No passkeys yet');
-    $response->assertSee('Two-factor authentication');
-    $response->assertSee('Enable 2FA');
+    $response->assertSee('Clés d’accès');
+    $response->assertSee('Aucune clé d’accès pour le moment');
+    $response->assertSee('Authentification à deux facteurs');
+    $response->assertSee('Activer la 2FA');
 });
 
 test('security settings page requires password confirmation when enabled', function () {
@@ -50,10 +50,10 @@ test('security settings page renders without two factor when feature is disabled
         ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('security.edit'))
         ->assertOk()
-        ->assertSee('Update password')
-        ->assertDontSee('Manage your passkeys for passwordless sign-in')
-        ->assertDontSee('Add a passkey to sign in without a password')
-        ->assertDontSee('Two-factor authentication');
+        ->assertSee('Mettre à jour le mot de passe')
+        ->assertDontSee('Gérez vos clés d’accès pour une connexion sans mot de passe')
+        ->assertDontSee('Ajoutez une clé d’accès pour vous connecter sans mot de passe')
+        ->assertDontSee('Authentification à deux facteurs');
 });
 
 test('two factor authentication disabled when confirmation abandoned between requests', function () {

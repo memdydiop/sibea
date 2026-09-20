@@ -148,6 +148,10 @@ select:focus[data-flux-control] {
     @apply size-4;
 } */
 
+[data-flux-field] [data-flux-error] {
+    @apply mt-0! text-xs! font-normal
+}
+
 [data-flux-main] {
     @apply p-0!;
 }

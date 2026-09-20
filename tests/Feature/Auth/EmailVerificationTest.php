@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Laravel\Fortify\Features;
@@ -69,4 +70,21 @@ test('already verified user visiting verification link is redirected without fir
 
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
     Event::assertNotDispatched(Verified::class);
+});
+
+test('verification email is written in French', function () {
+    Notification::fake();
+
+    $user = User::factory()->create(['email_verified_at' => null]);
+
+    $user->sendEmailVerificationNotification();
+
+    Notification::assertSentTo($user, VerifyEmail::class, function ($notification) use ($user) {
+        $mail = $notification->toMail($user)->render();
+
+        expect(str_contains($mail, 'Cliquez sur le bouton ci-dessous pour vérifier'))->toBeTrue()
+            ->and(str_contains($mail, 'Verify Email Address'))->toBeFalse();
+
+        return true;
+    });
 });

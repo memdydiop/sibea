@@ -5,8 +5,11 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -31,6 +34,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->configureActions();
         $this->configureAuthentication();
+        $this->configureMail();
         $this->configureViews();
         $this->configureRateLimiting();
     }
@@ -64,6 +68,36 @@ class FortifyServiceProvider extends ServiceProvider
             }
 
             return $user;
+        });
+    }
+
+    /**
+     * Emails système en français (réinitialisation + vérification).
+     */
+    private function configureMail(): void
+    {
+        ResetPassword::toMailUsing(function (object $notifiable, string $token) {
+            $url = url(route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+
+            return (new MailMessage)
+                ->subject('Réinitialisation de votre mot de passe')
+                ->greeting('Bonjour,')
+                ->line('Vous recevez cet email car nous avons reçu une demande de réinitialisation du mot de passe de votre compte.')
+                ->action('Réinitialiser le mot de passe', $url)
+                ->line('Ce lien expire dans 60 minutes.')
+                ->line('Si vous n’êtes pas à l’origine de cette demande, ignorez cet email.');
+        });
+
+        VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
+            return (new MailMessage)
+                ->subject('Vérifiez votre adresse email')
+                ->greeting('Bonjour,')
+                ->line('Cliquez sur le bouton ci-dessous pour vérifier votre adresse email.')
+                ->action('Vérifier mon adresse email', $url)
+                ->line('Si vous n’avez pas créé de compte, ignorez cet email.');
         });
     }
 
