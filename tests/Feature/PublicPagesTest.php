@@ -26,6 +26,63 @@ test('renders public pages', function () {
     $this->get(route('privacy'))->assertOk();
 });
 
+test('le-groupe page shows the president message above the editorial content', function () {
+    Page::create([
+        'slug' => 'le-groupe',
+        'title' => 'Le Groupe',
+        'content' => "## Notre vision\n\nUn groupe multi-activités.",
+        'is_published' => true,
+    ]);
+
+    $response = $this->get('/pages/le-groupe');
+    $response
+        ->assertOk()
+        ->assertSee('Le mot du Président')
+        ->assertSee('Je vous remercie pour votre confiance.')
+        ->assertSee('Le Président Directeur Général')
+        ->assertSee('Un groupe multi-activités.');
+
+    expect(substr_count($response->getContent(), 'mot du Président'))->toBe(1);
+});
+
+test('le-groupe page hides the president photo until one is uploaded', function () {
+    Page::create([
+        'slug' => 'le-groupe',
+        'title' => 'Le Groupe',
+        'content' => "## Notre vision\n\nUn groupe multi-activités.",
+        'is_published' => true,
+    ]);
+
+    $this->get('/pages/le-groupe')
+        ->assertOk()
+        ->assertDontSee('Photo du Président', false);
+});
+
+test('le-groupe page shows the uploaded president photo', function () {
+    Storage::fake('public');
+
+    Page::create([
+        'slug' => 'le-groupe',
+        'title' => 'Le Groupe',
+        'content' => "## Notre vision\n\nUn groupe multi-activités.",
+        'is_published' => true,
+    ]);
+
+    Setting::firstOrCreate(['key' => 'visuals.president'])
+        ->addMediaFromString(fakeJpeg())->usingFileName('president.jpg')->toMediaCollection('file');
+
+    $this->get('/pages/le-groupe')
+        ->assertOk()
+        ->assertSee('Photo du Président', false);
+});
+
+test('home group quote shows the president name', function () {
+    Setting::put('group.president.name', 'Nom Prénom — Président Directeur Général');
+
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('Nom Prénom — Président Directeur Général');
+});
 test('legal pages expose complete information', function () {
     $this->get(route('legal'))
         ->assertOk()

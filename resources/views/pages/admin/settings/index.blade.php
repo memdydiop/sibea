@@ -35,6 +35,9 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
         'group_text' => 'home.group.text',
         'group_quote' => 'home.group.quote',
         'group_button' => 'home.group.button',
+        'president_title' => 'group.president.title',
+        'president_name' => 'group.president.name',
+        'president_text' => 'group.president.text',
         'expertises_title' => 'home.expertises.title',
         'expertises_subtitle' => 'home.expertises.subtitle',
         'expertise_cta_title' => 'home.expertise_cta.title',
@@ -83,6 +86,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
         'hero_contact' => 'visuals.hero.contact',
         'hero_legal' => 'visuals.hero.legal',
         'hero_privacy' => 'visuals.hero.privacy',
+        'president_photo' => 'visuals.president',
     ];
 
     /** @var array<string, string> */
@@ -116,6 +120,8 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
     public $hero_legal = null;
 
     public $hero_privacy = null;
+
+    public $president_photo = null;
 
     public function mount(): void
     {
@@ -197,6 +203,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             'hero_contact' => ['nullable', 'image', 'max:5120'],
             'hero_legal' => ['nullable', 'image', 'max:5120'],
             'hero_privacy' => ['nullable', 'image', 'max:5120'],
+            'president_photo' => ['nullable', 'image', 'max:5120'],
             'headerLinks' => ['array'],
             'headerLinks.*' => ['boolean'],
         ]);
@@ -375,6 +382,23 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                 <flux:field>
                     <flux:label>Libellé du bouton</flux:label>
                     <flux:input wire:model="texts.group_button" type="text" />
+                </flux:field>
+            </x-admin.card>
+
+            <x-admin.card title="Mot du Président (page Le Groupe)">
+                <flux:field>
+                    <flux:label>Titre de la section</flux:label>
+                    <flux:input wire:model="texts.president_title" type="text" />
+                </flux:field>
+                <flux:field>
+                    <flux:label>Nom et fonction du signataire</flux:label>
+                    <flux:input wire:model="texts.president_name" type="text" placeholder="Ex. Nom Prénom — Président Directeur Général" />
+                    <flux:description>Si vide, la mention « Le Président Directeur Général » est affichée.</flux:description>
+                </flux:field>
+                <flux:field>
+                    <flux:label>Texte du message</flux:label>
+                    <flux:textarea wire:model="texts.president_text" rows="8" />
+                    <flux:description>Un paragraphe par ligne vide. Modifiable sans toucher au code.</flux:description>
                 </flux:field>
             </x-admin.card>
 
@@ -630,6 +654,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                         'hero_contact' => ['label' => 'Page contact', 'key' => 'visuals.hero.contact'],
                         'hero_legal' => ['label' => 'Mentions légales', 'key' => 'visuals.hero.legal'],
                         'hero_privacy' => ['label' => 'Politique de confidentialité', 'key' => 'visuals.hero.privacy'],
+                        'president_photo' => ['label' => 'Photo du Président', 'key' => 'visuals.president'],
                     ] as $property => $visual)
                         <div wire:key="visual-{{ $property }}" class="space-y-2 rounded-lg border border-bordure bg-casse/40 p-3">
                             <div class="flex items-center justify-between gap-2">

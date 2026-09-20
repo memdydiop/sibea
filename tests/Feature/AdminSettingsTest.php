@@ -75,6 +75,18 @@ test('uploads a logo and a hero image', function () {
         ->and(Setting::where('key', 'visuals.hero.contact')->first()->hasMedia('file'))->toBeTrue();
 });
 
+test('uploads a president photo', function () {
+    Storage::fake('public');
+
+    Livewire::actingAs(settingsManager())
+        ->test('pages::admin.settings.index')
+        ->set('president_photo', UploadedFile::fake()->image('president.jpg'))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(Setting::where('key', 'visuals.president')->first()->hasMedia('file'))->toBeTrue();
+});
+
 test('removes a visual', function () {
     Storage::fake('public');
 
@@ -101,6 +113,25 @@ test('updates header labels and link visibility', function () {
         ->and(setting('header.login_label'))->toBe('Espace admin')
         ->and(setting('header.link.expertises.visible'))->toBe('0')
         ->and(setting('header.link.sectors.visible'))->toBe('1');
+});
+
+test('updates the president message', function () {
+    Livewire::actingAs(settingsManager())
+        ->test('pages::admin.settings.index')
+        ->set('texts.president_title', 'Édito du Président')
+        ->set('texts.president_name', 'Nom Prénom — Président Directeur Général')
+        ->set('texts.president_text', "Chers partenaires,\n\nMerci pour votre confiance.")
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(setting('group.president.title'))->toBe('Édito du Président')
+        ->and(setting('group.president.name'))->toBe('Nom Prénom — Président Directeur Général')
+        ->and(setting('group.president.text'))->toBe("Chers partenaires,\n\nMerci pour votre confiance.");
+
+    $this->get('/pages/le-groupe')
+        ->assertOk()
+        ->assertSee('Édito du Président')
+        ->assertSee('Merci pour votre confiance.');
 });
 
 test('forbids settings admin without permission', function () {

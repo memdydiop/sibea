@@ -79,9 +79,13 @@ new #[Layout('layouts::public')] class extends Component {
                         <h2 class="font-display font-extrabold text-nuit tracking-tight text-3xl lg:text-4xl mb-5">{{ setting('home.group.title') }}</h2>
                         <p class="text-ardoise text-lg leading-relaxed mb-6">{{ setting('home.group.text') }}</p>
                         @if(setting('home.group.quote'))
-                            <figure class="mb-8 border-l-2 border-cuivre pl-5">
-                                <blockquote class="font-display text-lg italic leading-relaxed text-anthracite">« {{ setting('home.group.quote') }} »</blockquote>
-                                <figcaption class="mt-2 text-sm text-ardoise">Le Président Directeur Général</figcaption>
+                            <figure class="relative mb-8 overflow-hidden rounded-lg border border-bordure bg-casse p-6">
+                                <span aria-hidden="true" class="pointer-events-none absolute -top-4 right-3 font-display text-[7rem] font-extrabold leading-none text-cuivre/15">“</span>
+                                <blockquote class="relative font-display text-lg italic leading-relaxed text-anthracite">« {{ setting('home.group.quote') }} »</blockquote>
+                                <figcaption class="relative mt-3 flex items-center gap-3 text-sm">
+                                    <span aria-hidden="true" class="h-px w-8 bg-cuivre"></span>
+                                    <span class="font-semibold text-nuit">{{ setting('group.president.name') ?: 'Le Président Directeur Général' }}</span>
+                                </figcaption>
                             </figure>
                         @endif
                         <a href="{{ route('pages.show', ['page' => 'le-groupe']) }}" class="inline-flex items-center gap-2 rounded-full bg-nuit px-5 py-2.5 font-display text-sm font-semibold text-white transition-colors duration-300 hover:bg-cuivre hover:text-nuit" wire:navigate>

@@ -26,6 +26,7 @@ Route::livewire('/realisations/{project:slug}', 'pages::projects.show')->name('p
 Route::livewire('/contact', 'pages::contact')->name('contact');
 Route::livewire('/mentions-legales', 'pages::page')->name('legal')->defaults('page_slug', 'mentions-legales');
 Route::livewire('/politique-de-confidentialite', 'pages::page')->name('privacy')->defaults('page_slug', 'politique-de-confidentialite');
+Route::livewire('/pages/le-groupe', 'pages::groupe')->name('pages.groupe');
 Route::livewire('/pages/{page:slug}', 'pages::page')->name('pages.show')->where('page', '^(?!mentions-legales$|politique-de-confidentialite$).*$');
 
 // Sitemap
