@@ -194,43 +194,45 @@ new #[Layout('layouts::app')] #[Title('Services')] class extends Component
             </x-slot:filters>
         </x-admin.toolbar>
 
-        <flux:table :paginate="$this->services">
-        <flux:table.columns>
-            <flux:table.column>Nom</flux:table.column>
-            <flux:table.column>Expertises</flux:table.column>
-            <flux:table.column>Statut</flux:table.column>
-            <flux:table.column align="end">Actions</flux:table.column>
-        </flux:table.columns>
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->services">
+            <flux:table.columns>
+                <flux:table.column>Nom</flux:table.column>
+                <flux:table.column>Expertises</flux:table.column>
+                <flux:table.column>Statut</flux:table.column>
+                <flux:table.column align="end">Actions</flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @foreach($this->services as $service)
-                <flux:table.row wire:key="service-row-{{ $service->id }}">
-                    <flux:table.cell variant="strong">{{ $service->name }}</flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex flex-wrap gap-1">
-                            @foreach($service->expertises as $expertise)
-                                <flux:badge size="sm" color="zinc">{{ $expertise->name }}</flux:badge>
-                            @endforeach
-                        </div>
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        @if($service->is_active)
-                            <flux:badge size="sm" color="green">Actif</flux:badge>
-                        @else
-                            <flux:badge size="sm" color="zinc">Inactif</flux:badge>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex justify-end gap-1">
-                            <flux:button size="xs" variant="filled" icon="{{ $service->is_active ? 'eye-slash' : 'eye' }}" wire:click="toggleActive({{ $service->id }})" aria-label="{{ $service->is_active ? 'Désactiver' : 'Activer' }}" tooltip="{{ $service->is_active ? 'Désactiver' : 'Activer' }}" />
-                            <flux:button size="xs" variant="filled" icon="pencil" wire:click="edit({{ $service->id }})" aria-label="Modifier" tooltip="Modifier" />
-                            <flux:button size="xs" variant="filled" color="red" icon="trash" wire:click="delete({{ $service->id }})" wire:confirm="Supprimer ce service ?" aria-label="Supprimer" tooltip="Supprimer" />
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforeach
-        </flux:table.rows>
-    </flux:table>
+            <flux:table.rows>
+                @foreach($this->services as $service)
+                    <flux:table.row wire:key="service-row-{{ $service->id }}">
+                        <flux:table.cell variant="strong">{{ $service->name }}</flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex flex-wrap gap-1">
+                                @foreach($service->expertises as $expertise)
+                                    <flux:badge size="sm" color="zinc">{{ $expertise->name }}</flux:badge>
+                                @endforeach
+                            </div>
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if($service->is_active)
+                                <flux:badge size="sm" color="green">Actif</flux:badge>
+                            @else
+                                <flux:badge size="sm" color="zinc">Inactif</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex justify-end gap-1">
+                                <flux:button size="xs" variant="filled" icon="{{ $service->is_active ? 'eye-slash' : 'eye' }}" wire:click="toggleActive({{ $service->id }})" aria-label="{{ $service->is_active ? 'Désactiver' : 'Activer' }}" tooltip="{{ $service->is_active ? 'Désactiver' : 'Activer' }}" />
+                                <flux:button size="xs" variant="filled" icon="pencil" wire:click="edit({{ $service->id }})" aria-label="Modifier" tooltip="Modifier" />
+                                <flux:button size="xs" variant="filled" color="red" icon="trash" wire:click="delete({{ $service->id }})" wire:confirm="Supprimer ce service ?" aria-label="Supprimer" tooltip="Supprimer" />
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+            </flux:table>
+        </div>
 
     </x-admin.card>
 

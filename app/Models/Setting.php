@@ -55,19 +55,32 @@ class Setting extends Model implements HasMedia
         return config('site.arrays', [])[$key] ?? [];
     }
 
+    /**
+     * @var array<string, string>
+     */
+    protected static array $mediaMemo = [];
+
     public static function mediaUrl(string $key, ?string $conversion = null): string
     {
-        $media = static::query()->where('key', $key)->first()?->getFirstMedia('file');
+        $memoKey = $key.'.'.($conversion ?? 'orig');
 
-        if ($media !== null) {
-            if ($conversion !== null && $media->hasGeneratedConversion($conversion)) {
-                return $media->getUrl($conversion);
-            }
-
-            return $media->getUrl();
+        if (isset(static::$mediaMemo[$memoKey])) {
+            return static::$mediaMemo[$memoKey];
         }
 
-        return asset(config('site.visuals', [])[$key] ?? 'images/logo-sibea.png');
+        return static::$mediaMemo[$memoKey] = Cache::remember("site.settings.media.{$memoKey}", 3600, function () use ($key, $conversion): string {
+            $media = static::query()->where('key', $key)->first()?->getFirstMedia('file');
+
+            if ($media !== null) {
+                if ($conversion !== null && $media->hasGeneratedConversion($conversion)) {
+                    return $media->getUrl($conversion);
+                }
+
+                return $media->getUrl();
+            }
+
+            return asset(config('site.visuals', [])[$key] ?? 'images/logo-sibea.png');
+        });
     }
 
     public static function put(string $key, ?string $value): void
@@ -76,17 +89,26 @@ class Setting extends Model implements HasMedia
         static::flushCache();
     }
 
+    public static function forgetMediaCache(string $key): void
+    {
+        Cache::forget("site.settings.media.{$key}.orig");
+        Cache::forget("site.settings.media.{$key}.hero");
+        unset(static::$mediaMemo["{$key}.orig"], static::$mediaMemo["{$key}.hero"]);
+    }
+
     public static function putFile(string $key, UploadedFile $file): void
     {
         $setting = static::firstOrCreate(['key' => $key]);
         $setting->clearMediaCollection('file');
         static::addMediaFromUpload($setting, $file, 'file');
+        static::forgetMediaCache($key);
         static::flushCache();
     }
 
     public static function removeFile(string $key): void
     {
         static::query()->where('key', $key)->first()?->clearMediaCollection('file');
+        static::forgetMediaCache($key);
         static::flushCache();
     }
 
@@ -100,6 +122,7 @@ class Setting extends Model implements HasMedia
 
     public static function flushCache(): void
     {
+        static::$mediaMemo = [];
         Cache::forget('site.settings');
     }
 

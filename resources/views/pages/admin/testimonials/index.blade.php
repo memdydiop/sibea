@@ -157,55 +157,57 @@ new #[Layout('layouts::app')] #[Title('Témoignages')] class extends Component
             </x-slot:filters>
         </x-admin.toolbar>
 
-        <flux:table :paginate="$this->testimonials">
-        <flux:table.columns>
-            <flux:table.column>Auteur</flux:table.column>
-            <flux:table.column>Extrait</flux:table.column>
-            <flux:table.column>Ordre</flux:table.column>
-            <flux:table.column>Statut</flux:table.column>
-            <flux:table.column align="end">Actions</flux:table.column>
-        </flux:table.columns>
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->testimonials">
+            <flux:table.columns>
+                <flux:table.column>Auteur</flux:table.column>
+                <flux:table.column>Extrait</flux:table.column>
+                <flux:table.column>Ordre</flux:table.column>
+                <flux:table.column>Statut</flux:table.column>
+                <flux:table.column align="end">Actions</flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @foreach($this->testimonials as $testimonial)
-                <flux:table.row wire:key="testimonial-row-{{ $testimonial->id }}">
-                    <flux:table.cell variant="strong">
-                        <div>{{ $testimonial->author_name }}</div>
-                        @if($testimonial->position || $testimonial->organization)
-                            <div class="text-xs font-normal text-zinc-500">
-                                {{ trim($testimonial->position.' — '.$testimonial->organization, ' —') }}
+            <flux:table.rows>
+                @foreach($this->testimonials as $testimonial)
+                    <flux:table.row wire:key="testimonial-row-{{ $testimonial->id }}">
+                        <flux:table.cell variant="strong">
+                            <div>{{ $testimonial->author_name }}</div>
+                            @if($testimonial->position || $testimonial->organization)
+                                <div class="text-xs font-normal text-zinc-500">
+                                    {{ trim($testimonial->position.' — '.$testimonial->organization, ' —') }}
+                                </div>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <span class="line-clamp-2 max-w-md text-zinc-500">{{ $testimonial->content }}</span>
+                        </flux:table.cell>
+                        <flux:table.cell>{{ $testimonial->sort_order }}</flux:table.cell>
+                        <flux:table.cell>
+                            @if($testimonial->is_active)
+                                <flux:badge size="sm" color="green">Actif</flux:badge>
+                            @else
+                                <flux:badge size="sm" color="zinc">Inactif</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex justify-end gap-1">
+                                <flux:button size="xs" variant="filled"
+                                    icon="{{ $testimonial->is_active ? 'eye-slash' : 'eye' }}"
+                                    wire:click="toggleActive({{ $testimonial->id }})"
+                                    aria-label="{{ $testimonial->is_active ? 'Désactiver' : 'Activer' }}"
+                                    tooltip="{{ $testimonial->is_active ? 'Désactiver' : 'Activer' }}" />
+                                <flux:button size="xs" variant="filled" icon="pencil"
+                                    wire:click="edit({{ $testimonial->id }})" aria-label="Modifier" tooltip="Modifier" />
+                                <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                    wire:click="delete({{ $testimonial->id }})" wire:confirm="Supprimer ce témoignage ?"
+                                    aria-label="Supprimer" tooltip="Supprimer" />
                             </div>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        <span class="line-clamp-2 max-w-md text-zinc-500">{{ $testimonial->content }}</span>
-                    </flux:table.cell>
-                    <flux:table.cell>{{ $testimonial->sort_order }}</flux:table.cell>
-                    <flux:table.cell>
-                        @if($testimonial->is_active)
-                            <flux:badge size="sm" color="green">Actif</flux:badge>
-                        @else
-                            <flux:badge size="sm" color="zinc">Inactif</flux:badge>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex justify-end gap-1">
-                            <flux:button size="xs" variant="filled"
-                                icon="{{ $testimonial->is_active ? 'eye-slash' : 'eye' }}"
-                                wire:click="toggleActive({{ $testimonial->id }})"
-                                aria-label="{{ $testimonial->is_active ? 'Désactiver' : 'Activer' }}"
-                                tooltip="{{ $testimonial->is_active ? 'Désactiver' : 'Activer' }}" />
-                            <flux:button size="xs" variant="filled" icon="pencil"
-                                wire:click="edit({{ $testimonial->id }})" aria-label="Modifier" tooltip="Modifier" />
-                            <flux:button size="xs" variant="filled" color="red" icon="trash"
-                                wire:click="delete({{ $testimonial->id }})" wire:confirm="Supprimer ce témoignage ?"
-                                aria-label="Supprimer" tooltip="Supprimer" />
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforeach
-        </flux:table.rows>
-        </flux:table>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+            </flux:table>
+        </div>
 
     </x-admin.card>
 

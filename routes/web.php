@@ -3,9 +3,18 @@
 use App\Models\Page;
 use App\Models\Project;
 use App\Models\Sector;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
+
+// Redirects 301 (compat SEO, CDC v1.3) — avant les routes Livewire pour priorité de matching
+Route::redirect('/btp', '/secteurs/btp', 301);
+Route::redirect('/immobilier', '/secteurs/immobilier', 301);
+Route::redirect('/energie', '/secteurs/energie', 301);
+Route::redirect('/agroalimentaire', '/secteurs/agro-industrie', 301);
+Route::redirect('/secteurs/agroalimentaire', '/secteurs/agro-industrie', 301);
+Route::redirect('/agro-industrie', '/secteurs/agro-industrie', 301);
 
 // Site public
 Route::livewire('/', 'pages::home')->name('home');
@@ -21,35 +30,39 @@ Route::livewire('/pages/{page:slug}', 'pages::page')->name('pages.show')->where(
 
 // Sitemap
 Route::get('/robots.txt', fn () => response(
-    "User-agent: *\nAllow: /\n\nSitemap: ".url('/sitemap.xml')."\n",
+    "User-agent: *\nAllow: /\nDisallow: /admin\n\nSitemap: ".url('/sitemap.xml')."\n",
     200,
     ['Content-Type' => 'text/plain'],
 ))->name('robots');
 
 Route::get('/sitemap.xml', function () {
-    $sitemap = Sitemap::create()
-        ->add(Url::create('/')->setPriority(1.0))
-        ->add(Url::create('/secteurs')->setPriority(0.9))
-        ->add(Url::create('/expertises')->setPriority(0.9))
-        ->add(Url::create('/realisations')->setPriority(0.9))
-        ->add(Url::create('/contact')->setPriority(0.7))
-        ->add(Url::create('/mentions-legales')->setPriority(0.3))
-        ->add(Url::create('/politique-de-confidentialite')->setPriority(0.3));
+    $xml = Cache::remember('sitemap.xml.v1', 3600, function (): string {
+        $sitemap = Sitemap::create()
+            ->add(Url::create('/')->setPriority(1.0)->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY))
+            ->add(Url::create('/secteurs')->setPriority(0.9)->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY))
+            ->add(Url::create('/expertises')->setPriority(0.9)->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY))
+            ->add(Url::create('/realisations')->setPriority(0.9)->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY))
+            ->add(Url::create('/contact')->setPriority(0.7)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY))
+            ->add(Url::create('/mentions-legales')->setPriority(0.3)->setChangeFrequency(Url::CHANGE_FREQUENCY_YEARLY))
+            ->add(Url::create('/politique-de-confidentialite')->setPriority(0.3)->setChangeFrequency(Url::CHANGE_FREQUENCY_YEARLY));
 
-    Project::published()->latest()->each(
-        fn (Project $project) => $sitemap->add(Url::create("/realisations/{$project->slug}")->setPriority(0.7))
-    );
+        Project::published()->latest()->each(
+            fn (Project $project) => $sitemap->add(Url::create("/realisations/{$project->slug}")->setPriority(0.7)->setLastModificationDate($project->updated_at)->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY))
+        );
 
-    Page::published()
-        ->whereNotIn('slug', ['mentions-legales', 'politique-de-confidentialite'])
-        ->get()
-        ->each(fn (Page $page) => $sitemap->add(Url::create("/pages/{$page->slug}")->setPriority(0.5)));
+        Page::published()
+            ->whereNotIn('slug', ['mentions-legales', 'politique-de-confidentialite'])
+            ->get()
+            ->each(fn (Page $page) => $sitemap->add(Url::create("/pages/{$page->slug}")->setPriority(0.5)->setLastModificationDate($page->updated_at)->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY)));
 
-    Sector::active()->ordered()->each(
-        fn (Sector $sector) => $sitemap->add(Url::create("/secteurs/{$sector->slug}")->setPriority(0.8))
-    );
+        Sector::active()->ordered()->each(
+            fn (Sector $sector) => $sitemap->add(Url::create("/secteurs/{$sector->slug}")->setPriority(0.8)->setLastModificationDate($sector->updated_at)->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY))
+        );
 
-    return $sitemap->toResponse(request());
+        return $sitemap->render();
+    });
+
+    return response($xml, 200, ['Content-Type' => 'text/xml; charset=UTF-8']);
 })->name('sitemap');
 
 // Invitation : définition du mot de passe (lien signé, 7 jours)

@@ -162,50 +162,52 @@ new #[Layout('layouts::app')] #[Title('Chiffres clés')] class extends Component
             </x-slot:filters>
         </x-admin.toolbar>
 
-        <flux:table :paginate="$this->statistics">
-        <flux:table.columns>
-            <flux:table.column>Valeur</flux:table.column>
-            <flux:table.column>Libellé</flux:table.column>
-            <flux:table.column>Clé</flux:table.column>
-            <flux:table.column>Ordre</flux:table.column>
-            <flux:table.column>Statut</flux:table.column>
-            <flux:table.column align="end">Actions</flux:table.column>
-        </flux:table.columns>
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->statistics">
+            <flux:table.columns>
+                <flux:table.column>Valeur</flux:table.column>
+                <flux:table.column>Libellé</flux:table.column>
+                <flux:table.column>Clé</flux:table.column>
+                <flux:table.column>Ordre</flux:table.column>
+                <flux:table.column>Statut</flux:table.column>
+                <flux:table.column align="end">Actions</flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @foreach($this->statistics as $statistic)
-                <flux:table.row wire:key="statistic-row-{{ $statistic->id }}">
-                    <flux:table.cell variant="strong">{{ $statistic->value }}</flux:table.cell>
-                    <flux:table.cell>{{ $statistic->label }}</flux:table.cell>
-                    <flux:table.cell>
-                        <flux:badge size="sm" color="zinc">{{ $statistic->key }}</flux:badge>
-                    </flux:table.cell>
-                    <flux:table.cell>{{ $statistic->sort_order }}</flux:table.cell>
-                    <flux:table.cell>
-                        @if($statistic->is_active)
-                            <flux:badge size="sm" color="green">Actif</flux:badge>
-                        @else
-                            <flux:badge size="sm" color="zinc">Inactif</flux:badge>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex justify-end gap-1">
-                            <flux:button size="xs" variant="filled"
-                                icon="{{ $statistic->is_active ? 'eye-slash' : 'eye' }}"
-                                wire:click="toggleActive({{ $statistic->id }})"
-                                aria-label="{{ $statistic->is_active ? 'Désactiver' : 'Activer' }}"
-                                tooltip="{{ $statistic->is_active ? 'Désactiver' : 'Activer' }}" />
-                            <flux:button size="xs" variant="filled" icon="pencil"
-                                wire:click="edit({{ $statistic->id }})" aria-label="Modifier" tooltip="Modifier" />
-                            <flux:button size="xs" variant="filled" color="red" icon="trash"
-                                wire:click="delete({{ $statistic->id }})" wire:confirm="Supprimer ce chiffre clé ?"
-                                aria-label="Supprimer" tooltip="Supprimer" />
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforeach
-        </flux:table.rows>
-        </flux:table>
+            <flux:table.rows>
+                @foreach($this->statistics as $statistic)
+                    <flux:table.row wire:key="statistic-row-{{ $statistic->id }}">
+                        <flux:table.cell variant="strong">{{ $statistic->value }}</flux:table.cell>
+                        <flux:table.cell>{{ $statistic->label }}</flux:table.cell>
+                        <flux:table.cell>
+                            <flux:badge size="sm" color="zinc">{{ $statistic->key }}</flux:badge>
+                        </flux:table.cell>
+                        <flux:table.cell>{{ $statistic->sort_order }}</flux:table.cell>
+                        <flux:table.cell>
+                            @if($statistic->is_active)
+                                <flux:badge size="sm" color="green">Actif</flux:badge>
+                            @else
+                                <flux:badge size="sm" color="zinc">Inactif</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex justify-end gap-1">
+                                <flux:button size="xs" variant="filled"
+                                    icon="{{ $statistic->is_active ? 'eye-slash' : 'eye' }}"
+                                    wire:click="toggleActive({{ $statistic->id }})"
+                                    aria-label="{{ $statistic->is_active ? 'Désactiver' : 'Activer' }}"
+                                    tooltip="{{ $statistic->is_active ? 'Désactiver' : 'Activer' }}" />
+                                <flux:button size="xs" variant="filled" icon="pencil"
+                                    wire:click="edit({{ $statistic->id }})" aria-label="Modifier" tooltip="Modifier" />
+                                <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                    wire:click="delete({{ $statistic->id }})" wire:confirm="Supprimer ce chiffre clé ?"
+                                    aria-label="Supprimer" tooltip="Supprimer" />
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+            </flux:table>
+        </div>
 
     </x-admin.card>
 

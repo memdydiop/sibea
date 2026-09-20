@@ -43,3 +43,15 @@ test('project pages expose their own seo title and description', function () {
         ->assertSee('<title>Rizerie moderne — GROUPE SIBEA</title>', false)
         ->assertSee('name="description" content="Une rizerie clé en main."', false);
 });
+
+test('legacy sector urls redirect permanently to the canonical urls', function () {
+    $this->get('/btp')->assertRedirect('/secteurs/btp', 301);
+    $this->get('/agroalimentaire')->assertRedirect('/secteurs/agro-industrie', 301);
+    $this->get('/secteurs/agroalimentaire')->assertRedirect('/secteurs/agro-industrie', 301);
+});
+
+test('robots.txt blocks the admin area and exposes the sitemap', function () {
+    $this->get('/robots.txt')
+        ->assertOk()
+        ->assertSee('Disallow: /admin', false);
+});

@@ -259,7 +259,7 @@ new #[Layout('layouts::app')] #[Title('Administration')] class extends Component
                                     <div class="truncate text-sm font-medium">{{ $lead->name }}</div>
                                     <div class="truncate text-xs text-zinc-500">{{ $lead->company ?: $lead->email }}</div>
                                 </div>
-                                <flux:badge size="sm" color="zinc">{{ $lead->status->label() }}</flux:badge>
+                                <flux:badge size="sm" color="zinc">{{ $lead->status?->label() ?? '—' }}</flux:badge>
                                 <span class="whitespace-nowrap text-xs text-zinc-500">{{ $lead->created_at?->diffForHumans() }}</span>
                             </li>
                         @endforeach

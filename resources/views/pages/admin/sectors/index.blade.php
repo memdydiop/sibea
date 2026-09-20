@@ -72,6 +72,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
     public function sectors()
     {
         return Sector::query()
+            ->with('media')
             ->when($this->search, fn($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%' . mb_strtolower($this->search) . '%']))
             ->when($this->statusFilter === 'active', fn($query) => $query->where('is_active', true))
             ->when($this->statusFilter === 'inactive', fn($query) => $query->where('is_active', false))
@@ -82,7 +83,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
     #[Computed]
     public function editedSector(): ?Sector
     {
-        return $this->editingId ? Sector::find($this->editingId) : null;
+        return $this->editingId ? Sector::with('media')->find($this->editingId) : null;
     }
 
     public function updatedSearch(): void
@@ -354,7 +355,8 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
             </x-slot:filters>
         </x-admin.toolbar>
 
-        <flux:table :paginate="$this->sectors">
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->sectors">
         <flux:table.columns>
             <flux:table.column>Nom</flux:table.column>
                 <flux:table.column>Slug</flux:table.column>
@@ -406,7 +408,8 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
                     </flux:table.row>
                 @endforeach
             </flux:table.rows>
-        </flux:table>
+            </flux:table>
+        </div>
 
     </x-admin.card>
 

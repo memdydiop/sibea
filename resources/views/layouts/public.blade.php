@@ -51,21 +51,22 @@
                 @endif
             </nav>
             <div class="flex items-center gap-3">
-                <flux:button variant="ghost" href="{{ route('admin.dashboard') }}" target="_blank" rel="noopener" class="hidden sm:inline-flex text-white! hover:text-cuivre!">
-                    {{ setting('header.login_label') }}
-                </flux:button>
+                <flux:button variant="ghost" href="{{ route('admin.dashboard') }}" target="_blank" rel="noopener" icon="cog-6-tooth" :tooltip="setting('header.login_label') ?: 'Administration'" :aria-label="(setting('header.login_label') ?: 'Administration').' (nouvel onglet)'" class="hidden sm:inline-flex text-white! hover:text-cuivre!" />
                 <button
                     x-on:click="open = !open"
                     :aria-expanded="open"
                     aria-label="Menu"
-                    class="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-lg border border-bordure text-anthracite transition-colors hover:border-cuivre hover:text-cuivre"
+                    :aria-label="open ? 'Fermer le menu' : 'Ouvrir le menu'"
+                    aria-controls="menu-mobile"
+                    x-on:keydown.escape.window="open = false"
+                    class="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/20 text-white transition-colors hover:border-cuivre hover:text-cuivre"
                 >
-                    <span x-show="!open" class="text-xl leading-none">☰</span>
-                    <span x-show="open" class="text-xl leading-none">✕</span>
+                    <span x-show="!open" class="text-xl leading-none" aria-hidden="true">☰</span>
+                    <span x-show="open" class="text-xl leading-none" aria-hidden="true">✕</span>
                 </button>
             </div>
         </div>
-        <nav x-show="open" x-cloak class="lg:hidden border-t border-bordure bg-casse" aria-label="Menu mobile">
+        <nav x-show="open" x-cloak x-on:click.outside="open = false" id="menu-mobile" class="lg:hidden border-t border-bordure bg-casse" aria-label="Menu mobile">
             <div class="px-6 py-4 flex flex-col gap-1 font-display text-base font-semibold">
                 @if($headerLinks['sectors'])
                     <a x-on:click="open = false" href="{{ route('sectors.index') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.link.sectors.label') }}</a>
@@ -79,7 +80,7 @@
                 @if($headerLinks['contact'])
                     <a x-on:click="open = false" href="{{ route('contact') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.link.contact.label') }}</a>
                 @endif
-                <a x-on:click="open = false" href="{{ route('admin.dashboard') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre" wire:navigate>{{ setting('header.login_label') }}</a>
+                <a x-on:click="open = false" href="{{ route('admin.dashboard') }}" class="py-3 border-b border-bordure text-anthracite/85 hover:text-cuivre inline-flex items-center gap-2" wire:navigate><flux:icon.cog-6-tooth class="size-5" />{{ setting('header.login_label') }}</a>
             </div>
         </nav>
     </header>

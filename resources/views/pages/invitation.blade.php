@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -16,12 +17,23 @@ new #[Layout('layouts::auth')] #[Title('Invitation')] class extends Component
 
     public function mount(User $user): void
     {
+        abort_if($user->suspended_at !== null, 403);
+
         $this->user = $user;
     }
 
     public function save(): void
     {
         abort_if($this->user->password_changed_at !== null, 410);
+        abort_if($this->user->suspended_at !== null, 403);
+
+        $key = 'invitation:'.$this->user->id.'|'.request()->ip();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $this->addError('password', 'Trop de tentatives. Réessayez dans une minute.');
+
+            return;
+        }
+        RateLimiter::hit($key, 60);
 
         $validated = $this->validate([
             'password' => ['required', 'string', 'confirmed', Password::min(12)->letters()->mixedCase()->numbers()->symbols()],
@@ -31,6 +43,8 @@ new #[Layout('layouts::auth')] #[Title('Invitation')] class extends Component
             'password' => $validated['password'],
             'password_changed_at' => now(),
         ]);
+
+        RateLimiter::clear($key);
 
         $this->redirect(route('login'), navigate: true);
     }

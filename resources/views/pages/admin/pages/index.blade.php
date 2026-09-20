@@ -170,46 +170,48 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
             </x-slot:filters>
         </x-admin.toolbar>
 
-        <flux:table :paginate="$this->pages">
-        <flux:table.columns>
-            <flux:table.column>Titre</flux:table.column>
-            <flux:table.column>Adresse</flux:table.column>
-            <flux:table.column>Statut</flux:table.column>
-            <flux:table.column align="end">Actions</flux:table.column>
-        </flux:table.columns>
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->pages">
+            <flux:table.columns>
+                <flux:table.column>Titre</flux:table.column>
+                <flux:table.column>Adresse</flux:table.column>
+                <flux:table.column>Statut</flux:table.column>
+                <flux:table.column align="end">Actions</flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @foreach($this->pages as $page)
-                <flux:table.row wire:key="page-row-{{ $page->id }}">
-                    <flux:table.cell variant="strong">{{ $page->title }}</flux:table.cell>
-                    <flux:table.cell>
-                        <flux:badge size="sm" color="zinc">/{{ $page->slug }}</flux:badge>
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        @if($page->is_published)
-                            <flux:badge size="sm" color="green">Publiée</flux:badge>
-                        @else
-                            <flux:badge size="sm" color="zinc">Brouillon</flux:badge>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex justify-end gap-1">
-                            <flux:button size="xs" variant="filled"
-                                icon="{{ $page->is_published ? 'eye-slash' : 'eye' }}"
-                                wire:click="togglePublish({{ $page->id }})"
-                                aria-label="{{ $page->is_published ? 'Dépublier' : 'Publier' }}"
-                                tooltip="{{ $page->is_published ? 'Dépublier' : 'Publier' }}" />
-                            <flux:button size="xs" variant="filled" icon="pencil"
-                                wire:click="edit({{ $page->id }})" aria-label="Modifier" tooltip="Modifier" />
-                            <flux:button size="xs" variant="filled" color="red" icon="trash"
-                                wire:click="delete({{ $page->id }})" wire:confirm="Supprimer cette page ?"
-                                aria-label="Supprimer" tooltip="Supprimer" />
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforeach
-        </flux:table.rows>
-        </flux:table>
+            <flux:table.rows>
+                @foreach($this->pages as $page)
+                    <flux:table.row wire:key="page-row-{{ $page->id }}">
+                        <flux:table.cell variant="strong">{{ $page->title }}</flux:table.cell>
+                        <flux:table.cell>
+                            <flux:badge size="sm" color="zinc">/{{ $page->slug }}</flux:badge>
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if($page->is_published)
+                                <flux:badge size="sm" color="green">Publiée</flux:badge>
+                            @else
+                                <flux:badge size="sm" color="zinc">Brouillon</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex justify-end gap-1">
+                                <flux:button size="xs" variant="filled"
+                                    icon="{{ $page->is_published ? 'eye-slash' : 'eye' }}"
+                                    wire:click="togglePublish({{ $page->id }})"
+                                    aria-label="{{ $page->is_published ? 'Dépublier' : 'Publier' }}"
+                                    tooltip="{{ $page->is_published ? 'Dépublier' : 'Publier' }}" />
+                                <flux:button size="xs" variant="filled" icon="pencil"
+                                    wire:click="edit({{ $page->id }})" aria-label="Modifier" tooltip="Modifier" />
+                                <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                    wire:click="delete({{ $page->id }})" wire:confirm="Supprimer cette page ?"
+                                    aria-label="Supprimer" tooltip="Supprimer" />
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+            </flux:table>
+        </div>
 
     </x-admin.card>
 

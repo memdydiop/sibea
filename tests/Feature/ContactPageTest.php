@@ -22,11 +22,10 @@ function contactPageData(Sector $sector): array
         'request_type' => 'devis',
         'budget' => '10M FCFA',
         'message' => 'Je souhaite un devis pour un projet.',
-        'consent' => true,
     ];
 }
 
-test('creates a lead with consent data and history', function () {
+test('creates a lead with implicit consent data and history', function () {
     $sector = Sector::factory()->create(['is_active' => true]);
 
     Livewire::test('pages::contact')
@@ -55,18 +54,6 @@ test('ignores silently when honeypot is filled', function () {
         ->set('honeypot', 'spam-bot')
         ->call('submit')
         ->assertSet('success', false);
-
-    $this->assertDatabaseCount('leads', 0);
-});
-
-test('refuses submit without consent', function () {
-    $sector = Sector::factory()->create(['is_active' => true]);
-
-    Livewire::test('pages::contact')
-        ->set(contactPageData($sector))
-        ->set('consent', false)
-        ->call('submit')
-        ->assertHasErrors(['consent']);
 
     $this->assertDatabaseCount('leads', 0);
 });

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Hash;
@@ -76,7 +77,7 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureMail(): void
     {
-        ResetPassword::toMailUsing(function (object $notifiable, string $token) {
+        ResetPassword::toMailUsing(function (CanResetPassword $notifiable, string $token) {
             $url = url(route('password.reset', [
                 'token' => $token,
                 'email' => $notifiable->getEmailForPasswordReset(),

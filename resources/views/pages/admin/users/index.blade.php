@@ -266,9 +266,10 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs')] class extends Component
             </x-slot:filters>
         </x-admin.toolbar>
 
-        <flux:table :paginate="$this->users">
-        <flux:table.columns>
-            <flux:table.column>Nom</flux:table.column>
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->users">
+            <flux:table.columns>
+                <flux:table.column>Nom</flux:table.column>
                 <flux:table.column>Email</flux:table.column>
                 <flux:table.column>Rôles</flux:table.column>
                 <flux:table.column align="end">Actions</flux:table.column>
@@ -325,7 +326,8 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs')] class extends Component
                     </flux:table.row>
                 @endforeach
             </flux:table.rows>
-        </flux:table>
+            </flux:table>
+        </div>
 
     </x-admin.card>
 

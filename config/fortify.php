@@ -161,7 +161,7 @@ return [
     */
 
     'features' => array_values(array_filter([
-        env('APP_ENV') !== 'production' ? Features::registration() : null,
+        env('FORTIFY_REGISTRATION', env('APP_ENV') !== 'production') ? Features::registration() : null,
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

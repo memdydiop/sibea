@@ -2,48 +2,58 @@
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Enums\RequestType;
 use App\Events\LeadCreated;
 use App\Models\Lead;
 use App\Models\Sector;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 new #[Layout('layouts::public')] class extends Component {
-    #[Validate('required|string|max:255')]
     public string $name = '';
 
     public string $company = '';
 
-    #[Validate('required|email|max:255')]
     public string $email = '';
 
     public string $phone = '';
 
-    #[Validate('required|string|max:255')]
     public string $residence_country = '';
 
-    #[Validate('required|string|max:255')]
     public string $target_territory = '';
 
-    #[Validate('required|exists:sectors,id')]
     public ?int $sector_id = null;
 
-    #[Validate('required|in:information,devis,partenariat,candidature,presse,autre')]
     public string $request_type = '';
 
     public ?string $budget = null;
 
-    #[Validate('required|string|max:2000')]
     public string $message = '';
-
-    #[Validate('accepted')]
-    public bool $consent = false;
 
     public string $honeypot = '';
 
     public bool $success = false;
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'company' => ['nullable', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'residence_country' => ['required', 'string', 'max:255'],
+            'target_territory' => ['required', 'string', 'max:255'],
+            'sector_id' => ['required', 'exists:sectors,id'],
+            'request_type' => ['required', Rule::enum(RequestType::class)],
+            'budget' => ['nullable', 'string', 'max:255'],
+            'message' => ['required', 'string', 'max:2000'],
+        ];
+    }
 
     public function submit(): void
     {
@@ -51,15 +61,16 @@ new #[Layout('layouts::public')] class extends Component {
             return;
         }
 
-        $key = 'contact:' . request()->ip();
+        $key = 'contact:'.request()->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $this->addError('email', 'Trop de tentatives. Réessayez dans une minute.');
 
             return;
         }
-        RateLimiter::hit($key, 60);
 
         $this->validate();
+
+        RateLimiter::hit($key, 60);
 
         if (!Sector::whereKey($this->sector_id)->active()->exists()) {
             $this->addError('sector_id', 'Le secteur sélectionné n’est plus disponible.');
@@ -91,7 +102,7 @@ new #[Layout('layouts::public')] class extends Component {
 
         LeadCreated::dispatch($lead);
 
-        $this->reset(['name', 'company', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'request_type', 'budget', 'message', 'consent', 'honeypot']);
+        $this->reset(['name', 'company', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'request_type', 'budget', 'message', 'honeypot']);
         $this->success = true;
     }
 };
@@ -229,64 +240,87 @@ new #[Layout('layouts::public')] class extends Component {
 
                         <form wire:submit="submit" class="space-y-5">
                             <div class="grid sm:grid-cols-2 gap-5">
-                                <flux:input wire:model="name" label="Nom complet *" type="text"
-                                    placeholder="Votre nom complet *" />
+                                <div>
+                                    <flux:input wire:model="name" label="Nom complet *" type="text"
+                                        placeholder="Votre nom complet *" />
+                                    <flux:error name="name" />
+                                </div>
 
-                                <flux:input wire:model="company" label="Société" type="text"
-                                    placeholder="Votre société" />
-
+                                <div>
+                                    <flux:input wire:model="company" label="Société" type="text"
+                                        placeholder="Votre société" />
+                                    <flux:error name="company" />
+                                </div>
                             </div>
 
                             <div class="grid sm:grid-cols-2 gap-5">
-                                <flux:input wire:model="email" label="Email *" type="email"
-                                    placeholder="Votre adresse email" />
-                                <flux:input wire:model="phone" label="Votre numero de téléphone " type="tel" />
+                                <div>
+                                    <flux:input wire:model="email" label="Email *" type="email"
+                                        placeholder="Votre adresse email" />
+                                    <flux:error name="email" />
+                                </div>
+                                <div>
+                                    <flux:input wire:model="phone" label="Votre numéro de téléphone" type="tel" />
+                                    <flux:error name="phone" />
+                                </div>
                             </div>
 
                             <div class="grid sm:grid-cols-2 gap-5">
-                                <flux:input wire:model="residence_country" label="Pays de résidence *" type="text"
-                                    placeholder="Ex. Côte d’Ivoire, France…" />
-                                <flux:input wire:model="target_territory" label="Territoire ciblé *" type="text"
-                                    placeholder="Ex. Abidjan, Cocody" />
+                                <div>
+                                    <flux:input wire:model="residence_country" label="Pays de résidence *" type="text"
+                                        placeholder="Ex. Côte d’Ivoire, France…" />
+                                    <flux:error name="residence_country" />
+                                </div>
+                                <div>
+                                    <flux:input wire:model="target_territory" label="Territoire ciblé *" type="text"
+                                        placeholder="Ex. Abidjan, Cocody" />
+                                    <flux:error name="target_territory" />
+                                </div>
                             </div>
 
                             <div class="grid sm:grid-cols-2 gap-5">
-                                <flux:select wire:model="sector_id" label="Secteur concerné *">
-                                    <flux:select.option value="">Sélectionnez un secteur</flux:select.option>
-                                    @foreach (Sector::cachedActiveList() as $sector)
-                                        <flux:select.option value="{{ $sector->id }}">{{ $sector->name }}
-                                        </flux:select.option>
-                                    @endforeach
-                                </flux:select>
-                                </flux:field>
+                                <div>
+                                    <flux:select wire:model="sector_id" label="Secteur concerné *">
+                                        <flux:select.option value="">Sélectionnez un secteur</flux:select.option>
+                                        @foreach (Sector::cachedActiveList() as $sector)
+                                            <flux:select.option value="{{ $sector->id }}">{{ $sector->name }}
+                                            </flux:select.option>
+                                        @endforeach
+                                    </flux:select>
+                                    <flux:error name="sector_id" />
+                                </div>
 
-                                <flux:select wire:model="request_type" label="Type de demande *">
-                                    <flux:select.option value="">Sélectionnez</flux:select.option>
-                                    <flux:select.option value="information">Demande d’information</flux:select.option>
-                                    <flux:select.option value="devis">Demande de devis</flux:select.option>
-                                    <flux:select.option value="partenariat">Partenariat</flux:select.option>
-                                    <flux:select.option value="candidature">Candidature</flux:select.option>
-                                    <flux:select.option value="presse">Presse</flux:select.option>
-                                    <flux:select.option value="autre">Autre</flux:select.option>
-                                </flux:select>
+                                <div>
+                                    <flux:select wire:model="request_type" label="Type de demande *">
+                                        <flux:select.option value="">Sélectionnez</flux:select.option>
+                                        @foreach (RequestType::cases() as $type)
+                                            <flux:select.option value="{{ $type->value }}">{{ $type->label() }}</flux:select.option>
+                                        @endforeach
+                                    </flux:select>
+                                    <flux:error name="request_type" />
+                                </div>
                             </div>
 
-                            <flux:input wire:model="budget" label="Budget indicatif" type="text"
-                                placeholder="Ex. 25 000 000 FCFA" />
-                            <flux:textarea label="Message *" rows="5"
-                                placeholder="Décrivez votre projet, vos besoins, vos contraintes…" />
+                            <div>
+                                <flux:input wire:model="budget" label="Budget indicatif" type="text"
+                                    placeholder="Ex. 25 000 000 FCFA" />
+                                <flux:error name="budget" />
+                            </div>
+                            <div>
+                                <flux:textarea wire:model="message" label="Message *" rows="5"
+                                    placeholder="Décrivez votre projet, vos besoins, vos contraintes…" />
+                                <flux:error name="message" />
+                            </div>
 
-                            <div class="flex items-center">
-                                <flux:checkbox wire:model="consent" label="J’accepte la " /> &nbsp;<a
+                            <p class="text-xs text-ardoise">En soumettant ce formulaire, vous consentez à l’utilisation de vos données pour traiter votre demande, conformément à notre <a
                                     href="{{ route('privacy') }}" class="underline text-cuivre"
-                                    target="_blank">politique de confidentialité</a> *
-                            </div>
+                                    target="_blank">politique de confidentialité</a>.</p>
 
-                            <input type="text" wire:model="honeypot" class="hidden" tabindex="-1"
+                            <input type="text" wire:model="honeypot" class="hidden" tabindex="-1" aria-hidden="true"
                                 autocomplete="off">
 
                             <div class="pt-2">
-                                <flux:button type="submit" variant="primary" class="!bg-cuivre w-full sm:w-auto">
+                                <flux:button type="submit" variant="primary" class="bg-cuivre! w-full sm:w-auto">
                                     Envoyer ma demande
                                 </flux:button>
                             </div>

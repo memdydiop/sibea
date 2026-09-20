@@ -8,6 +8,7 @@ use App\Models\Lead;
 use App\Models\Sector;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -144,7 +145,7 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         $this->authorize('update', $lead);
 
         $validated = $this->validate([
-            'status' => ['required', 'string'],
+            'status' => ['required', Rule::enum(LeadStatus::class)],
             'assigned_to' => ['nullable', 'exists:users,id'],
             'notes' => ['nullable', 'string'],
         ]);
@@ -201,10 +202,10 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
             'residence_country' => ['nullable', 'string', 'max:255'],
             'target_territory' => ['nullable', 'string', 'max:255'],
             'sector_id' => ['required', 'exists:sectors,id'],
-            'request_type' => ['required', 'string'],
+            'request_type' => ['required', Rule::enum(RequestType::class)],
             'budget' => ['nullable', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:2000'],
-            'source' => ['required', 'string'],
+            'source' => ['required', Rule::enum(LeadSource::class)],
         ]);
 
         $lead = Lead::create($validated + [
@@ -277,7 +278,8 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
             </x-slot:filters>
         </x-admin.toolbar>
 
-        <flux:table :paginate="$this->leads">
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->leads">
         <flux:table.columns>
             <flux:table.column>Nom</flux:table.column>
             <flux:table.column>Email</flux:table.column>
@@ -294,10 +296,10 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                     <flux:table.cell variant="strong">{{ $lead->name }}</flux:table.cell>
                     <flux:table.cell>{{ $lead->email }}</flux:table.cell>
                     <flux:table.cell>{{ $lead->sector?->name ?? '—' }}</flux:table.cell>
-                    <flux:table.cell>{{ $lead->request_type->label() }}</flux:table.cell>
+                    <flux:table.cell>{{ $lead->request_type?->label() ?? '—' }}</flux:table.cell>
                     <flux:table.cell>
                         <flux:badge size="sm" color="{{ $lead->status === \App\Enums\LeadStatus::Nouveau ? 'blue' : 'zinc' }}">
-                            {{ $lead->status->label() }}
+                            {{ $lead->status?->label() ?? '—' }}
                         </flux:badge>
                     </flux:table.cell>
                     <flux:table.cell>{{ $lead->assignedTo?->name ?? '—' }}</flux:table.cell>
@@ -310,7 +312,8 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                 </flux:table.row>
             @endforeach
         </flux:table.rows>
-    </flux:table>
+        </flux:table>
+        </div>
 
     </x-admin.card>
 
@@ -330,7 +333,7 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                         {{ $this->editingLead->email }}@if($this->editingLead->phone) · {{ $this->editingLead->phone }}@endif
                     </div>
                     <div class="text-zinc-500">
-                        {{ $this->editingLead->sector?->name ?? 'Secteur non précisé' }} · {{ $this->editingLead->request_type->label() }}
+                        {{ $this->editingLead->sector?->name ?? 'Secteur non précisé' }} · {{ $this->editingLead->request_type?->label() ?? '—' }}
                     </div>
                     @if($this->editingLead->residence_country || $this->editingLead->target_territory)
                         <div class="text-zinc-500">

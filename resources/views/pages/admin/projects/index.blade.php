@@ -398,50 +398,52 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
             </x-slot:filters>
         </x-admin.toolbar>
 
-        <flux:table :paginate="$this->projects">
-        <flux:table.columns>
-            <flux:table.column>Titre</flux:table.column>
-            <flux:table.column>Secteurs</flux:table.column>
-            <flux:table.column>Publication</flux:table.column>
-            <flux:table.column align="end">Actions</flux:table.column>
-        </flux:table.columns>
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->projects">
+            <flux:table.columns>
+                <flux:table.column>Titre</flux:table.column>
+                <flux:table.column>Secteurs</flux:table.column>
+                <flux:table.column>Publication</flux:table.column>
+                <flux:table.column align="end">Actions</flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @foreach($this->projects as $project)
-                <flux:table.row wire:key="project-row-{{ $project->id }}">
-                    <flux:table.cell variant="strong">{{ $project->title }}</flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex flex-wrap gap-1">
-                            @foreach($project->sectors as $sector)
-                                <flux:badge size="sm" color="zinc">{{ $sector->name }}</flux:badge>
-                            @endforeach
-                        </div>
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        @if($project->is_published)
-                            <flux:badge size="sm" color="green">Publié</flux:badge>
-                        @else
-                            <flux:badge size="sm" color="zinc">Brouillon</flux:badge>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex justify-end gap-1">
-                            <flux:button size="xs" variant="filled"
-                                icon="{{ $project->is_published ? 'eye-slash' : 'eye' }}"
-                                wire:click="togglePublish({{ $project->id }})"
-                                aria-label="{{ $project->is_published ? 'Dépublier' : 'Publier' }}"
-                                tooltip="{{ $project->is_published ? 'Dépublier' : 'Publier' }}" />
-                            <flux:button size="xs" variant="filled" icon="pencil"
-                                wire:click="edit({{ $project->id }})" aria-label="Modifier" tooltip="Modifier" />
-                            <flux:button size="xs" variant="filled" color="red" icon="trash"
-                                wire:click="delete({{ $project->id }})" wire:confirm="Supprimer cette réalisation ?"
-                                aria-label="Supprimer" tooltip="Supprimer" />
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforeach
-        </flux:table.rows>
-        </flux:table>
+            <flux:table.rows>
+                @foreach($this->projects as $project)
+                    <flux:table.row wire:key="project-row-{{ $project->id }}">
+                        <flux:table.cell variant="strong">{{ $project->title }}</flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex flex-wrap gap-1">
+                                @foreach($project->sectors as $sector)
+                                    <flux:badge size="sm" color="zinc">{{ $sector->name }}</flux:badge>
+                                @endforeach
+                            </div>
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if($project->is_published)
+                                <flux:badge size="sm" color="green">Publié</flux:badge>
+                            @else
+                                <flux:badge size="sm" color="zinc">Brouillon</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex justify-end gap-1">
+                                <flux:button size="xs" variant="filled"
+                                    icon="{{ $project->is_published ? 'eye-slash' : 'eye' }}"
+                                    wire:click="togglePublish({{ $project->id }})"
+                                    aria-label="{{ $project->is_published ? 'Dépublier' : 'Publier' }}"
+                                    tooltip="{{ $project->is_published ? 'Dépublier' : 'Publier' }}" />
+                                <flux:button size="xs" variant="filled" icon="pencil"
+                                    wire:click="edit({{ $project->id }})" aria-label="Modifier" tooltip="Modifier" />
+                                <flux:button size="xs" variant="filled" color="red" icon="trash"
+                                    wire:click="delete({{ $project->id }})" wire:confirm="Supprimer cette réalisation ?"
+                                    aria-label="Supprimer" tooltip="Supprimer" />
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+            </flux:table>
+        </div>
 
     </x-admin.card>
 

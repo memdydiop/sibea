@@ -66,7 +66,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
     public function expertises()
     {
         return Expertise::query()
-            ->with('sectors')
+            ->with(['sectors', 'media'])
             ->when($this->search, fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($this->search).'%']))
             ->when($this->statusFilter === 'active', fn ($query) => $query->where('is_active', true))
             ->when($this->statusFilter === 'inactive', fn ($query) => $query->where('is_active', false))
@@ -329,53 +329,55 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
             </x-slot:filters>
         </x-admin.toolbar>
 
-        <flux:table :paginate="$this->expertises">
-        <flux:table.columns>
-            <flux:table.column>Visuel</flux:table.column>
-            <flux:table.column>Nom</flux:table.column>
-            <flux:table.column>Secteurs</flux:table.column>
-            <flux:table.column>Statut</flux:table.column>
-            <flux:table.column align="end">Actions</flux:table.column>
-        </flux:table.columns>
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->expertises">
+            <flux:table.columns>
+                <flux:table.column>Visuel</flux:table.column>
+                <flux:table.column>Nom</flux:table.column>
+                <flux:table.column>Secteurs</flux:table.column>
+                <flux:table.column>Statut</flux:table.column>
+                <flux:table.column align="end">Actions</flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @foreach($this->expertises as $expertise)
-                <flux:table.row wire:key="expertise-row-{{ $expertise->id }}">
-                    <flux:table.cell>
-                        @if($expertise->getFirstMediaUrl('cover', 'thumb'))
-                            <img src="{{ $expertise->getFirstMediaUrl('cover', 'thumb') }}" alt="" class="h-10 w-16 object-cover rounded">
-                        @else
-                            <span class="text-zinc-400">—</span>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell variant="strong">{{ $expertise->name }}</flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex flex-wrap gap-1">
-                            @forelse($expertise->sectors as $sector)
-                                <flux:badge size="sm">{{ $sector->name }}</flux:badge>
-                            @empty
-                                <span class="text-xs text-zinc-400">—</span>
-                            @endforelse
-                        </div>
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        @if($expertise->is_active)
-                            <flux:badge size="sm" color="green">Actif</flux:badge>
-                        @else
-                            <flux:badge size="sm" color="zinc">Inactif</flux:badge>
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        <div class="flex justify-end gap-1">
-                            <flux:button size="xs" variant="filled" icon="{{ $expertise->is_active ? 'eye-slash' : 'eye' }}" wire:click="toggleActive({{ $expertise->id }})" aria-label="{{ $expertise->is_active ? 'Désactiver' : 'Activer' }}" tooltip="{{ $expertise->is_active ? 'Désactiver' : 'Activer' }}" />
-                            <flux:button size="xs" variant="filled" icon="pencil" wire:click="edit({{ $expertise->id }})" aria-label="Modifier" tooltip="Modifier" />
-                            <flux:button size="xs" variant="filled" color="red" icon="trash" wire:click="delete({{ $expertise->id }})" wire:confirm="Supprimer cette expertise ?" aria-label="Supprimer" tooltip="Supprimer" />
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforeach
-        </flux:table.rows>
-    </flux:table>
+            <flux:table.rows>
+                @foreach($this->expertises as $expertise)
+                    <flux:table.row wire:key="expertise-row-{{ $expertise->id }}">
+                        <flux:table.cell>
+                            @if($expertise->getFirstMediaUrl('cover', 'thumb'))
+                                <img src="{{ $expertise->getFirstMediaUrl('cover', 'thumb') }}" alt="" class="h-10 w-16 object-cover rounded">
+                            @else
+                                <span class="text-zinc-400">—</span>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell variant="strong">{{ $expertise->name }}</flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex flex-wrap gap-1">
+                                @forelse($expertise->sectors as $sector)
+                                    <flux:badge size="sm">{{ $sector->name }}</flux:badge>
+                                @empty
+                                    <span class="text-xs text-zinc-400">—</span>
+                                @endforelse
+                            </div>
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if($expertise->is_active)
+                                <flux:badge size="sm" color="green">Actif</flux:badge>
+                            @else
+                                <flux:badge size="sm" color="zinc">Inactif</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <div class="flex justify-end gap-1">
+                                <flux:button size="xs" variant="filled" icon="{{ $expertise->is_active ? 'eye-slash' : 'eye' }}" wire:click="toggleActive({{ $expertise->id }})" aria-label="{{ $expertise->is_active ? 'Désactiver' : 'Activer' }}" tooltip="{{ $expertise->is_active ? 'Désactiver' : 'Activer' }}" />
+                                <flux:button size="xs" variant="filled" icon="pencil" wire:click="edit({{ $expertise->id }})" aria-label="Modifier" tooltip="Modifier" />
+                                <flux:button size="xs" variant="filled" color="red" icon="trash" wire:click="delete({{ $expertise->id }})" wire:confirm="Supprimer cette expertise ?" aria-label="Supprimer" tooltip="Supprimer" />
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+            </flux:table>
+        </div>
 
     </x-admin.card>
 

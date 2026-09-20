@@ -53,7 +53,10 @@ new #[Layout('layouts::public')] class extends Component
 
     <section class="max-w-4xl mx-auto px-6 lg:px-8 py-16">
         <div class="page-content text-anthracite">
-            {!! Illuminate\Support\Str::markdown($pageContent) !!}
+            {!! Illuminate\Support\Str::markdown($pageContent, [
+                'html_input' => 'strip',
+                'allow_unsafe_links' => false,
+            ]) !!}
         </div>
     </section>
 </div>

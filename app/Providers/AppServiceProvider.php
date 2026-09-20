@@ -4,8 +4,11 @@ namespace App\Providers;
 
 use App\Events\LeadCreated;
 use App\Listeners\SendLeadNotification;
+use App\Models\User;
 use App\Policies\RolePolicy;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -35,6 +38,15 @@ class AppServiceProvider extends ServiceProvider
             LeadCreated::class,
             SendLeadNotification::class,
         );
+
+        Event::listen(Login::class, function (Login $event): void {
+            $user = $event->user;
+
+            if ($user instanceof User && $user->suspended_at !== null) {
+                Auth::logout();
+                request()->session()->invalidate();
+            }
+        });
 
         Gate::policy(Role::class, RolePolicy::class);
     }

@@ -95,3 +95,29 @@ test('used invitation shows the login notice instead of the form', function () {
         ->assertSee('déjà été utilisée')
         ->assertDontSee('Confirmation');
 });
+
+test('expired invitation link is forbidden', function () {
+    $user = User::factory()->create(['password_changed_at' => null]);
+
+    $url = invitationUrl($user);
+
+    $this->travel(8)->days();
+
+    $this->get($url)->assertForbidden();
+});
+
+test('suspended user cannot use the invitation link', function () {
+    $user = User::factory()->create(['password_changed_at' => null]);
+
+    $component = Livewire::test('pages::invitation', ['user' => $user]);
+
+    $user->update(['suspended_at' => now()]);
+
+    $this->get(invitationUrl($user))->assertForbidden();
+
+    $component
+        ->set('password', 'N0uveau-P@ssword!')
+        ->set('password_confirmation', 'N0uveau-P@ssword!')
+        ->call('save')
+        ->assertForbidden();
+});

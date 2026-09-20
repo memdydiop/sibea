@@ -126,9 +126,10 @@ new #[Layout('layouts::app')] #[Title('Rôles')] class extends Component
 
         <x-admin.toolbar search-placeholder="Rechercher un rôle…" />
 
-        <flux:table :paginate="$this->roles">
-        <flux:table.columns>
-            <flux:table.column>Nom</flux:table.column>
+        <div class="overflow-x-auto">
+            <flux:table :paginate="$this->roles">
+            <flux:table.columns>
+                <flux:table.column>Nom</flux:table.column>
                 <flux:table.column>Permissions</flux:table.column>
                 <flux:table.column>Utilisateurs</flux:table.column>
                 <flux:table.column align="end">Actions</flux:table.column>
@@ -152,7 +153,8 @@ new #[Layout('layouts::app')] #[Title('Rôles')] class extends Component
                     </flux:table.row>
                 @endforeach
             </flux:table.rows>
-        </flux:table>
+            </flux:table>
+        </div>
 
     </x-admin.card>
 

@@ -189,6 +189,8 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             'method_steps.*.title' => ['nullable', 'string', 'max:255'],
             'method_steps.*.text' => ['nullable', 'string', 'max:500'],
             'logo' => ['nullable', 'image', 'max:5120'],
+            'hero_home' => ['nullable', 'image', 'max:5120'],
+            'group_image' => ['nullable', 'image', 'max:5120'],
             'hero_sectors' => ['nullable', 'image', 'max:5120'],
             'hero_expertises' => ['nullable', 'image', 'max:5120'],
             'hero_projects' => ['nullable', 'image', 'max:5120'],

@@ -26,6 +26,22 @@ test('renders public pages', function () {
     $this->get(route('privacy'))->assertOk();
 });
 
+test('legal pages expose complete information', function () {
+    $this->get(route('legal'))
+        ->assertOk()
+        ->assertSee('Directeur de la publication')
+        ->assertSee('Propriété intellectuelle')
+        ->assertSee('Limitation de responsabilité')
+        ->assertSee('Droit applicable');
+
+    $this->get(route('privacy'))
+        ->assertOk()
+        ->assertSee('Responsable du traitement')
+        ->assertSee('Finalités et base légale')
+        ->assertSee('Durée de conservation')
+        ->assertSee('ARTCI');
+});
+
 test('home hero is a static banner without carousel', function () {
     Sector::factory()->create(['name' => 'BTP', 'hero_title' => 'Titre secteur', 'is_active' => true]);
 
@@ -81,6 +97,21 @@ test('renders editorial pages from the database', function () {
         ->assertOk()
         ->assertSee('Mentions personnalisées')
         ->assertSee('Contenu personnalisé.');
+});
+
+test('strips raw HTML from editorial markdown pages', function () {
+    Page::create([
+        'slug' => 'mentions-legales',
+        'title' => 'Sécurité XSS',
+        'content' => "Texte sain <script>alert('xss')</script> et gras **important**.",
+        'is_published' => true,
+    ]);
+
+    $response = $this->get(route('legal'))->assertOk();
+
+    expect($response->getContent())
+        ->toContain('<p>Texte sain alert(\'xss\') et gras <strong>important</strong>.</p>')
+        ->not->toContain('<script>');
 });
 
 test('renders free editorial pages and lists them in the sitemap', function () {
