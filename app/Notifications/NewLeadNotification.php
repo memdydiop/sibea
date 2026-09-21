@@ -24,15 +24,41 @@ class NewLeadNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        $message = (new MailMessage)
             ->subject('Nouveau prospect : '.$this->lead->name)
             ->greeting('Bonjour,')
             ->line('Un nouveau prospect a été enregistré depuis le site.')
             ->line('Nom : '.$this->lead->name)
             ->line('Email : '.$this->lead->email)
-            ->line('Type de demande : '.$this->lead->request_type->label())
+            ->line('Type de demande : '.$this->lead->request_type->label());
+
+        if (filled($this->lead->company)) {
+            $message->line('Société : '.$this->lead->company);
+        }
+
+        if (filled($this->lead->phone)) {
+            $message->line('Téléphone : '.$this->lead->phone);
+        }
+
+        if (filled($this->lead->target_territory)) {
+            $message->line('Territoire ciblé : '.$this->lead->target_territory);
+        }
+
+        if (filled($this->lead->budget)) {
+            $message->line('Budget indicatif : '.$this->lead->budget);
+        }
+
+        $message
             ->action('Voir dans l’administration', url('/admin/prospects'))
             ->line('Merci !');
+
+        // Permet au commercial de répondre directement au prospect
+        // tout en gardant un expéditeur vérifié (contact@sibea.ci) pour Brevo/SPF/DKIM.
+        if (filter_var($this->lead->email, FILTER_VALIDATE_EMAIL) !== false) {
+            $message->replyTo($this->lead->email, $this->lead->name);
+        }
+
+        return $message;
     }
 
     /**
