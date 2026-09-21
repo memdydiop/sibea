@@ -1,13 +1,13 @@
 <?php
 
+use App\Events\LeadCreated;
 use App\Models\Lead;
 use App\Models\Sector;
 use App\Models\User;
 use App\Notifications\NewLeadNotification;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 function contactPageData(Sector $sector): array
 {
@@ -89,12 +89,9 @@ test('throttles contact submits after 5 attempts', function () {
     $this->assertDatabaseMissing('leads', ['email' => 'blocked@example.com']);
 });
 
-test('notifies commercial on new lead', function () {
+test('routes unassigned lead to the shared mailbox', function () {
     Notification::fake();
-    Permission::create(['name' => 'manage_leads', 'guard_name' => 'web']);
-    $role = Role::create(['name' => 'Commercial notif', 'guard_name' => 'web']);
-    $role->givePermissionTo('manage_leads');
-    $commercial = User::factory()->create()->assignRole($role);
+    config()->set('leads.notification_email', 'contact@sibea.ci');
     $sector = Sector::factory()->create(['is_active' => true]);
 
     Livewire::test('pages::contact')
@@ -102,5 +99,16 @@ test('notifies commercial on new lead', function () {
         ->call('submit')
         ->assertSet('success', true);
 
+    Notification::assertSentOnDemand(NewLeadNotification::class);
+});
+
+test('notifies the assignee when the lead is assigned', function () {
+    Notification::fake();
+    $commercial = User::factory()->create();
+    $lead = Lead::factory()->create(['assigned_to' => $commercial->id]);
+
+    Event::dispatch(new LeadCreated($lead));
+
     Notification::assertSentTo($commercial, NewLeadNotification::class);
+    Notification::assertSentOnDemandTimes(NewLeadNotification::class, 0);
 });

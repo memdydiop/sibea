@@ -320,7 +320,8 @@ new #[Layout('layouts::public')] class extends Component {
                                 autocomplete="off">
 
                             <div class="pt-2">
-                                <flux:button type="submit" variant="primary" class="bg-cuivre! w-full sm:w-auto">
+                                <flux:button type="submit" variant="primary" class="bg-cuivre! w-full sm:w-auto"
+                                    wire:loading.attr="disabled" wire:target="submit">
                                     Envoyer ma demande
                                 </flux:button>
                             </div>
