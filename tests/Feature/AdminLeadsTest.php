@@ -4,6 +4,8 @@ use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Models\Sector;
 use App\Models\User;
+use App\Notifications\AssignedLeadNotification;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -131,6 +133,47 @@ test('logs status and assignment changes in history', function () {
 
     expect($actions)->toContain('status_changed')
         ->and($actions)->toContain('assigned');
+});
+
+test('assigning a lead notifies the assignee', function () {
+    Notification::fake();
+    $manager = leadsManager();
+    $assignee = User::factory()->create();
+    $lead = Lead::factory()->create(['status' => LeadStatus::Nouveau]);
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.leads.index')
+        ->call('edit', $lead->id)
+        ->set('assigned_to', $assignee->id)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    Notification::assertSentTo($assignee, AssignedLeadNotification::class);
+});
+
+test('re-saving without assignment change sends nothing', function () {
+    Notification::fake();
+    $manager = leadsManager();
+    $assignee = User::factory()->create();
+    $lead = Lead::factory()->create(['status' => LeadStatus::Nouveau, 'assigned_to' => $assignee->id]);
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.leads.index')
+        ->call('edit', $lead->id)
+        ->set('notes', 'Simple note.')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    Notification::assertNothingSent();
+});
+
+test('flags duplicate emails in the list', function () {
+    Lead::factory()->create(['email' => 'doublon@example.com']);
+    Lead::factory()->create(['email' => 'doublon@example.com']);
+
+    Livewire::actingAs(leadsManager())
+        ->test('pages::admin.leads.index')
+        ->assertSee('Doublon');
 });
 
 test('paginates leads with per page setting', function () {

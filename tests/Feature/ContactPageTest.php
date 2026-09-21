@@ -4,6 +4,7 @@ use App\Events\LeadCreated;
 use App\Models\Lead;
 use App\Models\Sector;
 use App\Models\User;
+use App\Notifications\LeadAcknowledgment;
 use App\Notifications\NewLeadNotification;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -99,6 +100,19 @@ test('routes unassigned lead to the shared mailbox', function () {
         ->call('submit')
         ->assertSet('success', true);
 
+    Notification::assertSentOnDemand(NewLeadNotification::class);
+});
+
+test('sends an acknowledgment to the prospect', function () {
+    Notification::fake();
+    $sector = Sector::factory()->create(['is_active' => true]);
+
+    Livewire::test('pages::contact')
+        ->set(contactPageData($sector))
+        ->call('submit')
+        ->assertSet('success', true);
+
+    Notification::assertSentOnDemand(LeadAcknowledgment::class);
     Notification::assertSentOnDemand(NewLeadNotification::class);
 });
 

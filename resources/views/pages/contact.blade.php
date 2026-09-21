@@ -6,6 +6,8 @@ use App\Enums\RequestType;
 use App\Events\LeadCreated;
 use App\Models\Lead;
 use App\Models\Sector;
+use App\Notifications\LeadAcknowledgment;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -101,6 +103,10 @@ new #[Layout('layouts::public')] class extends Component {
         ]);
 
         LeadCreated::dispatch($lead);
+
+        // Accusé de réception (file d'attente) — uniquement le formulaire public,
+        // jamais la saisie admin manuelle.
+        Notification::route('mail', $lead->email)->notify(new LeadAcknowledgment($lead));
 
         $this->reset(['name', 'company', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'request_type', 'budget', 'message', 'honeypot']);
         $this->success = true;

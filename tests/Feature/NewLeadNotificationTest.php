@@ -25,6 +25,25 @@ test('new lead mail contains prospect details and reply-to', function () {
     expect($rendered)->toContain('+2250700000000');
 });
 
+test('new lead mail flags possible duplicates', function () {
+    Lead::factory()->create(['email' => 'doublon@example.com']);
+    $lead = Lead::factory()->create(['email' => 'doublon@example.com']);
+
+    $user = User::factory()->create();
+    $rendered = (string) (new NewLeadNotification($lead))->toMail($user)->render();
+
+    expect($rendered)->toContain('Doublon possible');
+});
+
+test('new lead mail omits duplicate flag when email is unique', function () {
+    $lead = Lead::factory()->create(['email' => 'unique@example.com']);
+
+    $user = User::factory()->create();
+    $rendered = (string) (new NewLeadNotification($lead))->toMail($user)->render();
+
+    expect($rendered)->not->toContain('Doublon possible');
+});
+
 test('new lead mail skips reply-to when email is invalid', function () {
     $lead = Lead::factory()->make(['email' => 'not-an-email']);
 

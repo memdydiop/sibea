@@ -3,31 +3,37 @@
 namespace App\Notifications;
 
 use App\Models\Lead;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewLeadNotification extends Notification implements ShouldQueue
+class AssignedLeadNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     public function __construct(public Lead $lead) {}
 
     /**
+     * Get the notification's delivery channels.
+     *
      * @return array<int, string>
      */
-    public function via(object $notifiable): array
+    public function via(User $notifiable): array
     {
         return ['mail'];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(User $notifiable): MailMessage
     {
         $message = (new MailMessage)
-            ->subject('Nouveau prospect : '.$this->lead->name)
-            ->greeting('Bonjour,')
-            ->line('Un nouveau prospect a été enregistré depuis le site.')
+            ->subject('Prospect assigné : '.$this->lead->name)
+            ->greeting('Bonjour '.$notifiable->name.',')
+            ->line('Un prospect vous a été assigné sur '.config('app.name').'.')
             ->line('Nom : '.$this->lead->name)
             ->line('Email : '.$this->lead->email)
             ->line('Type de demande : '.$this->lead->request_type->label());
@@ -40,29 +46,11 @@ class NewLeadNotification extends Notification implements ShouldQueue
             $message->line('Téléphone : '.$this->lead->phone);
         }
 
-        if (filled($this->lead->target_territory)) {
-            $message->line('Territoire ciblé : '.$this->lead->target_territory);
-        }
-
-        if (filled($this->lead->budget)) {
-            $message->line('Budget indicatif : '.$this->lead->budget);
-        }
-
-        $duplicates = Lead::query()
-            ->where('email', $this->lead->email)
-            ->whereKeyNot($this->lead->getKey())
-            ->count();
-
-        if ($duplicates > 0) {
-            $message->line('Doublon possible : '.$duplicates.' autre(s) demande(s) existe(nt) déjà pour cet email.');
-        }
-
         $message
             ->action('Voir dans l’administration', url('/admin/prospects'))
             ->line('Merci !');
 
-        // Permet au commercial de répondre directement au prospect
-        // tout en gardant un expéditeur vérifié (contact@sibea.ci) pour Brevo/SPF/DKIM.
+        // Réponse directe au prospect, expéditeur vérifié conservé.
         if (filter_var($this->lead->email, FILTER_VALIDATE_EMAIL) !== false) {
             $message->replyTo($this->lead->email, $this->lead->name);
         }
@@ -71,9 +59,11 @@ class NewLeadNotification extends Notification implements ShouldQueue
     }
 
     /**
+     * Get the array representation of the notification.
+     *
      * @return array<string, mixed>
      */
-    public function toArray(object $notifiable): array
+    public function toArray(User $notifiable): array
     {
         return [
             'lead_id' => $this->lead->id,

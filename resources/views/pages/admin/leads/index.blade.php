@@ -5,6 +5,7 @@ use App\Enums\LeadStatus;
 use App\Enums\RequestType;
 use App\Events\LeadCreated;
 use App\Models\Lead;
+use App\Notifications\AssignedLeadNotification;
 use App\Models\Sector;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -112,6 +113,20 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         $this->resetPage();
     }
 
+    /**
+     * @return array<string, int>
+     */
+    #[Computed]
+    public function duplicateEmails(): array
+    {
+        return Lead::query()
+            ->selectRaw('email, COUNT(*) as total')
+            ->groupBy('email')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('total', 'email')
+            ->all();
+    }
+
     #[Computed]
     public function editingLead(): ?Lead
     {
@@ -174,6 +189,11 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                 'action' => 'assigned',
                 'description' => 'Assigné à '.$assignee.'.',
             ]);
+
+            // Alerte le nouveau commercial (pas d'envoi si désassigné).
+            if ($lead->assignedTo !== null) {
+                $lead->assignedTo->notify(new AssignedLeadNotification($lead));
+            }
         }
 
         $this->showForm = false;
@@ -293,7 +313,11 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         <flux:table.rows>
             @foreach($this->leads as $lead)
                 <flux:table.row wire:key="lead-row-{{ $lead->id }}">
-                    <flux:table.cell variant="strong">{{ $lead->name }}</flux:table.cell>
+                    <flux:table.cell variant="strong">{{ $lead->name }}
+                        @if(isset($this->duplicateEmails[$lead->email]))
+                            <flux:badge size="sm" color="amber">Doublon ×{{ $this->duplicateEmails[$lead->email] }}</flux:badge>
+                        @endif
+                    </flux:table.cell>
                     <flux:table.cell>{{ $lead->email }}</flux:table.cell>
                     <flux:table.cell>{{ $lead->sector?->name ?? '—' }}</flux:table.cell>
                     <flux:table.cell>{{ $lead->request_type?->label() ?? '—' }}</flux:table.cell>
