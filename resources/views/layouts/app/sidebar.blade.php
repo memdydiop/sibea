@@ -78,16 +78,11 @@
             @canany(['manage_users', 'manage_roles', 'manage_settings'])
             <flux:sidebar.nav>
                 <flux:sidebar.group heading="Administration" icon="cog-6-tooth" expandable :expanded="false" class="grid">
-                    @can('manage_users')
+                    @canany(['manage_users', 'manage_roles'])
                         <flux:sidebar.item icon="user-group" :href="route('admin.users')" :current="request()->routeIs('admin.users')" wire:navigate>
-                            Utilisateurs
+                            Utilisateurs & rôles
                         </flux:sidebar.item>
-                    @endcan
-                    @can('manage_roles')
-                        <flux:sidebar.item icon="shield-check" :href="route('admin.roles')" :current="request()->routeIs('admin.roles')" wire:navigate>
-                            Rôles
-                        </flux:sidebar.item>
-                    @endcan
+                    @endcanany
                     @can('manage_settings')
                         <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
                             Paramètres du site

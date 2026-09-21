@@ -83,7 +83,8 @@ Route::middleware(['auth', 'password.changed'])->prefix('admin')->group(function
     Route::livewire('/parametres', 'pages::admin.settings.index')->name('admin.settings');
     Route::livewire('/prospects', 'pages::admin.leads.index')->name('admin.leads');
     Route::livewire('/utilisateurs', 'pages::admin.users.index')->name('admin.users');
-    Route::livewire('/roles', 'pages::admin.roles.index')->name('admin.roles');
+    Route::livewire('/roles/{role}', 'pages::admin.roles.show')->name('admin.roles.show');
+    Route::redirect('/roles', '/admin/utilisateurs');
 });
 
 require __DIR__.'/settings.php';

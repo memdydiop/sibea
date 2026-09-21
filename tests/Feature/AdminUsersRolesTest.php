@@ -37,6 +37,55 @@ test('creates a user with roles', function () {
         ->and($user->hasRole($role->name))->toBeTrue();
 });
 
+test('assigns direct permissions to a user outside roles', function () {
+    Livewire::actingAs(adminManager())
+        ->test('pages::admin.users.index')
+        ->set('name', 'Awa Koné')
+        ->set('email', 'awa-direct@example.com')
+        ->set('role_names', [])
+        ->set('permission_names', ['manage_leads'])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $user = User::where('email', 'awa-direct@example.com')->first();
+
+    expect($user)->not->toBeNull()
+        ->and($user->hasDirectPermission('manage_leads'))->toBeTrue()
+        ->and($user->roles)->toBeEmpty();
+});
+
+test('direct permissions covered by roles are hidden from the assignable list', function () {
+    Role::create(['name' => 'Commercial', 'guard_name' => 'web'])->givePermissionTo('manage_leads');
+
+    $assignable = Livewire::actingAs(adminManager())
+        ->test('pages::admin.users.index')
+        ->set('role_names', ['Commercial'])
+        ->get('assignablePermissions')->pluck('name')->all();
+
+    expect($assignable)->not->toContain('manage_leads')
+        ->and($assignable)->toContain('manage_users');
+});
+
+test('hidden direct permissions are preserved on save', function () {
+    Role::create(['name' => 'Commercial', 'guard_name' => 'web'])->givePermissionTo('manage_leads');
+    Permission::create(['name' => 'manage_pages', 'guard_name' => 'web']);
+    $user = User::factory()->create(['password_changed_at' => null]);
+    $user->assignRole('Commercial');
+    $user->givePermissionTo(['manage_leads', 'manage_pages']);
+
+    Livewire::actingAs(adminManager())
+        ->test('pages::admin.users.index')
+        ->call('edit', $user->id)
+        ->set('permission_names', [])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    // manage_leads est masquée (couverte par le rôle) donc conservée ;
+    // manage_pages était visible et décochée donc retirée.
+    expect($user->fresh()->hasDirectPermission('manage_leads'))->toBeTrue()
+        ->and($user->fresh()->hasDirectPermission('manage_pages'))->toBeFalse();
+});
+
 test('refuses duplicate emails', function () {
     User::factory()->create(['email' => 'doublon@example.com']);
 
@@ -92,23 +141,96 @@ test('refuses self deletion', function () {
 
 test('creates a role with permissions', function () {
     Livewire::actingAs(adminManager())
-        ->test('pages::admin.roles.index')
-        ->set('name', 'Rédacteur')
-        ->set('permission_names', ['manage_leads'])
-        ->call('save')
+        ->test('pages::admin.users.index')
+        ->set('role_name', 'Rédacteur')
+        ->set('role_description', 'Gère les contenus du site.')
+        ->set('role_permission_names', ['manage_leads'])
+        ->call('saveRole')
         ->assertHasNoErrors();
 
     $role = Role::where('name', 'Rédacteur')->first();
 
     expect($role)->not->toBeNull()
+        ->and($role->description)->toBe('Gère les contenus du site.')
         ->and($role->hasPermissionTo('manage_leads'))->toBeTrue();
+});
+
+test('assigns users to a role from the role form', function () {
+    $member = User::factory()->create(['name' => 'Membre Role Test']);
+    $outsider = User::factory()->create(['name' => 'Externe Role Test']);
+
+    Livewire::actingAs(adminManager())
+        ->test('pages::admin.users.index')
+        ->set('role_name', 'Rédacteur')
+        ->set('role_permission_names', ['manage_leads'])
+        ->set('role_user_ids', [$member->id])
+        ->call('saveRole')
+        ->assertHasNoErrors();
+
+    expect($member->fresh()->hasRole('Rédacteur'))->toBeTrue()
+        ->and($outsider->fresh()->hasRole('Rédacteur'))->toBeFalse();
+});
+
+test('role details page lists permissions with descriptions', function () {
+    $role = Role::create(['name' => 'Support', 'guard_name' => 'web', 'description' => 'Assistance de premier niveau.']);
+    Permission::where('name', 'manage_leads')->update(['description' => 'Consulter, assigner et traiter les prospects reçus via le site.']);
+    $role->givePermissionTo('manage_leads');
+
+    $this->actingAs(adminManager())
+        ->get(route('admin.roles.show', $role))
+        ->assertOk()
+        ->assertSee('Assistance de premier niveau.')
+        ->assertSee('manage_leads')
+        ->assertSee('Consulter, assigner et traiter les prospects reçus via le site.');
+});
+
+test('role details page edits the role inline', function () {
+    $role = Role::create(['name' => 'Support', 'guard_name' => 'web']);
+
+    Livewire::actingAs(adminManager())
+        ->test('pages::admin.roles.show', ['role' => $role])
+        ->call('edit')
+        ->set('name', 'Support N1')
+        ->set('description', 'Assistance de premier niveau.')
+        ->set('permission_names', ['manage_leads'])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($role->fresh()->name)->toBe('Support N1')
+        ->and($role->fresh()->description)->toBe('Assistance de premier niveau.');
+});
+
+test('role details page deletes the role and goes back to users', function () {
+    $role = Role::create(['name' => 'Temporaire', 'guard_name' => 'web']);
+
+    Livewire::actingAs(adminManager())
+        ->test('pages::admin.roles.show', ['role' => $role])
+        ->call('delete')
+        ->assertRedirect(route('admin.users'));
+
+    $this->assertDatabaseMissing('roles', ['id' => $role->id]);
+});
+
+test('seeded roles and permissions carry french descriptions', function () {
+    $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\RolesPermissionsSeeder', '--force' => true]);
+
+    expect(Role::where('name', 'Commercial')->first()->description)->toBe('Traite les demandes reçues via le site : suivi des prospects, assignation et notes. Consulte les secteurs et les réalisations.')
+        ->and(Permission::where('name', 'manage_leads')->first()->description)->toBe('Consulter, assigner et traiter les prospects reçus via le site.');
+});
+
+test('role details page is forbidden without permission', function () {
+    $role = Role::create(['name' => 'Support', 'guard_name' => 'web']);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('admin.roles.show', $role))
+        ->assertForbidden();
 });
 
 test('forbids users and roles admin without permission', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)->get(route('admin.users'))->assertForbidden();
-    $this->actingAs($user)->get(route('admin.roles'))->assertForbidden();
+    $this->actingAs($user)->get('/admin/roles')->assertRedirect(route('admin.users'));
 });
 
 test('suspends and reactivates a user with history entries', function () {
@@ -180,14 +302,38 @@ test('filters users by status', function () {
     User::factory()->create(['name' => 'Compte Actif Test', 'suspended_at' => null]);
     User::factory()->create(['name' => 'Compte Suspendu Test', 'suspended_at' => now()]);
 
-    Livewire::actingAs(adminManager())
+    $manager = adminManager();
+
+    $suspended = Livewire::actingAs($manager)
         ->test('pages::admin.users.index')
         ->set('statusFilter', 'suspended')
-        ->assertSee('Compte Suspendu Test')
-        ->assertDontSee('Compte Actif Test')
+        ->get('users')->pluck('name')->all();
+
+    expect($suspended)->toContain('Compte Suspendu Test')
+        ->and($suspended)->not->toContain('Compte Actif Test');
+
+    $active = Livewire::actingAs($manager)
+        ->test('pages::admin.users.index')
         ->set('statusFilter', 'active')
-        ->assertSee('Compte Actif Test')
-        ->assertDontSee('Compte Suspendu Test');
+        ->get('users')->pluck('name')->all();
+
+    expect($active)->toContain('Compte Actif Test')
+        ->and($active)->not->toContain('Compte Suspendu Test');
+});
+
+test('filters users by role', function () {
+    $role = Role::create(['name' => 'Commercial', 'guard_name' => 'web']);
+
+    User::factory()->create(['name' => 'Compte Commercial Test'])->assignRole($role);
+    User::factory()->create(['name' => 'Compte Sans Role Test']);
+
+    $names = Livewire::actingAs(adminManager())
+        ->test('pages::admin.users.index')
+        ->set('roleFilter', 'Commercial')
+        ->get('users')->pluck('name')->all();
+
+    expect($names)->toContain('Compte Commercial Test')
+        ->and($names)->not->toContain('Compte Sans Role Test');
 });
 
 test('shows the account history', function () {
