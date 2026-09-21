@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property LeadStatus $status
  * @property RequestType $request_type
  * @property LeadSource $source
+ * @property Carbon|null $notified_at
  */
 #[Fillable(['name', 'company', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'request_type', 'budget', 'message', 'status', 'source', 'assigned_to', 'notes', 'consent_at', 'consent_ip'])]
 class Lead extends Model
@@ -38,6 +40,7 @@ class Lead extends Model
             'status' => LeadStatus::class,
             'source' => LeadSource::class,
             'consent_at' => 'datetime',
+            'notified_at' => 'datetime',
         ];
     }
 

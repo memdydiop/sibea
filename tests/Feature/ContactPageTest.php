@@ -102,6 +102,17 @@ test('routes unassigned lead to the shared mailbox', function () {
     Notification::assertSentOnDemand(NewLeadNotification::class);
 });
 
+test('duplicate lead events notify only once', function () {
+    Notification::fake();
+    config()->set('leads.notification_email', 'contact@sibea.ci');
+    $lead = Lead::factory()->create();
+
+    Event::dispatch(new LeadCreated($lead));
+    Event::dispatch(new LeadCreated($lead));
+
+    Notification::assertSentOnDemandTimes(NewLeadNotification::class, 1);
+});
+
 test('notifies the assignee when the lead is assigned', function () {
     Notification::fake();
     $commercial = User::factory()->create();
