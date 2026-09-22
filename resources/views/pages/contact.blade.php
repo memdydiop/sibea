@@ -7,6 +7,7 @@ use App\Events\LeadCreated;
 use App\Models\Lead;
 use App\Models\Sector;
 use App\Notifications\LeadAcknowledgment;
+use App\Support\PageSeo;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
@@ -37,6 +38,11 @@ new #[Layout('layouts::public')] class extends Component {
     public string $honeypot = '';
 
     public bool $success = false;
+
+    public function mount(): void
+    {
+        PageSeo::share('Contact', setting('contact.hero.subtitle'));
+    }
 
     /**
      * @return array<string, mixed>

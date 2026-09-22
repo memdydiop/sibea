@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Page;
+use App\Support\PageSeo;
 use Illuminate\Http\Request;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -37,6 +38,8 @@ new #[Layout('layouts::public')] class extends Component
         $this->heroImage = setting_media_url(
             $slug === 'politique-de-confidentialite' ? 'visuals.hero.privacy' : 'visuals.hero.legal'
         );
+
+        PageSeo::share($this->pageTitle, PageSeo::excerpt($this->pageContent));
     }
 };
 ?>

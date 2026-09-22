@@ -2,6 +2,7 @@
 
 use App\Models\Project;
 use App\Models\Sector;
+use App\Support\PageSeo;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -14,6 +15,11 @@ new #[Layout('layouts::public')] class extends Component
 
     #[Url]
     public ?int $sector_id = null;
+
+    public function mount(): void
+    {
+        PageSeo::share((string) setting('projects.hero.title'), setting('projects.hero.subtitle'));
+    }
 
     #[Computed]
     public function activeSector(): ?Sector

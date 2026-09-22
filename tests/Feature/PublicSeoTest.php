@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Page;
 use App\Models\Project;
 use App\Models\Sector;
 
@@ -48,6 +49,48 @@ test('legacy sector urls redirect permanently to the canonical urls', function (
     $this->get('/btp')->assertRedirect('/secteurs/btp', 301);
     $this->get('/agroalimentaire')->assertRedirect('/secteurs/agro-industrie', 301);
     $this->get('/secteurs/agroalimentaire')->assertRedirect('/secteurs/agro-industrie', 301);
+});
+
+test('public index pages expose unique seo titles and descriptions', function () {
+    $this->get(route('sectors.index'))
+        ->assertOk()
+        ->assertSee('<title>Secteurs d’activité — GROUPE SIBEA</title>', false)
+        ->assertSee('name="description" content="Quatre secteurs, une même exigence de qualité et de durabilité."', false);
+
+    $this->get(route('expertises.index'))
+        ->assertOk()
+        ->assertSee('<title>Nos expertises — GROUPE SIBEA</title>', false)
+        ->assertSee('savoir-faire complémentaires au service de vos projets.', false);
+
+    $this->get(route('projects.index'))
+        ->assertOk()
+        ->assertSee('<title>Réalisations — GROUPE SIBEA</title>', false)
+        ->assertSee('name="description" content="Découvrez nos projets livrés et en cours."', false);
+
+    $this->get(route('contact'))
+        ->assertOk()
+        ->assertSee('<title>Contact — GROUPE SIBEA</title>', false)
+        ->assertSee('Parlons de votre projet.', false);
+});
+
+test('editorial pages expose their own title and an excerpt description', function () {
+    Page::create([
+        'slug' => 'mentions-legales',
+        'title' => 'Mentions Test',
+        'content' => '## Cadre juridique du site vitrine du Groupe SIBEA.',
+        'is_published' => true,
+    ]);
+
+    $this->get(route('legal'))
+        ->assertOk()
+        ->assertSee('<title>Mentions Test — GROUPE SIBEA</title>', false)
+        ->assertSee('Cadre juridique du site vitrine', false);
+});
+
+test('homepage keeps the global seo defaults', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('<title>Groupe SIBEA — BTP, Immobilier, Énergie, Agro-industrie</title>', false);
 });
 
 test('robots.txt blocks the admin area and exposes the sitemap', function () {

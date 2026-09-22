@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Expertise;
+use App\Support\PageSeo;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -10,6 +11,13 @@ new #[Layout('layouts::public')] class extends Component
     public bool $showDetails = false;
 
     public ?int $selectedExpertiseId = null;
+
+    public function mount(): void
+    {
+        $subtitle = str_replace(':count', (string) Expertise::active()->count(), (string) setting('expertises.hero.subtitle'));
+
+        PageSeo::share((string) setting('expertises.hero.title'), $subtitle);
+    }
 
     #[Computed]
     public function expertises()
