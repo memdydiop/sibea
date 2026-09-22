@@ -34,6 +34,10 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
 
     public string $slug = '';
 
+    public ?string $meta_title = null;
+
+    public ?string $meta_description = null;
+
     public ?string $short_description = null;
 
     public ?string $description = null;
@@ -162,7 +166,7 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
     public function create(): void
     {
         $this->authorize('create', Project::class);
-        $this->reset(['editingId', 'title', 'slug', 'short_description', 'description', 'challenge', 'solution', 'impact', 'location', 'project_date', 'status', 'duration', 'surface', 'budget', 'client_name', 'testimonial_quote', 'testimonial_author', 'latitude', 'longitude', 'results_text', 'sector_ids', 'expertise_ids', 'service_ids', 'cover', 'gallery', 'documents', 'coverPreview']);
+        $this->reset(['editingId', 'title', 'slug', 'meta_title', 'meta_description', 'short_description', 'description', 'challenge', 'solution', 'impact', 'location', 'project_date', 'status', 'duration', 'surface', 'budget', 'client_name', 'testimonial_quote', 'testimonial_author', 'latitude', 'longitude', 'results_text', 'sector_ids', 'expertise_ids', 'service_ids', 'cover', 'gallery', 'documents', 'coverPreview']);
         $this->is_active = true;
         $this->client_publishable = false;
         $this->is_published = false;
@@ -176,6 +180,8 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
         $this->editingId = $project->id;
         $this->title = $project->title;
         $this->slug = $project->slug;
+        $this->meta_title = $project->meta_title;
+        $this->meta_description = $project->meta_description;
         $this->short_description = $project->short_description;
         $this->description = $project->description;
         $this->challenge = $project->challenge;
@@ -213,6 +219,8 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique('projects', 'slug')->ignore($this->editingId)],
+            'meta_title' => ['nullable', 'string', 'max:255'],
+            'meta_description' => ['nullable', 'string', 'max:500'],
             'short_description' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
             'challenge' => ['nullable', 'string'],
@@ -278,7 +286,7 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
         }
 
         $this->showForm = false;
-        $this->reset(['editingId', 'title', 'slug', 'short_description', 'description', 'challenge', 'solution', 'impact', 'location', 'project_date', 'status', 'duration', 'surface', 'budget', 'client_name', 'testimonial_quote', 'testimonial_author', 'latitude', 'longitude', 'results_text', 'sector_ids', 'expertise_ids', 'service_ids', 'cover', 'gallery', 'documents', 'coverPreview']);
+        $this->reset(['editingId', 'title', 'slug', 'meta_title', 'meta_description', 'short_description', 'description', 'challenge', 'solution', 'impact', 'location', 'project_date', 'status', 'duration', 'surface', 'budget', 'client_name', 'testimonial_quote', 'testimonial_author', 'latitude', 'longitude', 'results_text', 'sector_ids', 'expertise_ids', 'service_ids', 'cover', 'gallery', 'documents', 'coverPreview']);
         $this->is_active = true;
         $this->client_publishable = false;
         $this->is_published = false;
@@ -470,6 +478,20 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
                 <flux:label>Description complète</flux:label>
                 <flux:textarea wire:model="description" rows="4" />
                 <flux:error name="description" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Titre SEO (balise title)</flux:label>
+                <flux:input wire:model="meta_title" type="text" placeholder="Ex. Rizerie moderne à Abidjan" />
+                <flux:description>Idéal : 50-60 caractères. Vide : utilise le titre de la réalisation.</flux:description>
+                <flux:error name="meta_title" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Description SEO (meta description)</flux:label>
+                <flux:textarea wire:model="meta_description" rows="3" />
+                <flux:description>Idéal : 150-160 caractères. Vide : utilise la description courte.</flux:description>
+                <flux:error name="meta_description" />
             </flux:field>
 
             <flux:field>

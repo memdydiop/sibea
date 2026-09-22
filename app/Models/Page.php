@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $content
  * @property bool $is_published
  */
-#[Fillable(['slug', 'title', 'content', 'is_published'])]
+#[Fillable(['slug', 'title', 'meta_title', 'meta_description', 'content', 'is_published'])]
 class Page extends Model
 {
     /** @use HasFactory<PageFactory> */

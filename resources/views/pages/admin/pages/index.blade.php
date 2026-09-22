@@ -28,6 +28,10 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
 
     public string $slug = '';
 
+    public ?string $meta_title = null;
+
+    public ?string $meta_description = null;
+
     public ?string $content = null;
 
     public bool $is_published = true;
@@ -82,7 +86,7 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
     public function create(): void
     {
         $this->authorize('create', Page::class);
-        $this->reset(['editingId', 'title', 'slug', 'content']);
+        $this->reset(['editingId', 'title', 'slug', 'meta_title', 'meta_description', 'content']);
         $this->is_published = true;
         $this->showForm = true;
     }
@@ -94,6 +98,8 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
         $this->editingId = $page->id;
         $this->title = $page->title;
         $this->slug = $page->slug;
+        $this->meta_title = $page->meta_title;
+        $this->meta_description = $page->meta_description;
         $this->content = $page->content;
         $this->is_published = $page->is_published;
         $this->showForm = true;
@@ -108,6 +114,8 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('pages', 'slug')->ignore($this->editingId)],
+            'meta_title' => ['nullable', 'string', 'max:255'],
+            'meta_description' => ['nullable', 'string', 'max:500'],
             'content' => ['nullable', 'string'],
             'is_published' => ['boolean'],
         ]);
@@ -122,7 +130,7 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
         }
 
         $this->showForm = false;
-        $this->reset(['editingId', 'title', 'slug', 'content']);
+        $this->reset(['editingId', 'title', 'slug', 'meta_title', 'meta_description', 'content']);
         $this->is_published = true;
     }
 
@@ -232,6 +240,20 @@ new #[Layout('layouts::app')] #[Title('Pages éditoriales')] class extends Compo
                 <flux:label>Contenu</flux:label>
                 <flux:textarea wire:model="content" rows="16" class="font-mono text-sm" />
                 <flux:error name="content" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Titre SEO (balise title)</flux:label>
+                <flux:input wire:model="meta_title" type="text" />
+                <flux:description>Idéal : 50-60 caractères. Vide : utilise le titre de la page.</flux:description>
+                <flux:error name="meta_title" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Description SEO (meta description)</flux:label>
+                <flux:textarea wire:model="meta_description" rows="3" />
+                <flux:description>Idéal : 150-160 caractères. Vide : utilise un extrait du contenu.</flux:description>
+                <flux:error name="meta_description" />
             </flux:field>
 
             <flux:field variant="inline">

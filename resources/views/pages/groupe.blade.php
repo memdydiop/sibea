@@ -3,6 +3,7 @@
 use App\Models\Page;
 use App\Models\Setting;
 use App\Support\PageSeo;
+use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -39,7 +40,8 @@ new #[Layout('layouts::public')] class extends Component
 
         $this->heroImage = setting_media_url('visuals.group', 'hero');
 
-        PageSeo::share($this->pageTitle, PageSeo::excerpt($this->pageContent));
+        PageSeo::share($page?->meta_title ?: $this->pageTitle, $page?->meta_description ?: PageSeo::excerpt($this->pageContent));
+        View::share('ogImage', setting_media_url('visuals.group', 'hero') ?: null);
 
         $this->presidentPhoto = Setting::query()->where('key', 'visuals.president')->first()?->hasMedia('file')
             ? setting_media_url('visuals.president')

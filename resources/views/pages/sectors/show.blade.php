@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Sector;
+use App\Support\PageSeo;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
@@ -17,8 +18,8 @@ new #[Layout('layouts::public')] class extends Component
 
         $description = Str::squish((string) ($this->sector->description ?: $this->sector->short_description));
 
-        View::share('title', $this->sector->name.' — '.setting('general.site_name'));
-        View::share('description', $description !== '' ? Str::limit($description, 160, '') : null);
+        PageSeo::share($this->sector->meta_title ?: $this->sector->name, $this->sector->meta_description ?: ($description !== '' ? $description : null));
+        View::share('ogImage', $this->sector->getFirstMediaUrl('hero', 'og') ?: null);
     }
 
     #[Computed]

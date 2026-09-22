@@ -39,7 +39,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property bool $is_published
  * @property array<int, mixed>|null $results
  */
-#[Fillable(['title', 'slug', 'short_description', 'description', 'challenge', 'solution', 'impact', 'location', 'project_date', 'status', 'duration', 'surface', 'budget', 'client_name', 'client_publishable', 'testimonial_quote', 'testimonial_author', 'latitude', 'longitude', 'results', 'is_active', 'is_published'])]
+#[Fillable(['title', 'slug', 'meta_title', 'meta_description', 'short_description', 'description', 'challenge', 'solution', 'impact', 'location', 'project_date', 'status', 'duration', 'surface', 'budget', 'client_name', 'client_publishable', 'testimonial_quote', 'testimonial_author', 'latitude', 'longitude', 'results', 'is_active', 'is_published'])]
 class Project extends Model implements HasMedia
 {
     /** @use HasFactory<ProjectFactory> */

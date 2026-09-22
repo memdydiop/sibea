@@ -3,6 +3,7 @@
 use App\Models\Project;
 use App\Models\Sector;
 use App\Support\PageSeo;
+use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -19,6 +20,7 @@ new #[Layout('layouts::public')] class extends Component
     public function mount(): void
     {
         PageSeo::share((string) setting('projects.hero.title'), setting('projects.hero.subtitle'));
+        View::share('ogImage', setting_media_url('visuals.hero.projects', 'hero') ?: null);
     }
 
     #[Computed]

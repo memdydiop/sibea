@@ -8,6 +8,7 @@ use App\Models\Lead;
 use App\Models\Sector;
 use App\Notifications\LeadAcknowledgment;
 use App\Support\PageSeo;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
@@ -42,6 +43,7 @@ new #[Layout('layouts::public')] class extends Component {
     public function mount(): void
     {
         PageSeo::share('Contact', setting('contact.hero.subtitle'));
+        View::share('ogImage', setting_media_url('visuals.hero.contact', 'hero') ?: null);
     }
 
     /**

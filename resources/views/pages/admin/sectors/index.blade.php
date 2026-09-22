@@ -29,6 +29,10 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
 
     public string $slug = '';
 
+    public ?string $meta_title = null;
+
+    public ?string $meta_description = null;
+
     public ?string $short_description = null;
 
     public ?string $description = null;
@@ -130,6 +134,8 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
         $this->editingId = $sector->id;
         $this->name = $sector->name;
         $this->slug = $sector->slug;
+        $this->meta_title = $sector->meta_title;
+        $this->meta_description = $sector->meta_description;
         $this->short_description = $sector->short_description;
         $this->description = $sector->description;
         $this->is_active = $sector->is_active;
@@ -158,6 +164,8 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique('sectors', 'slug')->ignore($this->editingId)],
+            'meta_title' => ['nullable', 'string', 'max:255'],
+            'meta_description' => ['nullable', 'string', 'max:500'],
             'short_description' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
             'is_active' => ['boolean'],
@@ -183,6 +191,8 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
         $data = [
             'name' => $validated['name'],
             'slug' => $validated['slug'],
+            'meta_title' => $validated['meta_title'] ?? null,
+            'meta_description' => $validated['meta_description'] ?? null,
             'short_description' => $validated['short_description'] ?? null,
             'description' => $validated['description'] ?? null,
             'is_active' => $validated['is_active'],
@@ -281,7 +291,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
 
     private function resetForm(): void
     {
-        $this->reset(['editingId', 'name', 'slug', 'short_description', 'description', 'is_active', 'is_locked', 'sort_order', 'hero_title', 'hero_description', 'hero_cta_label', 'heroImage', 'intro_title', 'intro_text', 'cards', 'figures', 'cta_title', 'cta_text', 'cta_label']);
+        $this->reset(['editingId', 'name', 'slug', 'meta_title', 'meta_description', 'short_description', 'description', 'is_active', 'is_locked', 'sort_order', 'hero_title', 'hero_description', 'hero_cta_label', 'heroImage', 'intro_title', 'intro_text', 'cards', 'figures', 'cta_title', 'cta_text', 'cta_label']);
 
         $this->is_active = true;
         $this->is_locked = false;
@@ -422,7 +432,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
             </div>
 
             <div class="flex flex-wrap gap-2">
-                @foreach (['identite' => 'Identité', 'hero' => 'Hero', 'contenu' => 'Contenu de page'] as $key => $label)
+                @foreach (['identite' => 'Identité', 'hero' => 'Hero', 'contenu' => 'Contenu de page', 'seo' => 'Référencement'] as $key => $label)
                     <button type="button" x-on:click="tab = '{{ $key }}'"
                         x-bind:class="tab === '{{ $key }}' ? 'border-cuivre bg-cuivre text-nuit' :
                             'border-zinc-200 text-zinc-600 hover:border-cuivre dark:border-zinc-700 dark:text-zinc-300'"
@@ -468,6 +478,22 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
                         <flux:label>Verrouillé</flux:label>
                     </flux:field>
                 </div>
+            </div>
+
+            <div x-show="tab === 'seo'" class="space-y-4">
+                <flux:field>
+                    <flux:label>Titre SEO (balise title)</flux:label>
+                    <flux:input wire:model="meta_title" type="text" placeholder="Ex. BTP & Génie civil en Côte d’Ivoire" />
+                    <flux:description>Idéal : 50-60 caractères. Vide : utilise le nom du secteur.</flux:description>
+                    <flux:error name="meta_title" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Description SEO (meta description)</flux:label>
+                    <flux:textarea wire:model="meta_description" rows="3" placeholder="Ex. Le pôle BTP du Groupe SIBEA conçoit et réalise…" />
+                    <flux:description>Idéal : 150-160 caractères. Vide : utilise la description complète.</flux:description>
+                    <flux:error name="meta_description" />
+                </flux:field>
             </div>
 
             <div x-show="tab === 'hero'" class="space-y-4">

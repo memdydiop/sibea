@@ -3,6 +3,7 @@
 use App\Models\Page;
 use App\Support\PageSeo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -39,7 +40,8 @@ new #[Layout('layouts::public')] class extends Component
             $slug === 'politique-de-confidentialite' ? 'visuals.hero.privacy' : 'visuals.hero.legal'
         );
 
-        PageSeo::share($this->pageTitle, PageSeo::excerpt($this->pageContent));
+        PageSeo::share($page?->meta_title ?: $this->pageTitle, $page?->meta_description ?: PageSeo::excerpt($this->pageContent));
+        View::share('ogImage', setting_media_url($slug === 'politique-de-confidentialite' ? 'visuals.hero.privacy' : 'visuals.hero.legal', 'hero') ?: null);
     }
 };
 ?>

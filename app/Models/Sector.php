@@ -37,7 +37,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property bool $is_locked
  * @property int $sort_order
  */
-#[Fillable(['name', 'slug', 'short_description', 'description', 'hero_title', 'hero_description', 'hero_cta_label', 'page_intro_title', 'page_intro_text', 'page_cards', 'page_figures', 'page_cta_title', 'page_cta_text', 'page_cta_label', 'is_active', 'is_locked', 'sort_order'])]
+#[Fillable(['name', 'slug', 'meta_title', 'meta_description', 'short_description', 'description', 'hero_title', 'hero_description', 'hero_cta_label', 'page_intro_title', 'page_intro_text', 'page_cards', 'page_figures', 'page_cta_title', 'page_cta_text', 'page_cta_label', 'is_active', 'is_locked', 'sort_order'])]
 class Sector extends Model implements HasMedia
 {
     /** @use HasFactory<SectorFactory> */

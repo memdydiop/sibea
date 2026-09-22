@@ -2,6 +2,7 @@
 
 use App\Models\Expertise;
 use App\Support\PageSeo;
+use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -17,6 +18,7 @@ new #[Layout('layouts::public')] class extends Component
         $subtitle = str_replace(':count', (string) Expertise::active()->count(), (string) setting('expertises.hero.subtitle'));
 
         PageSeo::share((string) setting('expertises.hero.title'), $subtitle);
+        View::share('ogImage', setting_media_url('visuals.hero.expertises', 'hero') ?: null);
     }
 
     #[Computed]

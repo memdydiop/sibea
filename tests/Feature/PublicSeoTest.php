@@ -87,6 +87,32 @@ test('editorial pages expose their own title and an excerpt description', functi
         ->assertSee('Cadre juridique du site vitrine', false);
 });
 
+test('custom seo fields override the automatic titles and descriptions', function () {
+    $sector = Sector::factory()->create([
+        'is_active' => true,
+        'slug' => 'btp-test',
+        'name' => 'BTP Test',
+        'meta_title' => 'BTP sur mesure',
+        'meta_description' => 'Description sur mesure du BTP.',
+    ]);
+
+    $this->get(route('sectors.show', $sector->slug))
+        ->assertOk()
+        ->assertSee('<title>BTP sur mesure — GROUPE SIBEA</title>', false)
+        ->assertSee('name="description" content="Description sur mesure du BTP."', false);
+
+    $project = Project::factory()->create([
+        'is_published' => true,
+        'slug' => 'projet-test',
+        'title' => 'Projet Test',
+        'meta_title' => 'Projet sur mesure',
+    ]);
+
+    $this->get(route('projects.show', $project->slug))
+        ->assertOk()
+        ->assertSee('<title>Projet sur mesure — GROUPE SIBEA</title>', false);
+});
+
 test('homepage keeps the global seo defaults', function () {
     $this->get(route('home'))
         ->assertOk()
