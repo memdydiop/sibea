@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SitemapCache;
 use Database\Factories\SectorFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -41,6 +42,18 @@ class Sector extends Model implements HasMedia
 {
     /** @use HasFactory<SectorFactory> */
     use HasFactory, InteractsWithMedia;
+
+    protected static function booted(): void
+    {
+        static::saved(function (): void {
+            self::flushActiveListCache();
+            SitemapCache::forget();
+        });
+        static::deleted(function (): void {
+            self::flushActiveListCache();
+            SitemapCache::forget();
+        });
+    }
 
     /**
      * @return array<string, string>

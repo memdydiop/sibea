@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProjectStatus;
+use App\Support\SitemapCache;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -43,6 +44,16 @@ class Project extends Model implements HasMedia
 {
     /** @use HasFactory<ProjectFactory> */
     use HasFactory, InteractsWithMedia;
+
+    protected static function booted(): void
+    {
+        static::saved(function (): void {
+            SitemapCache::forget();
+        });
+        static::deleted(function (): void {
+            SitemapCache::forget();
+        });
+    }
 
     /**
      * @return array<string, string>

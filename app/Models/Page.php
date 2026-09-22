@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SitemapCache;
 use Database\Factories\PageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -21,6 +22,16 @@ class Page extends Model
 {
     /** @use HasFactory<PageFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::saved(function (): void {
+            SitemapCache::forget();
+        });
+        static::deleted(function (): void {
+            SitemapCache::forget();
+        });
+    }
 
     /**
      * @return array<string, string>

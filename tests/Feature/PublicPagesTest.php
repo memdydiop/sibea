@@ -272,6 +272,21 @@ test('serves sitemap with sectors and published projects', function () {
     $response->assertDontSee('projet-brouillon', false);
 });
 
+test('sitemap refreshes after publishing a new project', function () {
+    Project::factory()->create(['is_published' => true, 'slug' => 'projet-initial']);
+
+    $this->get(route('sitemap'))
+        ->assertOk()
+        ->assertSee('/realisations/projet-initial', false);
+
+    Project::factory()->create(['is_published' => true, 'slug' => 'projet-publie-apres-cache']);
+
+    $this->get(route('sitemap'))
+        ->assertOk()
+        ->assertSee('/realisations/projet-initial', false)
+        ->assertSee('/realisations/projet-publie-apres-cache', false);
+});
+
 test('returns 404 for inactive or unpublished content', function () {
     Sector::factory()->create(['is_active' => false, 'slug' => 'archive', 'name' => 'Secteur archivé']);
     $expertise = Expertise::factory()->create(['is_active' => false, 'slug' => 'archive']);
