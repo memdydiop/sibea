@@ -287,6 +287,23 @@ test('sitemap refreshes after publishing a new project', function () {
         ->assertSee('/realisations/projet-publie-apres-cache', false);
 });
 
+test('sitemap sets honest lastmod on static urls', function () {
+    $sector = Sector::factory()->create(['is_active' => true, 'slug' => 'btp']);
+
+    $response = $this->get(route('sitemap'));
+
+    $response->assertOk();
+    $response->assertSee('<lastmod>', false);
+    $response->assertSee($sector->updated_at->format('Y-m-d'), false);
+});
+
+test('sitemap omits lastmod when no content exists', function () {
+    $response = $this->get(route('sitemap'));
+
+    $response->assertOk();
+    $response->assertDontSee('<lastmod>', false);
+});
+
 test('returns 404 for inactive or unpublished content', function () {
     Sector::factory()->create(['is_active' => false, 'slug' => 'archive', 'name' => 'Secteur archivé']);
     $expertise = Expertise::factory()->create(['is_active' => false, 'slug' => 'archive']);
