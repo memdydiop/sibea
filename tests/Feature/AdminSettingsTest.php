@@ -47,6 +47,16 @@ test('updates facebook url with validation', function () {
 
     Livewire::actingAs($manager)
         ->test('pages::admin.settings.index')
+        ->set('texts.social_whatsapp', 'https://whatsapp.com/channel/sibea')
+        ->set('texts.social_tiktok', 'https://www.tiktok.com/@sibea')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(setting('social.whatsapp'))->toBe('https://whatsapp.com/channel/sibea')
+        ->and(setting('social.tiktok'))->toBe('https://www.tiktok.com/@sibea');
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.settings.index')
         ->set('texts.social_facebook', 'not-a-url')
         ->call('save')
         ->assertHasErrors(['texts.social_facebook']);

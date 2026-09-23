@@ -74,6 +74,8 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
         'office_location' => 'contact.office_location',
         'office_description' => 'contact.office_description',
         'social_facebook' => 'social.facebook',
+        'social_whatsapp' => 'social.whatsapp',
+        'social_tiktok' => 'social.tiktok',
     ];
 
     private const VISUAL_SETTINGS = [
@@ -190,6 +192,8 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
             'texts.*' => ['nullable', 'string'],
             'texts.contact_email' => ['nullable', 'email'],
             'texts.social_facebook' => ['nullable', 'url', 'max:500'],
+            'texts.social_whatsapp' => ['nullable', 'url', 'max:500'],
+            'texts.social_tiktok' => ['nullable', 'url', 'max:500'],
             'texts.contact_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'texts.contact_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'method_steps' => ['array'],
@@ -594,6 +598,16 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                     <flux:label>Page Facebook (URL complète)</flux:label>
                     <flux:input wire:model="texts.social_facebook" type="url" placeholder="https://www.facebook.com/…" />
                     <flux:error name="texts.social_facebook" />
+                </flux:field>
+                <flux:field>
+                    <flux:label>Chaîne WhatsApp (URL complète)</flux:label>
+                    <flux:input wire:model="texts.social_whatsapp" type="url" placeholder="https://whatsapp.com/channel/…" />
+                    <flux:error name="texts.social_whatsapp" />
+                </flux:field>
+                <flux:field>
+                    <flux:label>Compte TikTok (URL complète)</flux:label>
+                    <flux:input wire:model="texts.social_tiktok" type="url" placeholder="https://www.tiktok.com/…" />
+                    <flux:error name="texts.social_tiktok" />
                 </flux:field>
             </x-admin.card>
 

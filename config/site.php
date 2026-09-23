@@ -88,6 +88,8 @@ return [
         'contact.office_location' => 'Cocody, Côte d’Ivoire',
         'contact.office_description' => 'Direction générale et coordination des activités BTP, immobilier, énergie et agro-industrie du Groupe SIBEA.',
         'social.facebook' => 'https://www.facebook.com/share/19YaSZD2sC/',
+        'social.whatsapp' => '',
+        'social.tiktok' => '',
     ],
 
     'arrays' => [
