@@ -73,6 +73,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
         'office_title' => 'contact.office_title',
         'office_location' => 'contact.office_location',
         'office_description' => 'contact.office_description',
+        'social_facebook' => 'social.facebook',
     ];
 
     private const VISUAL_SETTINGS = [
@@ -188,6 +189,7 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
         $this->validate([
             'texts.*' => ['nullable', 'string'],
             'texts.contact_email' => ['nullable', 'email'],
+            'texts.social_facebook' => ['nullable', 'url', 'max:500'],
             'texts.contact_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'texts.contact_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'method_steps' => ['array'],
@@ -587,6 +589,11 @@ new #[Layout('layouts::app')] #[Title('Paramètres du site')] class extends Comp
                 <flux:field>
                     <flux:label>Message WhatsApp pré-rempli</flux:label>
                     <flux:textarea wire:model="texts.contact_whatsapp_message" rows="2" />
+                </flux:field>
+                <flux:field>
+                    <flux:label>Page Facebook (URL complète)</flux:label>
+                    <flux:input wire:model="texts.social_facebook" type="url" placeholder="https://www.facebook.com/…" />
+                    <flux:error name="texts.social_facebook" />
                 </flux:field>
             </x-admin.card>
 

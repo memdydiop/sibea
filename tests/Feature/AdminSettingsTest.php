@@ -34,6 +34,24 @@ test('updates site texts', function () {
         ->and(setting('contact.phone'))->toBe('+225 01 02 03 04 05');
 });
 
+test('updates facebook url with validation', function () {
+    $manager = settingsManager();
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.settings.index')
+        ->set('texts.social_facebook', 'https://www.facebook.com/share/19YaSZD2sC/')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(setting('social.facebook'))->toBe('https://www.facebook.com/share/19YaSZD2sC/');
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.settings.index')
+        ->set('texts.social_facebook', 'not-a-url')
+        ->call('save')
+        ->assertHasErrors(['texts.social_facebook']);
+});
+
 test('updates method repeater', function () {
     Livewire::actingAs(settingsManager())
         ->test('pages::admin.settings.index')

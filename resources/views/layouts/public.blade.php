@@ -123,6 +123,9 @@
                 <div class="font-display font-bold mb-4">Contact</div>
                 <ul class="space-y-2 text-sm text-white/70">
                     <li><a href="{{ route('contact') }}" class="transition-colors hover:text-cuivre" wire:navigate>Nous contacter</a></li>
+                    @if(setting('social.facebook'))
+                        <li><a href="{{ setting('social.facebook') }}" target="_blank" rel="noopener" class="transition-colors hover:text-cuivre">Facebook</a></li>
+                    @endif
                     <li><a href="{{ route('legal') }}" class="transition-colors hover:text-cuivre" wire:navigate>Mentions légales</a></li>
                     <li><a href="{{ route('privacy') }}" class="transition-colors hover:text-cuivre" wire:navigate>Politique de confidentialité</a></li>
                 </ul>
