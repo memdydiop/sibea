@@ -86,8 +86,8 @@
     <main id="main" x-data="{ scrolled: window.scrollY > 40 }" x-on:scroll.window="scrolled = window.scrollY > 40" class="transition-all duration-300 pt-20">{{ $slot }}</main>
 
     <footer class="on-dark border-t border-white/10 bg-nuit text-white">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
-            <div>
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-5 2xl:grid-cols-7 gap-12">
+            <div class="md:col-span-5 2xl:col-span-2">
                 <span class="mb-4 inline-flex rounded-lg bg-surface px-3 py-2">
                     <img src="{{ setting_media_url('visuals.logo') }}" alt="Groupe SIBEA" class="h-10 w-auto">
                 </span>
@@ -100,6 +100,8 @@
                 <ul class="space-y-2 text-sm text-white/70">
                     <li><a href="{{ route('pages.show', ['page' => 'le-groupe']) }}" class="transition-colors hover:text-cuivre" wire:navigate>Qui sommes-nous</a></li>
                     <li><a href="{{ route('pages.show', ['page' => 'engagements']) }}" class="transition-colors hover:text-cuivre" wire:navigate>Engagements</a></li>
+                    <li><a href="{{ route('legal') }}" class="transition-colors hover:text-cuivre" wire:navigate>Mentions légales</a></li>
+                    <li><a href="{{ route('privacy') }}" class="transition-colors hover:text-cuivre" wire:navigate>Politique de confidentialité</a></li>
                 </ul>
             </div>
             <div>
@@ -119,7 +121,7 @@
                     <li><a href="{{ route('projects.index') }}" class="transition-colors hover:text-cuivre" wire:navigate>Réalisations</a></li>
                 </ul>
             </div>
-            <div>
+            <div class="md:col-span-2 ">
                 <div class="font-display font-bold mb-4">Contact</div>
                 <ul class="space-y-3 text-sm text-white/70">
                     <li>
@@ -131,7 +133,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <span class="leading-relaxed">{!! nl2br(e(setting('contact.address'))) !!}</span>
+                            <span class="leading-relaxed">{{ setting('contact.address') }}</span>
                         </li>
                     @endif
                     @if(setting('contact.phone'))
@@ -154,8 +156,6 @@
                             </a>
                         </li>
                     @endif
-                    <li><a href="{{ route('legal') }}" class="transition-colors hover:text-cuivre" wire:navigate>Mentions légales</a></li>
-                    <li><a href="{{ route('privacy') }}" class="transition-colors hover:text-cuivre" wire:navigate>Politique de confidentialité</a></li>
                     @if(setting('social.facebook'))
                         <li class="pt-1">
                             <div class="mb-2 text-xs font-semibold uppercase tracking-widest text-white/50">Suivez-nous</div>

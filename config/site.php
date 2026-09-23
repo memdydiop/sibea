@@ -14,7 +14,7 @@ return [
 
     'defaults' => [
         'general.site_name' => 'GROUPE SIBEA',
-        'general.footer_tagline' => 'Un groupe multi-activités intervenant dans le BTP, l’immobilier, l’énergie et l’agro-industrie.',
+        'general.footer_tagline' => 'Le Groupe SIBEA fédère des expertises complémentaires dans le BTP, l’immobilier, l’énergie et l’agro-industrie pour concevoir des projets durables et créateurs de valeur. De l’étude à la réalisation, une même exigence : qualité, sécurité et impact local — avec une réponse sous 24h ouvrées.',
         'general.footer_copyright' => 'SIBEA. Conçu avec ♥ par Save&Dev. Tous droits réservés.',
 
         'header.link.sectors.label' => 'Secteurs d’activité',
