@@ -15,7 +15,7 @@ return [
     'defaults' => [
         'general.site_name' => 'GROUPE SIBEA',
         'general.footer_tagline' => 'Un groupe multi-activités intervenant dans le BTP, l’immobilier, l’énergie et l’agro-industrie.',
-        'general.footer_copyright' => 'Groupe SIBEA. Tous droits réservés.',
+        'general.footer_copyright' => 'SIBEA. Conçu avec ♥ par Save&Dev. Tous droits réservés.',
 
         'header.link.sectors.label' => 'Secteurs d’activité',
         'header.link.sectors.visible' => '1',
