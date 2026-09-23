@@ -73,6 +73,94 @@ new #[Layout('layouts::app')] #[Title('Administration')] class extends Component
     }
 
     /**
+     * @return array{received: int, contacted: int, within24h: int, withinRate: float, avgMinutes: ?int, avgLabel: string, won: int, conversionRate: float, slaBreached: int, overdueActions: int, pipeline: array<string, int>}
+     */
+    #[Computed]
+    public function salesPilot(): array
+    {
+        $empty = [
+            'received' => 0,
+            'contacted' => 0,
+            'within24h' => 0,
+            'withinRate' => 0.0,
+            'avgMinutes' => null,
+            'avgLabel' => '—',
+            'won' => 0,
+            'conversionRate' => 0.0,
+            'slaBreached' => 0,
+            'overdueActions' => 0,
+            'pipeline' => [],
+        ];
+
+        if (! auth()->user()->can('manage_leads')) {
+            return $empty;
+        }
+
+        $received = Lead::count();
+
+        if ($received === 0) {
+            return $empty;
+        }
+
+        $contactedLeads = Lead::query()
+            ->whereNotNull('first_contacted_at')
+            ->get(['created_at', 'first_contacted_at']);
+
+        $delays = $contactedLeads
+            ->map(fn (Lead $lead) => $lead->responseTimeInMinutes())
+            ->filter(fn (?int $minutes) => $minutes !== null);
+
+        $within24h = $delays->filter(fn (int $minutes) => $minutes <= 24 * 60)->count();
+        $avgMinutes = $delays->isNotEmpty() ? (int) round($delays->avg()) : null;
+
+        $won = Lead::where('status', LeadStatus::Gagne)->count();
+
+        $pipeline = Lead::query()
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->all();
+
+        // SLA ouvrée lun-sam : dimanches exclus (SlaClock via modèle).
+        $slaBreached = Lead::where('status', LeadStatus::Nouveau)
+            ->whereNull('first_contacted_at')
+            ->get(['created_at', 'first_contacted_at', 'status'])
+            ->filter(fn (Lead $lead) => $lead->isSlaBreached())
+            ->count();
+
+        return [
+            'received' => $received,
+            'contacted' => $contactedLeads->count(),
+            'within24h' => $within24h,
+            'withinRate' => $contactedLeads->isNotEmpty() ? round($within24h / $contactedLeads->count() * 100, 1) : 0.0,
+            'avgMinutes' => $avgMinutes,
+            'avgLabel' => $avgMinutes === null ? '—' : sprintf('%dh%02d', intdiv($avgMinutes, 60), $avgMinutes % 60),
+            'won' => $won,
+            'conversionRate' => round($won / $received * 100, 1),
+            'slaBreached' => $slaBreached,
+            'overdueActions' => Lead::whereNotNull('next_action_at')
+                ->where('next_action_at', '<', now())
+                ->whereNotIn('status', [LeadStatus::Gagne->value, LeadStatus::Perdu->value, LeadStatus::Archive->value])
+                ->count(),
+            'pipeline' => $pipeline,
+        ];
+    }
+
+    #[Computed]
+    public function overdueLeads()
+    {
+        return auth()->user()->can('manage_leads')
+            ? Lead::where('status', LeadStatus::Nouveau)
+                ->whereNull('first_contacted_at')
+                ->get()
+                ->filter(fn (Lead $lead) => $lead->isSlaBreached())
+                ->sortByDesc('created_at')
+                ->take(5)
+                ->values()
+            : collect();
+    }
+
+    /**
      * @return array<int, array{type: string, title: string, date: mixed, url: string}>
      */
     #[Computed]
@@ -241,6 +329,58 @@ new #[Layout('layouts::app')] #[Title('Administration')] class extends Component
             </ul>
         </x-admin.card>
     @endif
+
+    @can('manage_leads')
+        <x-admin.card title="Pilotage commercial — promesse 24h ouvrées" class="mb-8">
+            <x-slot:actions>
+                <flux:link :href="route('admin.leads')" wire:navigate class="text-sm">Prospects</flux:link>
+            </x-slot:actions>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-900">
+                    <div class="font-display text-2xl font-extrabold">{{ $this->salesPilot['avgLabel'] }}</div>
+                    <div class="text-sm text-zinc-500">Temps moyen de première réponse</div>
+                </div>
+                <div class="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-900">
+                    <div class="font-display text-2xl font-extrabold">{{ $this->salesPilot['received'] }}</div>
+                    <div class="text-sm text-zinc-500">Prospects reçus</div>
+                </div>
+                <div class="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-900">
+                    <div class="font-display text-2xl font-extrabold">{{ $this->salesPilot['within24h'] }} <span class="text-sm font-medium text-zinc-500">({{ number_format($this->salesPilot['withinRate'], 1, ',', ' ') }} %)</span></div>
+                    <div class="text-sm text-zinc-500">Contactés &lt; 24h</div>
+                </div>
+                <div class="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-900">
+                    <div class="font-display text-2xl font-extrabold">{{ number_format($this->salesPilot['conversionRate'], 1, ',', ' ') }} %</div>
+                    <div class="text-sm text-zinc-500">Taux de conversion ({{ $this->salesPilot['won'] }} gagné(s))</div>
+                </div>
+            </div>
+
+            @if($this->salesPilot['slaBreached'] > 0 || $this->salesPilot['overdueActions'] > 0)
+                <ul class="mt-4 space-y-2 text-sm">
+                    @if($this->salesPilot['slaBreached'] > 0)
+                        <li class="flex items-center justify-between gap-3 text-red-600">
+                            <span><strong>{{ $this->salesPilot['slaBreached'] }}</strong> prospect(s) en dépassement SLA 24h</span>
+                            <flux:button size="sm" variant="ghost" href="{{ route('admin.leads') }}" wire:navigate>Voir</flux:button>
+                        </li>
+                    @endif
+                    @if($this->salesPilot['overdueActions'] > 0)
+                        <li class="flex items-center justify-between gap-3 text-amber-600">
+                            <span><strong>{{ $this->salesPilot['overdueActions'] }}</strong> relance(s) en retard</span>
+                            <flux:button size="sm" variant="ghost" href="{{ route('admin.leads') }}" wire:navigate>Voir</flux:button>
+                        </li>
+                    @endif
+                </ul>
+            @endif
+
+            @if(! empty($this->salesPilot['pipeline']))
+                <div class="mt-4 flex flex-wrap gap-2">
+                    @foreach($this->salesPilot['pipeline'] as $status => $total)
+                        <flux:badge size="sm" color="zinc">{{ \App\Enums\LeadStatus::tryFrom($status)?->label() ?? $status }} : {{ $total }}</flux:badge>
+                    @endforeach
+                </div>
+            @endif
+        </x-admin.card>
+    @endcan
 
     <div class="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         @if(auth()->user()->can('manage_leads'))

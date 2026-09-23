@@ -25,11 +25,13 @@ class NewLeadNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $message = (new MailMessage)
-            ->subject('Nouveau prospect : '.$this->lead->name)
+            ->subject('Nouveau prospect '.($this->lead->reference ?? '').' : '.$this->lead->name)
             ->greeting('Bonjour,')
             ->line('Un nouveau prospect a été enregistré depuis le site.')
+            ->line('Réf : '.($this->lead->reference ?? '—'))
             ->line('Nom : '.$this->lead->name)
             ->line('Email : '.$this->lead->email)
+            ->line('Type : '.($this->lead->prospect_type?->label() ?? '—'))
             ->line('Type de demande : '.$this->lead->request_type->label());
 
         if (filled($this->lead->company)) {
@@ -42,6 +44,37 @@ class NewLeadNotification extends Notification implements ShouldQueue
 
         if (filled($this->lead->target_territory)) {
             $message->line('Territoire ciblé : '.$this->lead->target_territory);
+        }
+
+        if ($this->lead->sector) {
+            $message->line('Secteur : '.$this->lead->sector->name);
+        }
+
+        if ($this->lead->expertise) {
+            $message->line('Expertise : '.$this->lead->expertise->name);
+        }
+
+        if (filled($this->lead->origin_page)) {
+            $message->line('Page d’origine : '.$this->lead->origin_page);
+        }
+
+        if (filled($this->lead->utm_source) || filled($this->lead->utm_campaign)) {
+            $utm = $this->lead->utm_source ?? '—';
+            if (filled($this->lead->utm_medium)) {
+                $utm .= ' / '.$this->lead->utm_medium;
+            }
+            if (filled($this->lead->utm_campaign)) {
+                $utm .= ' / '.$this->lead->utm_campaign;
+            }
+            $message->line('Campagne : '.$utm);
+        }
+
+        if ($this->lead->deadline) {
+            $message->line('Échéance : '.$this->lead->deadline->format('d/m/Y'));
+        }
+
+        if ($this->lead->assignedTo) {
+            $message->line('Assigné à : '.$this->lead->assignedTo->name);
         }
 
         if (filled($this->lead->budget)) {

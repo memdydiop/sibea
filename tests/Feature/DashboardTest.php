@@ -95,7 +95,7 @@ test('dashboard hides alerts when nothing is pending', function () {
     $role->givePermissionTo(['view_dashboard', 'manage_leads', 'view_projects']);
     $user = User::factory()->create()->assignRole($role);
 
-    Lead::factory()->create(['status' => LeadStatus::Converti]);
+    Lead::factory()->create(['status' => LeadStatus::Gagne]);
     Project::factory()->create(['is_published' => true]);
 
     $this->actingAs($user)

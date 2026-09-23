@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Enums\ProspectType;
 use App\Enums\RequestType;
 use App\Models\Lead;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -24,6 +25,7 @@ class LeadFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->phoneNumber(),
+            'prospect_type' => ProspectType::Particulier,
             'request_type' => RequestType::Information,
             'message' => fake()->paragraph(),
             'status' => LeadStatus::Nouveau,

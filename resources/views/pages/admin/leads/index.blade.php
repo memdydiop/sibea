@@ -2,8 +2,10 @@
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Enums\ProspectType;
 use App\Enums\RequestType;
 use App\Events\LeadCreated;
+use App\Models\Expertise;
 use App\Models\Lead;
 use App\Notifications\AssignedLeadNotification;
 use App\Models\Sector;
@@ -26,6 +28,8 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 
     public ?int $sectorFilter = null;
 
+    public string $typeFilter = '';
+
     public int $perPage = 15;
 
     public bool $showForm = false;
@@ -38,11 +42,23 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 
     public ?int $assigned_to = null;
 
+    public ?int $expertise_id = null;
+
     public ?string $notes = null;
+
+    public ?string $next_action = null;
+
+    public ?string $next_action_at = null;
+
+    public ?string $deadline = null;
+
+    public ?int $estimated_amount = null;
 
     public string $name = '';
 
     public ?string $company = null;
+
+    public ?string $prospect_type = null;
 
     public string $email = '';
 
@@ -62,6 +78,8 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 
     public string $source = 'site';
 
+    public ?string $origin_page = null;
+
     public function mount(): void
     {
         $this->authorize('viewAny', Lead::class);
@@ -80,15 +98,24 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     }
 
     #[Computed]
+    public function expertises()
+    {
+        return Expertise::ordered()->get();
+    }
+
+    #[Computed]
     public function leads()
     {
         return Lead::query()
-            ->with(['sector', 'assignedTo'])
+            ->with(['sector', 'expertise', 'assignedTo'])
             ->when($this->search, fn ($query) => $query->where(fn ($q) => $q
                 ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($this->search).'%'])
-                ->orWhereRaw('LOWER(email) LIKE ?', ['%'.mb_strtolower($this->search).'%'])))
+                ->orWhereRaw('LOWER(email) LIKE ?', ['%'.mb_strtolower($this->search).'%'])
+                ->orWhereRaw('LOWER(company) LIKE ?', ['%'.mb_strtolower($this->search).'%'])
+                ->orWhereRaw('LOWER(reference) LIKE ?', ['%'.mb_strtolower($this->search).'%'])))
             ->when($this->statusFilter, fn ($query) => $query->where('status', $this->statusFilter))
             ->when($this->sectorFilter, fn ($query) => $query->where('sector_id', $this->sectorFilter))
+            ->when($this->typeFilter, fn ($query) => $query->where('prospect_type', $this->typeFilter))
             ->latest()
             ->paginate($this->perPage);
     }
@@ -104,6 +131,11 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     }
 
     public function updatedSectorFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedTypeFilter(): void
     {
         $this->resetPage();
     }
@@ -130,7 +162,7 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     #[Computed]
     public function editingLead(): ?Lead
     {
-        return $this->editingId ? Lead::with('sector')->find($this->editingId) : null;
+        return $this->editingId ? Lead::with(['sector', 'expertise'])->find($this->editingId) : null;
     }
 
     #[Computed]
@@ -150,7 +182,12 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         $this->editingId = $lead->id;
         $this->status = $lead->status->value;
         $this->assigned_to = $lead->assigned_to;
+        $this->expertise_id = $lead->expertise_id;
         $this->notes = $lead->notes;
+        $this->next_action = $lead->next_action;
+        $this->next_action_at = $lead->next_action_at?->format('Y-m-d');
+        $this->deadline = $lead->deadline?->format('Y-m-d');
+        $this->estimated_amount = $lead->estimated_amount;
         $this->showForm = true;
     }
 
@@ -162,16 +199,27 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         $validated = $this->validate([
             'status' => ['required', Rule::enum(LeadStatus::class)],
             'assigned_to' => ['nullable', 'exists:users,id'],
+            'expertise_id' => ['nullable', 'exists:expertises,id'],
             'notes' => ['nullable', 'string'],
+            'next_action' => ['nullable', 'string', 'max:255'],
+            'next_action_at' => ['nullable', 'date'],
+            'deadline' => ['nullable', 'date'],
+            'estimated_amount' => ['nullable', 'integer', 'min:0', 'max:100000000000'],
         ]);
 
         $oldStatus = $lead->status->value;
         $oldAssignee = $lead->assigned_to;
+        $oldExpertise = $lead->expertise_id;
 
         $lead->update([
             'status' => LeadStatus::from($validated['status']),
             'assigned_to' => $validated['assigned_to'],
+            'expertise_id' => $validated['expertise_id'],
             'notes' => $validated['notes'],
+            'next_action' => $validated['next_action'],
+            'next_action_at' => $validated['next_action_at'],
+            'deadline' => $validated['deadline'],
+            'estimated_amount' => $validated['estimated_amount'],
         ]);
 
         if ($oldStatus !== $lead->status->value) {
@@ -179,6 +227,14 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                 'user_id' => auth()->id(),
                 'action' => 'status_changed',
                 'description' => 'Statut : '.$oldStatus.' → '.$lead->status->value.'.',
+            ]);
+        }
+
+        if ($oldExpertise !== $lead->expertise_id) {
+            $lead->activities()->create([
+                'user_id' => auth()->id(),
+                'action' => 'expertise_changed',
+                'description' => 'Expertise qualifiée : '.($lead->expertise?->name ?? 'non précisée').'.',
             ]);
         }
 
@@ -197,16 +253,18 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         }
 
         $this->showForm = false;
-        $this->reset(['editingId', 'assigned_to', 'notes']);
+        $this->reset(['editingId', 'assigned_to', 'expertise_id', 'notes', 'next_action', 'next_action_at', 'deadline', 'estimated_amount']);
         $this->status = LeadStatus::Nouveau->value;
     }
 
     public function create(): void
     {
         $this->authorize('create', Lead::class);
-        $this->reset(['name', 'company', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'budget', 'message']);
+        $this->reset(['name', 'company', 'prospect_type', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'budget', 'message', 'origin_page', 'next_action', 'next_action_at', 'deadline', 'estimated_amount']);
         $this->request_type = RequestType::Information->value;
         $this->source = LeadSource::Site->value;
+        $this->prospect_type = ProspectType::Particulier->value;
+        $this->expertise_id = null;
         $this->showCreate = true;
     }
 
@@ -217,20 +275,28 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'company' => ['nullable', 'string', 'max:255'],
+            'prospect_type' => ['nullable', Rule::enum(ProspectType::class)],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'residence_country' => ['nullable', 'string', 'max:255'],
             'target_territory' => ['nullable', 'string', 'max:255'],
             'sector_id' => ['required', 'exists:sectors,id'],
+            'expertise_id' => ['nullable', 'exists:expertises,id'],
             'request_type' => ['required', Rule::enum(RequestType::class)],
             'budget' => ['nullable', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:2000'],
             'source' => ['required', Rule::enum(LeadSource::class)],
+            'origin_page' => ['nullable', 'string', 'max:500'],
+            'next_action' => ['nullable', 'string', 'max:255'],
+            'next_action_at' => ['nullable', 'date'],
+            'deadline' => ['nullable', 'date'],
+            'estimated_amount' => ['nullable', 'integer', 'min:0', 'max:100000000000'],
         ]);
 
         $lead = Lead::create($validated + [
             'status' => LeadStatus::Nouveau,
             'source' => LeadSource::from($validated['source']),
+            'prospect_type' => isset($validated['prospect_type']) ? ProspectType::from($validated['prospect_type']) : ProspectType::Particulier,
         ]);
 
         $lead->activities()->create([
@@ -242,9 +308,11 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         LeadCreated::dispatch($lead);
 
         $this->showCreate = false;
-        $this->reset(['name', 'company', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'budget', 'message']);
+        $this->reset(['name', 'company', 'prospect_type', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'budget', 'message', 'origin_page', 'next_action', 'next_action_at', 'deadline', 'estimated_amount']);
         $this->request_type = RequestType::Information->value;
         $this->source = LeadSource::Site->value;
+        $this->prospect_type = ProspectType::Particulier->value;
+        $this->expertise_id = null;
     }
 
     public function delete(int $id): void
@@ -281,7 +349,7 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
             <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouveau prospect" tooltip="Nouveau prospect" />
         </x-slot:actions>
 
-        <x-admin.toolbar search-placeholder="Nom ou email…">
+        <x-admin.toolbar search-placeholder="Nom, email, société ou réf…">
             <x-slot:filters>
                 <flux:select wire:model.live="statusFilter" size="sm">
                     <option value="">Tous les statuts</option>
@@ -295,17 +363,24 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                         <option value="{{ $sector->id }}">{{ $sector->name }}</option>
                     @endforeach
                 </flux:select>
+                <flux:select wire:model.live="typeFilter" size="sm">
+                    <option value="">B2B + Particuliers</option>
+                    @foreach(ProspectType::cases() as $case)
+                        <option value="{{ $case->value }}">{{ $case->label() }}</option>
+                    @endforeach
+                </flux:select>
             </x-slot:filters>
         </x-admin.toolbar>
 
         <div class="overflow-x-auto">
             <flux:table :paginate="$this->leads">
         <flux:table.columns>
+            <flux:table.column>Réf</flux:table.column>
             <flux:table.column>Nom</flux:table.column>
-            <flux:table.column>Email</flux:table.column>
+            <flux:table.column>Type</flux:table.column>
             <flux:table.column>Secteur</flux:table.column>
-            <flux:table.column>Demande</flux:table.column>
             <flux:table.column>Statut</flux:table.column>
+            <flux:table.column>Prochaine action</flux:table.column>
             <flux:table.column>Assigné à</flux:table.column>
             <flux:table.column align="end">Actions</flux:table.column>
         </flux:table.columns>
@@ -313,18 +388,31 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         <flux:table.rows>
             @foreach($this->leads as $lead)
                 <flux:table.row wire:key="lead-row-{{ $lead->id }}">
+                    <flux:table.cell variant="strong">{{ $lead->reference ?? '—' }}</flux:table.cell>
                     <flux:table.cell variant="strong">{{ $lead->name }}
                         @if(isset($this->duplicateEmails[$lead->email]))
                             <flux:badge size="sm" color="amber">Doublon ×{{ $this->duplicateEmails[$lead->email] }}</flux:badge>
                         @endif
+                        <div class="text-xs font-normal text-zinc-500">{{ $lead->email }}</div>
+                        @if($lead->company)
+                            <div class="text-xs font-normal text-zinc-500">{{ $lead->company }}</div>
+                        @endif
                     </flux:table.cell>
-                    <flux:table.cell>{{ $lead->email }}</flux:table.cell>
+                    <flux:table.cell>{{ $lead->prospect_type?->label() ?? '—' }}</flux:table.cell>
                     <flux:table.cell>{{ $lead->sector?->name ?? '—' }}</flux:table.cell>
-                    <flux:table.cell>{{ $lead->request_type?->label() ?? '—' }}</flux:table.cell>
                     <flux:table.cell>
-                        <flux:badge size="sm" color="{{ $lead->status === \App\Enums\LeadStatus::Nouveau ? 'blue' : 'zinc' }}">
+                        <flux:badge size="sm" color="{{ $lead->status === \App\Enums\LeadStatus::Nouveau ? 'blue' : ($lead->status === \App\Enums\LeadStatus::Gagne ? 'green' : ($lead->status === \App\Enums\LeadStatus::Perdu ? 'red' : 'zinc')) }}">
                             {{ $lead->status?->label() ?? '—' }}
                         </flux:badge>
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        @if($lead->next_action_at)
+                            <span class="{{ $lead->isNextActionOverdue() ? 'text-red-600 font-semibold' : '' }}">
+                                {{ $lead->next_action ?? 'Relance' }} · {{ $lead->next_action_at->format('d/m/Y') }}
+                            </span>
+                        @else
+                            {{ $lead->next_action ?? '—' }}
+                        @endif
                     </flux:table.cell>
                     <flux:table.cell>{{ $lead->assignedTo?->name ?? '—' }}</flux:table.cell>
                     <flux:table.cell>
@@ -351,14 +439,41 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
             @if($this->editingLead)
                 <div class="rounded-lg bg-zinc-50 dark:bg-zinc-900 p-4 text-sm space-y-1">
                     <div class="font-semibold">
-                        {{ $this->editingLead->name }}@if($this->editingLead->company) — {{ $this->editingLead->company }}@endif
+                        {{ $this->editingLead->reference ?? '—' }} · {{ $this->editingLead->name }}@if($this->editingLead->company) — {{ $this->editingLead->company }}@endif
                     </div>
                     <div class="text-zinc-500">
-                        {{ $this->editingLead->email }}@if($this->editingLead->phone) · {{ $this->editingLead->phone }}@endif
+                        {{ $this->editingLead->prospect_type?->label() ?? '—' }} · {{ $this->editingLead->email }}@if($this->editingLead->phone) · {{ $this->editingLead->phone }}@endif
                     </div>
                     <div class="text-zinc-500">
-                        {{ $this->editingLead->sector?->name ?? 'Secteur non précisé' }} · {{ $this->editingLead->request_type?->label() ?? '—' }}
+                        {{ $this->editingLead->sector?->name ?? 'Secteur non précisé' }} · {{ $this->editingLead->expertise?->name ?? 'Expertise non qualifiée' }} · {{ $this->editingLead->request_type?->label() ?? '—' }}
                     </div>
+                    <div class="text-zinc-500">
+                        Source : {{ $this->editingLead->source?->label() ?? '—' }}@if($this->editingLead->origin_page) · {{ $this->editingLead->origin_page }}@endif
+                    </div>
+                    @if($this->editingLead->utm_source || $this->editingLead->utm_campaign)
+                        <div class="text-zinc-500">
+                            Campagne : {{ $this->editingLead->utm_source ?? '—' }}@if($this->editingLead->utm_medium) / {{ $this->editingLead->utm_medium }}@endif@if($this->editingLead->utm_campaign) / {{ $this->editingLead->utm_campaign }}@endif
+                        </div>
+                    @endif
+                    @if($this->editingLead->estimated_amount)
+                        <div class="text-zinc-500">Montant estimé : {{ number_format($this->editingLead->estimated_amount, 0, ',', ' ') }} FCFA</div>
+                    @endif
+                    @if($this->editingLead->deadline)
+                        <div class="text-zinc-500">Échéance : {{ $this->editingLead->deadline->format('d/m/Y') }}</div>
+                    @endif
+                    @if($this->editingLead->next_action_at)
+                        <div class="{{ $this->editingLead->isNextActionOverdue() ? 'text-red-600 font-semibold' : 'text-zinc-500' }}">
+                            Prochaine action : {{ $this->editingLead->next_action ?? 'Relance' }} · {{ $this->editingLead->next_action_at->format('d/m/Y') }}
+                        </div>
+                    @endif
+                    @if($this->editingLead->first_contacted_at)
+                        <div class="text-zinc-500">
+                            Premier contact : {{ $this->editingLead->first_contacted_at->format('d/m/Y H:i') }}
+                            ({{ $this->editingLead->responseTimeInMinutes() }} min ouvrées après réception)
+                        </div>
+                    @else
+                        <div class="text-amber-600">Pas encore contacté — SLA 24h ouvrées en cours.</div>
+                    @endif
                     @if($this->editingLead->residence_country || $this->editingLead->target_territory)
                         <div class="text-zinc-500">
                             Résidence : {{ $this->editingLead->residence_country ?? '—' }} · Territoire ciblé : {{ $this->editingLead->target_territory ?? '—' }}
@@ -391,6 +506,45 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                 </flux:select>
                 <flux:error name="assigned_to" />
             </flux:field>
+
+            <flux:field>
+                <flux:label>Expertise qualifiée</flux:label>
+                <flux:select wire:model="expertise_id">
+                    <option value="">Non qualifiée</option>
+                    @foreach($this->expertises as $expertise)
+                        <option value="{{ $expertise->id }}">{{ $expertise->name }}</option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="expertise_id" />
+            </flux:field>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <flux:field>
+                    <flux:label>Prochaine action</flux:label>
+                    <flux:input wire:model="next_action" type="text" placeholder="Ex. Relance, RDV, Devis" />
+                    <flux:error name="next_action" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Date de relance</flux:label>
+                    <flux:input wire:model="next_action_at" type="date" />
+                    <flux:error name="next_action_at" />
+                </flux:field>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <flux:field>
+                    <flux:label>Montant estimé (FCFA)</flux:label>
+                    <flux:input wire:model="estimated_amount" type="number" min="0" placeholder="Ex. 85000000" />
+                    <flux:error name="estimated_amount" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Échéance projet</flux:label>
+                    <flux:input wire:model="deadline" type="date" />
+                    <flux:error name="deadline" />
+                </flux:field>
+            </div>
 
             <flux:field>
                 <flux:label>Notes internes</flux:label>
@@ -446,6 +600,24 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 
             <div class="grid sm:grid-cols-2 gap-4">
                 <flux:field>
+                    <flux:label>Type de prospect</flux:label>
+                    <flux:select wire:model="prospect_type">
+                        @foreach(ProspectType::cases() as $case)
+                            <option value="{{ $case->value }}">{{ $case->label() }}</option>
+                        @endforeach
+                    </flux:select>
+                    <flux:error name="prospect_type" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Échéance projet</flux:label>
+                    <flux:input wire:model="deadline" type="date" />
+                    <flux:error name="deadline" />
+                </flux:field>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <flux:field>
                     <flux:label>Email *</flux:label>
                     <flux:input wire:model="email" type="email" />
                     <flux:error name="email" />
@@ -485,6 +657,19 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                 </flux:field>
 
                 <flux:field>
+                    <flux:label>Expertise liée</flux:label>
+                    <flux:select wire:model="expertise_id">
+                        <option value="">Non précisée</option>
+                        @foreach($this->expertises as $expertise)
+                            <option value="{{ $expertise->id }}">{{ $expertise->name }}</option>
+                        @endforeach
+                    </flux:select>
+                    <flux:error name="expertise_id" />
+                </flux:field>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <flux:field>
                     <flux:label>Type de demande *</flux:label>
                     <flux:select wire:model="request_type">
                         @foreach(RequestType::cases() as $case)
@@ -492,6 +677,12 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                         @endforeach
                     </flux:select>
                     <flux:error name="request_type" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Page d'origine</flux:label>
+                    <flux:input wire:model="origin_page" type="text" placeholder="Ex. /secteurs/btp" />
+                    <flux:error name="origin_page" />
                 </flux:field>
             </div>
 
@@ -503,6 +694,14 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                 </flux:field>
 
                 <flux:field>
+                    <flux:label>Montant estimé (FCFA)</flux:label>
+                    <flux:input wire:model="estimated_amount" type="number" min="0" placeholder="Ex. 85000000" />
+                    <flux:error name="estimated_amount" />
+                </flux:field>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <flux:field>
                     <flux:label>Source *</flux:label>
                     <flux:select wire:model="source">
                         @foreach(LeadSource::cases() as $case)
@@ -511,7 +710,19 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                     </flux:select>
                     <flux:error name="source" />
                 </flux:field>
+
+                <flux:field>
+                    <flux:label>Date de relance</flux:label>
+                    <flux:input wire:model="next_action_at" type="date" />
+                    <flux:error name="next_action_at" />
+                </flux:field>
             </div>
+
+            <flux:field>
+                <flux:label>Prochaine action</flux:label>
+                <flux:input wire:model="next_action" type="text" placeholder="Ex. Relance le 28/09" />
+                <flux:error name="next_action" />
+            </flux:field>
 
             <flux:field>
                 <flux:label>Message *</flux:label>

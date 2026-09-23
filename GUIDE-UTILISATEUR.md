@@ -2,9 +2,9 @@
 
 **Public :** équipe interne SIBEA (Super administrateur, Administrateur, Éditeur, Commercial)
 **Site public :** `/` — **Administration :** `/admin`
-**Version :** état livré v2.8 (Laravel 13, Livewire 4, Flux UI, PostgreSQL)
+**Version :** v3.1 — mini-CRM (pipeline commercial, SLA 24h ouvrées lun–sam, UTM, assignation auto)
 
-Ce guide explique comment utiliser l'administration au quotidien : se connecter, gérer les contenus, traiter les prospects, administrer les comptes et régler le site. Il décrit l'application **telle que livrée** (voir `cdc-realise.md`).
+Ce guide explique comment utiliser l'administration au quotidien : se connecter, gérer les contenus, traiter les prospects, administrer les comptes et régler le site. Il décrit l'application **telle que livrée** (voir `cdc-realise.md` + `GUIDE-DEVELOPPEUR.md`).
 
 ---
 
@@ -56,7 +56,7 @@ Règles du mot de passe : **12 caractères minimum**, avec minuscules + majuscul
 
 ## 2. Principes communs à tous les écrans admin
 
-- **Listes :** recherche instantanée (nom, email, titre), filtres (statut, secteur, rôle), pagination (15 par page par défaut), tri par défaut = plus récent.
+- **Listes :** recherche instantanée (nom, email, société, référence prospect), filtres (statut, secteur, type B2B/Particulier, rôle), pagination (15 par page par défaut), tri par défaut = plus récent.
 - **Création / modification :** toujours dans une **modale Flux UI**. Remplissez, cliquez **Enregistrer**, annulez avec **Annuler**. Un **toast de confirmation** vert s'affiche en cas de succès.
 - **Suppression :** bouton poubelle rouge + **confirmation**. Action irréversible.
 - **Publication :** interrupteur ou bouton œil :
@@ -75,10 +75,11 @@ Vue d'ensemble, accessible à tous les rôles connectés (contenu filtré par pe
 
 - **4 compteurs :** Secteurs actifs, Expertises actives, Projets publiés, Prospects (total).
 - **Bloc « À traiter » :** prospects `Nouveau`, réalisations en brouillon, pages en brouillon, avec lien direct.
+- **Bloc « Pilotage commercial — promesse 24h ouvrées »** (si `manage_leads`) : temps moyen de première réponse (ex. `3h42`, dimanches exclus), prospects reçus, contactés < 24h (+ %), taux de conversion (gagnés / reçus), alertes **dépassement SLA 24h** (rouge) et **relances en retard** (ambre), répartition par étape du pipeline.
 - **Derniers prospects** (si `manage_leads`), **Réalisations récentes** (si `view_projects`), **Activité récente** (dernières mises à jour).
 - Bouton **« Voir le site »** (ouvre le site public dans un nouvel onglet).
 
-Réflexe quotidien : commencez par ce bloc « À traiter ».
+Réflexe quotidien : commencez par « Pilotage commercial » puis « À traiter ».
 
 ---
 
@@ -160,43 +161,53 @@ Pages libres en **markdown** : Engagements, Le Groupe (complément), mentions l�
 
 ## 5. Traiter les prospects (`/admin/prospects`)
 
-Origine : formulaire public `/contact` + saisie manuelle admin. Chaque prospect crée une entrée d'historique + notification email au commercial (via file d'attente).
+Origine : formulaire public `/contact` (assignation auto) + saisie manuelle admin. Chaque prospect a une **référence lisible** (`SIB-00001`) + entrée d'historique + notification email (via file d'attente).
 
 ### 5.1 Liste et filtres
 
-- Colonnes : Nom (+ badge **Doublon ×N** si même email), Email, Secteur, Type de demande, Statut, Assigné à, Actions.
-- **Recherche :** nom ou email. **Filtres :** statut + secteur. Pagination 15/page.
-- Bouton **« Purger +3 ans »** (avec confirmation) : supprime définitivement les prospects de plus de 3 ans (obligation RGPD, voir §8). Commande équivalente : `php artisan leads:purge` (tâche mensuelle côté technique).
+- Colonnes : **Réf**, Nom (email + société en sous-lignes, badge **Doublon ×N** si même email), **Type** (Particulier / Entreprise B2B), Secteur, **Statut** (pipeline), **Prochaine action** (libellé + date, **rouge** si en retard), Assigné à, Actions.
+- **Recherche :** nom, email, société ou référence. **Filtres :** statut + secteur + type B2B/Particuliers. Pagination 15/page.
+- Bouton **« Purger +3 ans »** (avec confirmation) : supprime définitivement les prospects de plus de 3 ans (obligation RGPD, voir §8). Commande équivalente : `php artisan leads:purge`.
 
-### 5.2 Cycle de vie d'un prospect
+### 5.2 Cycle de vie d'un prospect (pipeline)
 
-Statuts (dans l'ordre de traitement) :
+1. **Nouveau** (à qualifier — prioritaire dashboard, SLA 24h ouvrées en cours)
+2. **Qualification** (B2B/Particulier vérifié, besoin cadré)
+3. **RDV** (rendez-vous pris)
+4. **Étude** (étude / chiffrage en cours)
+5. **Proposition** (devis envoyé)
+6. **Négociation**
+7. **Gagné** (affaire remportée — compte dans le taux de conversion)
+8. **Perdu** (abandon motivé) / **Archivé** (classé, compte comme perdu)
 
-1. **Nouveau** (à qualifier — prioritaire dashboard)
-2. **Contacté**
-3. **En cours**
-4. **Qualifié**
-5. **Converti** (affaire gagnée)
-6. **Non qualifié** (abandon motivé)
-7. **Archivé**
+Types de demande : information, devis, partenariat, candidature, presse, autre.
+Sources : site web, téléphone, email, **WhatsApp**, réseaux sociaux, recommandation, autre.
+La fiche affiche aussi : page d'origine (ex. `/secteurs/btp`), campagne (`source / medium / campagne` si venue d'une pub), expertise qualifiée, montant estimé (FCFA), échéance projet, budget indicatif, résidence / territoire ciblé, délai de première réponse (en minutes **ouvrées**).
 
-Types de demande : Demande d'information, Demande de devis, Partenariat, Candidature, Presse, Autre.
-Sources : Site web, Téléphone, Email, Réseaux sociaux, Recommandation, Autre.
+### 5.3 Promesse « réponse sous 24h ouvrées » (lun–sam)
 
-### 5.3 Traiter un prospect (modale « Traiter le prospect »)
+Le compteur démarre à la réception et **saute les dimanches** : une demande du **samedi 10h doit être contactée avant lundi 10h** (pas dimanche). Il suffit de **sortir le prospect de `Nouveau`** (passage en Qualification ou autre) pour figer l'heure du premier contact.
+- Dashboard : moyenne, `% < 24h`, alertes rouges (dépassements) et ambre (relances en retard).
+- Fiche : « Premier contact : date (X min ouvrées après réception) » ou « Pas encore contacté — SLA en cours ».
+
+### 5.4 Assignation automatique
+
+Chaque demande du site est confiée d'office à un commercial (`manage_leads`), en **rotation stricte A → B → C → A** (mode par défaut, équitable). Le commercial reçoit un email avec la fiche (réf, type, secteur, origine, campagne, échéance). Si personne n'est disponible, la boîte partagée `contact@sibea.ci` est alertée. Vous pouvez réassigner à tout moment dans la modale (le nouveau commercial est notifié).
+
+### 5.5 Traiter un prospect (modale « Traiter le prospect »)
 
 1. Cliquez le crayon sur la ligne.
-2. Lisez l'encadré récapitulatif (identité, secteur, demande, budget, message complet, pays de résidence / territoire ciblé).
-3. Changez le **Statut**, choisissez **Assigné à** (un utilisateur — il reçoit un email), ajoutez des **Notes internes** (invisibles du prospect).
-4. **Enregistrer.** Chaque changement de statut ou d'assignation est consigné dans l'**Historique** (date, auteur, description, 20 dernières entrées visibles).
+2. Lisez l'encadré : réf + identité + société, type B2B/Particulier, secteur + expertise + demande, source + page + campagne, montant, échéance, prochaine action, délai SLA, résidence/territoire, budget, message complet.
+3. Changez le **Statut** (fait avancer le pipeline + fige la SLA si 1er contact), choisissez **Assigné à**, qualifiez l'**Expertise**, renseignez **Prochaine action + date de relance**, **Montant estimé (FCFA)**, **Échéance projet**, **Notes internes** (invisibles du prospect).
+4. **Enregistrer.** Statut, expertise et assignation sont consignés dans l'**Historique** (20 dernières entrées : date, auteur, description).
 
-### 5.4 Créer un prospect manuellement (bouton `+`)
+### 5.6 Créer un prospect manuellement (bouton `+`)
 
-Pour les demandes reçues par téléphone, email ou visite : **Nouveau prospect** → nom*, email*, secteur*, type de demande*, message*, société, téléphone, pays de résidence, territoire ciblé, budget, source*. Enregistrement = statut `Nouveau` + historique « créé manuellement par … » + notification.
+Pour téléphone, email, WhatsApp, visite : nom*, email*, secteur*, type de demande*, message*, source* (+ société, téléphone, type B2B/Particulier, échéance, résidence, territoire, budget, montant, page d'origine, prochaine action, relance). Enregistrement = statut `Nouveau` + référence auto + historique + notification (+ assignation auto si source site).
 
-### 5.5 Supprimer
+### 5.7 Supprimer
 
-Poubelle rouge + confirmation. Réservé aux rôles autorisés. Préférez **Archivé** à la suppression sauf demande RGPD (voir §8).
+Poubelle rouge + confirmation. Réservé aux rôles autorisés. Préférez **Perdu/Archivé** à la suppression sauf demande RGPD (voir §8).
 
 ---
 
@@ -206,7 +217,7 @@ Poubelle rouge + confirmation. Réservé aux rôles autorisés. Préférez **Arc
 - `/secteurs`, `/secteurs/{slug}` : secteurs actifs + expertises, services, réalisations liées.
 - `/expertises` : cartes + services, détail en modale.
 - `/realisations` : grille 3 colonnes, 9 par page, filtre par secteur. Fiche : galerie, fiche technique, contexte/solution/impact, témoignage, carte OSM, documents PDF, précédent/suivant.
-- `/contact` : coordonnées, WhatsApp, **formulaire inline** (nom*, société, email*, téléphone, pays de résidence*, territoire ciblé*, secteur actif*, type de demande*, budget, message* ; consentement implicite par soumission + lien privacy ; anti-spam honeypot + 5 envois/min/IP), carte OSM.
+- `/contact` : coordonnées, WhatsApp, **formulaire inline** (nom*, société, vous êtes* [Particulier/Entreprise], email*, téléphone, pays de résidence*, territoire ciblé*, secteur actif*, type de demande*, budget, échéance souhaitée, message* ; consentement implicite par soumission + lien privacy ; anti-spam honeypot + 5 envois/min/IP ; assignation auto + accusé email « réponse sous 24h ouvrées »), carte OSM.
 - `/pages/le-groupe`, `/pages/{slug}`, mentions, privacy, `/robots.txt`, `/sitemap.xml`.
 
 Vos contenus (titres, images, `is_active` / `is_published`) déterminent directement ces pages.
@@ -254,7 +265,8 @@ Réservé Administrateur / Super administrateur. Deux blocs sur la même page.
 2. **Images trop lourdes :** compressez avant upload (paysage, ≥1600 px pour les heroes, texte alternatif soigné côté public).
 3. **Slug / URL :** généré depuis le titre. Évitez de le changer après publication (perte de référencement). Redirections 301 existantes : `/btp`, `/immobilier`, `/energie`, `/agroalimentaire`, `/agro-industrie` → `/secteurs/…`.
 4. **Liaisons oubliées :** une réalisation sans secteur n'apparaît dans aucun filtre ; un service sans expertise est invisible.
-5. **Prospects sans assigné :** assignez systématiquement + changez le statut, sinon ils restent en « Nouveau ».
+5. **Prospects :** sortez-les de `Nouveau` dès le 1er contact (fige la SLA) ; renseignez **prochaine action + date** à chaque étape ; surveillez le bloc Pilotage (rouge = SLA dépassée, ambre = relance en retard) ; utilisez la **référence SIB-…** dans vos échanges.
+6. **Campagnes :** pour suivre une pub, ajoutez `?utm_source=facebook&utm_medium=cpc&utm_campaign=nom` à l'URL partagée — la campagne remonte dans la fiche et le mail.
 6. **Paramètres non enregistrés :** guettez « Modifications non enregistrées », cliquez **Enregistrer**, puis Ctrl+F5 côté public.
 7. **Comptes :** ne créez pas de doublon email ; renvoyez l'invitation plutôt que recréer.
 
@@ -270,6 +282,8 @@ Réservé Administrateur / Super administrateur. Deux blocs sur la même page.
 | Contenu invisible sur le site | `is_published` / `is_active` à false | Publiez/activez dans l'admin |
 | Image refusée | > 5 Mo (ou PDF > 10 Mo / non-PDF) | Compressez / convertissez, réessayez |
 | Email de notification non reçu | File d'attente sans worker, `MAIL_*` mal configurés | Prévenez le technique (vérifier Brevo + `QUEUE_CONNECTION=database` + worker) |
+| SLA rouge alors que contacté vite | Dimanche compté à tort / statut resté `Nouveau` | La SLA saute les dimanches ; changez le statut dès le 1er contact |
+| Campagne vide sur la fiche | Lien partagé sans UTM | Partagez l'URL avec `?utm_source=…&utm_medium=…&utm_campaign=…` |
 | Toast d'erreur de validation | Champ requis / email invalide / latitude hors bornes | Corrigez le champ signalé en rouge |
 
 **En cas de blocage :** notez l'heure, l'URL (`/admin/...`), l'action et le message exact (ou capture), puis contactez l'Administrateur ou le prestataire technique (logs : `laravel.log`).

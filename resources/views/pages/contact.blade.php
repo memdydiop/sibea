@@ -2,11 +2,13 @@
 
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Enums\ProspectType;
 use App\Enums\RequestType;
 use App\Events\LeadCreated;
 use App\Models\Lead;
 use App\Models\Sector;
 use App\Notifications\LeadAcknowledgment;
+use App\Support\LeadAssigner;
 use App\Support\PageSeo;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Notification;
@@ -19,6 +21,8 @@ new #[Layout('layouts::public')] class extends Component {
     public string $name = '';
 
     public string $company = '';
+
+    public string $prospect_type = 'particulier';
 
     public string $email = '';
 
@@ -34,16 +38,54 @@ new #[Layout('layouts::public')] class extends Component {
 
     public ?string $budget = null;
 
+    public ?string $deadline = null;
+
     public string $message = '';
 
     public string $honeypot = '';
 
     public bool $success = false;
 
+    public ?string $origin_page = null;
+
+    public ?string $utm_source = null;
+
+    public ?string $utm_medium = null;
+
+    public ?string $utm_campaign = null;
+
     public function mount(): void
     {
         PageSeo::share('Contact', setting('contact.hero.subtitle'));
         View::share('ogImage', setting_media_url('visuals.hero.contact', 'hero') ?: null);
+
+        $referer = (string) request()->headers->get('referer', '');
+        $path = $referer !== '' ? parse_url($referer, PHP_URL_PATH) : null;
+
+        if (is_string($path) && $path !== '' && $path !== '/contact') {
+            $this->origin_page = mb_substr($path, 0, 500);
+        }
+
+        // UTM : query du moment prioritaire, sinon referer (navigation
+        // /secteurs/btp?utm_source=… → /contact), sinon session.
+        $refererQuery = [];
+        if ($referer !== '') {
+            parse_str((string) parse_url($referer, PHP_URL_QUERY), $refererQuery);
+        }
+
+        $utm = [
+            'utm_source' => request()->query('utm_source') ?? $refererQuery['utm_source'] ?? session('utm.utm_source'),
+            'utm_medium' => request()->query('utm_medium') ?? $refererQuery['utm_medium'] ?? session('utm.utm_medium'),
+            'utm_campaign' => request()->query('utm_campaign') ?? $refererQuery['utm_campaign'] ?? session('utm.utm_campaign'),
+        ];
+
+        if (request()->query('utm_source') || request()->query('utm_medium') || request()->query('utm_campaign')) {
+            session(['utm' => $utm]);
+        }
+
+        $this->utm_source = is_string($utm['utm_source']) ? mb_substr($utm['utm_source'], 0, 255) : null;
+        $this->utm_medium = is_string($utm['utm_medium']) ? mb_substr($utm['utm_medium'], 0, 255) : null;
+        $this->utm_campaign = is_string($utm['utm_campaign']) ? mb_substr($utm['utm_campaign'], 0, 255) : null;
     }
 
     /**
@@ -54,6 +96,7 @@ new #[Layout('layouts::public')] class extends Component {
         return [
             'name' => ['required', 'string', 'max:255'],
             'company' => ['nullable', 'string', 'max:255'],
+            'prospect_type' => ['required', Rule::enum(ProspectType::class)],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'residence_country' => ['required', 'string', 'max:255'],
@@ -61,8 +104,24 @@ new #[Layout('layouts::public')] class extends Component {
             'sector_id' => ['required', 'exists:sectors,id'],
             'request_type' => ['required', Rule::enum(RequestType::class)],
             'budget' => ['nullable', 'string', 'max:255'],
+            'deadline' => ['nullable', 'date', 'after:today'],
             'message' => ['required', 'string', 'max:2000'],
         ];
+    }
+
+    private function resolveExpertiseFromOrigin(): ?int
+    {
+        if ($this->origin_page === null || ! str_starts_with($this->origin_page, '/expertises/')) {
+            return null;
+        }
+
+        $slug = explode('/', trim($this->origin_page, '/'))[1] ?? null;
+
+        if ($slug === null || $slug === '') {
+            return null;
+        }
+
+        return \App\Models\Expertise::where('slug', $slug)->value('id');
     }
 
     public function submit(): void
@@ -70,7 +129,6 @@ new #[Layout('layouts::public')] class extends Component {
         if ($this->honeypot !== '') {
             return;
         }
-
         $key = 'contact:'.request()->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $this->addError('email', 'Trop de tentatives. Réessayez dans une minute.');
@@ -91,23 +149,31 @@ new #[Layout('layouts::public')] class extends Component {
         $lead = Lead::create([
             'name' => $this->name,
             'company' => $this->company,
+            'prospect_type' => $this->prospect_type,
             'email' => $this->email,
             'phone' => $this->phone,
             'residence_country' => $this->residence_country,
             'target_territory' => $this->target_territory,
             'sector_id' => $this->sector_id,
+            'expertise_id' => $this->resolveExpertiseFromOrigin(),
             'request_type' => $this->request_type,
             'budget' => $this->budget,
+            'deadline' => $this->deadline,
             'message' => $this->message,
             'status' => LeadStatus::Nouveau,
             'source' => LeadSource::Site,
+            'origin_page' => $this->origin_page,
+            'utm_source' => $this->utm_source,
+            'utm_medium' => $this->utm_medium,
+            'utm_campaign' => $this->utm_campaign,
+            'assigned_to' => config('leads.auto_assign') ? LeadAssigner::next()?->id : null,
             'consent_at' => now(),
             'consent_ip' => request()->ip(),
         ]);
 
         $lead->activities()->create([
             'action' => 'created',
-            'description' => 'Prospect créé via la page contact.',
+            'description' => 'Prospect créé via la page contact.'.($lead->assigned_to ? ' Assigné auto à '.$lead->assignedTo?->name.'.' : ''),
         ]);
 
         LeadCreated::dispatch($lead);
@@ -116,7 +182,8 @@ new #[Layout('layouts::public')] class extends Component {
         // jamais la saisie admin manuelle.
         Notification::route('mail', $lead->email)->notify(new LeadAcknowledgment($lead));
 
-        $this->reset(['name', 'company', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'request_type', 'budget', 'message', 'honeypot']);
+        $this->reset(['name', 'company', 'prospect_type', 'email', 'phone', 'residence_country', 'target_territory', 'sector_id', 'request_type', 'budget', 'deadline', 'message', 'honeypot']);
+        $this->prospect_type = ProspectType::Particulier->value;
         $this->success = true;
     }
 };
@@ -264,6 +331,21 @@ new #[Layout('layouts::public')] class extends Component {
                                     <flux:input wire:model="company" label="Société" type="text"
                                         placeholder="Votre société" />
                                     <flux:error name="company" />
+                                </div>
+                            </div>
+
+                            <div class="grid sm:grid-cols-2 gap-5">
+                                <div>
+                                    <flux:select wire:model="prospect_type" label="Vous êtes *">
+                                        @foreach (ProspectType::cases() as $type)
+                                            <flux:select.option value="{{ $type->value }}">{{ $type->label() }}</flux:select.option>
+                                        @endforeach
+                                    </flux:select>
+                                    <flux:error name="prospect_type" />
+                                </div>
+                                <div>
+                                    <flux:input wire:model="deadline" label="Échéance souhaitée" type="date" />
+                                    <flux:error name="deadline" />
                                 </div>
                             </div>
 

@@ -38,14 +38,14 @@ test('updates lead status and assignment', function () {
     Livewire::actingAs($manager)
         ->test('pages::admin.leads.index')
         ->call('edit', $lead->id)
-        ->set('status', LeadStatus::Qualifie->value)
+        ->set('status', LeadStatus::Qualification->value)
         ->set('assigned_to', $assignee->id)
         ->set('notes', 'Prospect sérieux.')
         ->call('save')
         ->assertHasNoErrors();
 
     expect($lead->fresh())
-        ->status->toBe(LeadStatus::Qualifie)
+        ->status->toBe(LeadStatus::Qualification)
         ->assigned_to->toBe($assignee->id)
         ->notes->toBe('Prospect sérieux.');
 });
@@ -62,11 +62,11 @@ test('deletes a lead', function () {
 
 test('filters leads by status', function () {
     Lead::factory()->create(['email' => 'nouveau@example.com', 'status' => LeadStatus::Nouveau]);
-    Lead::factory()->create(['email' => 'qualifie@example.com', 'status' => LeadStatus::Qualifie]);
+    Lead::factory()->create(['email' => 'qualifie@example.com', 'status' => LeadStatus::Qualification]);
 
     Livewire::actingAs(leadsManager())
         ->test('pages::admin.leads.index')
-        ->set('statusFilter', LeadStatus::Qualifie->value)
+        ->set('statusFilter', LeadStatus::Qualification->value)
         ->assertSee('qualifie@example.com')
         ->assertDontSee('nouveau@example.com');
 });
@@ -124,7 +124,7 @@ test('logs status and assignment changes in history', function () {
     Livewire::actingAs($manager)
         ->test('pages::admin.leads.index')
         ->call('edit', $lead->id)
-        ->set('status', LeadStatus::Contacte->value)
+        ->set('status', LeadStatus::Qualification->value)
         ->set('assigned_to', $assignee->id)
         ->call('save')
         ->assertHasNoErrors();
