@@ -2,7 +2,7 @@
 
 **Public :** équipe interne SIBEA (Super administrateur, Administrateur, Éditeur, Commercial)
 **Site public :** `/` — **Administration :** `/admin`
-**Version :** v3.1 — mini-CRM (pipeline commercial, SLA 24h ouvrées lun–sam, UTM, assignation auto)
+**Version :** v3.5 — mini-CRM (pipeline, SLA 24h ouvrées lun–sam hors fériés, export CSV, UTM, réseaux)
 
 Ce guide explique comment utiliser l'administration au quotidien : se connecter, gérer les contenus, traiter les prospects, administrer les comptes et régler le site. Il décrit l'application **telle que livrée** (voir `cdc-realise.md` + `GUIDE-DEVELOPPEUR.md`).
 
@@ -75,7 +75,7 @@ Vue d'ensemble, accessible à tous les rôles connectés (contenu filtré par pe
 
 - **4 compteurs :** Secteurs actifs, Expertises actives, Projets publiés, Prospects (total).
 - **Bloc « À traiter » :** prospects `Nouveau`, réalisations en brouillon, pages en brouillon, avec lien direct.
-- **Bloc « Pilotage commercial — promesse 24h ouvrées »** (si `manage_leads`) : temps moyen de première réponse (ex. `3h42`, dimanches exclus), prospects reçus, contactés < 24h (+ %), taux de conversion (gagnés / reçus), alertes **dépassement SLA 24h** (rouge) et **relances en retard** (ambre), répartition par étape du pipeline.
+- **Bloc « Pilotage commercial — promesse 24h ouvrées »** (si `manage_leads`) : temps moyen de première réponse (ex. `3h42`, dimanches et fériés exclus), prospects reçus, contactés < 24h (+ %), taux de conversion (gagnés / reçus), alertes **dépassement SLA 24h** (rouge) et **relances en retard** (ambre), répartition par étape du pipeline.
 - **Derniers prospects** (si `manage_leads`), **Réalisations récentes** (si `view_projects`), **Activité récente** (dernières mises à jour).
 - Bouton **« Voir le site »** (ouvre le site public dans un nouvel onglet).
 
@@ -167,6 +167,7 @@ Origine : formulaire public `/contact` (assignation auto) + saisie manuelle admi
 
 - Colonnes : **Réf**, Nom (email + société en sous-lignes, badge **Doublon ×N** si même email), **Type** (Particulier / Entreprise B2B), Secteur, **Statut** (pipeline), **Prochaine action** (libellé + date, **rouge** si en retard), Assigné à, Actions.
 - **Recherche :** nom, email, société ou référence. **Filtres :** statut + secteur + type B2B/Particuliers. Pagination 15/page.
+- Bouton **« Exporter CSV »** : télécharge les prospects **tels que filtrés** (statut, secteur, type, recherche) en CSV Excel (UTF-8, séparateur `;`).
 - Bouton **« Purger +3 ans »** (avec confirmation) : supprime définitivement les prospects de plus de 3 ans (obligation RGPD, voir §8). Commande équivalente : `php artisan leads:purge`.
 
 ### 5.2 Cycle de vie d'un prospect (pipeline)
@@ -186,7 +187,7 @@ La fiche affiche aussi : page d'origine (ex. `/secteurs/btp`), campagne (`source
 
 ### 5.3 Promesse « réponse sous 24h ouvrées » (lun–sam)
 
-Le compteur démarre à la réception et **saute les dimanches** : une demande du **samedi 10h doit être contactée avant lundi 10h** (pas dimanche). Il suffit de **sortir le prospect de `Nouveau`** (passage en Qualification ou autre) pour figer l'heure du premier contact.
+Le compteur démarre à la réception et **saute les dimanches et les jours fériés ivoiriens** (fixes, lundi de Pâques / Ascension / Pentecôte, plus Korité / Tabaski / Maouloud maintenus dans la config) : une demande du **samedi 10h doit être contactée avant lundi 10h** (pas dimanche). Un prospect reçu la veille d'un férié gagne une journée ouvrée de plus. Il suffit de **sortir le prospect de `Nouveau`** (passage en Qualification ou autre) pour figer l'heure du premier contact.
 - Dashboard : moyenne, `% < 24h`, alertes rouges (dépassements) et ambre (relances en retard).
 - Fiche : « Premier contact : date (X min ouvrées après réception) » ou « Pas encore contacté — SLA en cours ».
 
@@ -282,7 +283,7 @@ Réservé Administrateur / Super administrateur. Deux blocs sur la même page.
 | Contenu invisible sur le site | `is_published` / `is_active` à false | Publiez/activez dans l'admin |
 | Image refusée | > 5 Mo (ou PDF > 10 Mo / non-PDF) | Compressez / convertissez, réessayez |
 | Email de notification non reçu | File d'attente sans worker, `MAIL_*` mal configurés | Prévenez le technique (vérifier Brevo + `QUEUE_CONNECTION=database` + worker) |
-| SLA rouge alors que contacté vite | Dimanche compté à tort / statut resté `Nouveau` | La SLA saute les dimanches ; changez le statut dès le 1er contact |
+| SLA rouge alors que contacté vite | Dimanche/férié compté à tort / statut resté `Nouveau` | La SLA saute dimanches et fériés ; changez le statut dès le 1er contact |
 | Campagne vide sur la fiche | Lien partagé sans UTM | Partagez l'URL avec `?utm_source=…&utm_medium=…&utm_campaign=…` |
 | Toast d'erreur de validation | Champ requis / email invalide / latitude hors bornes | Corrigez le champ signalé en rouge |
 

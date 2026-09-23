@@ -8,11 +8,79 @@ use Illuminate\Support\Carbon;
 class SlaClock
 {
     /**
-     * Jours ouvrés SIBEA : lundi (1) au samedi (6). Dimanche (0) exclu.
+     * Cache des jours fériés indexés par année puis par date Y-m-d.
+     *
+     * @var array<int, array<string, true>>
+     */
+    private static array $holidaysByYear = [];
+
+    /**
+     * Jour ouvré SIBEA : lundi–samedi, hors dimanche et jours fériés ivoiriens.
      */
     public static function isWorkingDay(CarbonInterface $date): bool
     {
-        return $date->dayOfWeek !== Carbon::SUNDAY;
+        if ($date->dayOfWeek === Carbon::SUNDAY) {
+            return false;
+        }
+
+        return ! self::isHoliday($date);
+    }
+
+    /**
+     * Jour férié officiel (fixes + chrétiens mobiles + extras config, ex. Korité / Tabaski).
+     */
+    public static function isHoliday(CarbonInterface $date): bool
+    {
+        return isset(self::holidaysForYear($date->year)[$date->format('Y-m-d')]);
+    }
+
+    /**
+     * Dates fériées d'une année civile, clés Y-m-d.
+     *
+     * @return array<string, true>
+     */
+    public static function holidaysForYear(int $year): array
+    {
+        if (isset(self::$holidaysByYear[$year])) {
+            return self::$holidaysByYear[$year];
+        }
+
+        $dates = [];
+
+        foreach ([
+            sprintf('%04d-01-01', $year), // Nouvel An
+            sprintf('%04d-05-01', $year), // Fête du Travail
+            sprintf('%04d-08-07', $year), // Fête nationale
+            sprintf('%04d-08-15', $year), // Assomption
+            sprintf('%04d-11-01', $year), // Toussaint
+            sprintf('%04d-11-15', $year), // Journée nationale de la Paix
+            sprintf('%04d-12-25', $year), // Noël
+        ] as $fixed) {
+            $dates[$fixed] = true;
+        }
+
+        // Lundi de Pâques (+1), Ascension (+39), lundi de Pentecôte (+50).
+        $easter = Carbon::createFromTimestamp(easter_date($year))->startOfDay();
+
+        foreach ([1, 39, 50] as $offsetDays) {
+            $dates[$easter->copy()->addDays($offsetDays)->format('Y-m-d')] = true;
+        }
+
+        foreach (config('leads.holidays', []) as $extra) {
+            if (is_string($extra) && str_starts_with($extra, sprintf('%04d-', $year))) {
+                $dates[$extra] = true;
+            }
+        }
+
+        return self::$holidaysByYear[$year] = $dates;
+    }
+
+    /**
+     * Remet le cache (tests / changement de config en runtime).
+     */
+    public static function flushHolidayCache(): void
+    {
+        self::$holidaysByYear = [];
     }
 
     /**
@@ -46,7 +114,7 @@ class SlaClock
                 $deadline = $deadline->copy()->addDay()->startOfDay();
             }
 
-            // Saute les dimanches d'un coup.
+            // Saute dimanches et fériés d'un coup.
             while (! self::isWorkingDay($deadline)) {
                 $deadline = $deadline->copy()->addDay()->startOfDay();
             }
@@ -56,7 +124,7 @@ class SlaClock
     }
 
     /**
-     * Minutes ouvrées entre deux instants (dimanches exclus).
+     * Minutes ouvrées entre deux instants (dimanches et fériés exclus).
      */
     public static function workingMinutesBetween(CarbonInterface $from, CarbonInterface $to): int
     {

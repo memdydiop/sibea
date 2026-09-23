@@ -10,6 +10,7 @@ use App\Models\Lead;
 use App\Notifications\AssignedLeadNotification;
 use App\Models\Sector;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -17,6 +18,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 {
@@ -103,8 +105,10 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         return Expertise::ordered()->get();
     }
 
-    #[Computed]
-    public function leads()
+    /**
+     * @return Builder<Lead>
+     */
+    protected function filteredLeadsQuery(): Builder
     {
         return Lead::query()
             ->with(['sector', 'expertise', 'assignedTo'])
@@ -116,8 +120,13 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
             ->when($this->statusFilter, fn ($query) => $query->where('status', $this->statusFilter))
             ->when($this->sectorFilter, fn ($query) => $query->where('sector_id', $this->sectorFilter))
             ->when($this->typeFilter, fn ($query) => $query->where('prospect_type', $this->typeFilter))
-            ->latest()
-            ->paginate($this->perPage);
+            ->latest();
+    }
+
+    #[Computed]
+    public function leads()
+    {
+        return $this->filteredLeadsQuery()->paginate($this->perPage);
     }
 
     public function updatedSearch(): void
@@ -327,6 +336,88 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
         abort_unless(auth()->user()->can('manage_leads'), 403);
         Artisan::call('leads:purge');
     }
+
+    public function export(): StreamedResponse
+    {
+        $this->authorize('viewAny', Lead::class);
+
+        $filename = 'prospects-'.now()->format('Y-m-d-His').'.csv';
+        $query = $this->filteredLeadsQuery();
+
+        return response()->streamDownload(function () use ($query): void {
+            $handle = fopen('php://output', 'w');
+
+            // BOM UTF-8 pour Excel + séparateur point-virgule (locale FR).
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, [
+                'Réf',
+                'Nom',
+                'Email',
+                'Téléphone',
+                'Société',
+                'Type',
+                'Secteur',
+                'Expertise',
+                'Statut',
+                'Source',
+                'Page origine',
+                'UTM source',
+                'UTM medium',
+                'UTM campaign',
+                'Assigné à',
+                'Prochaine action',
+                'Date relance',
+                'Montant estimé (FCFA)',
+                'Échéance',
+                'Budget',
+                'Résidence',
+                'Territoire',
+                'Type de demande',
+                'Message',
+                'Créé le',
+                'Premier contact',
+                'Notes',
+            ], ';');
+
+            foreach ($query->cursor() as $lead) {
+                /** @var Lead $lead */
+                fputcsv($handle, [
+                    $lead->reference,
+                    $lead->name,
+                    $lead->email,
+                    $lead->phone,
+                    $lead->company,
+                    $lead->prospect_type?->label(),
+                    $lead->sector?->name,
+                    $lead->expertise?->name,
+                    $lead->status?->label(),
+                    $lead->source?->label(),
+                    $lead->origin_page,
+                    $lead->utm_source,
+                    $lead->utm_medium,
+                    $lead->utm_campaign,
+                    $lead->assignedTo?->name,
+                    $lead->next_action,
+                    $lead->next_action_at?->format('Y-m-d'),
+                    $lead->estimated_amount,
+                    $lead->deadline?->format('Y-m-d'),
+                    $lead->budget,
+                    $lead->residence_country,
+                    $lead->target_territory,
+                    $lead->request_type?->label(),
+                    $lead->message,
+                    $lead->created_at?->format('Y-m-d H:i'),
+                    $lead->first_contacted_at?->format('Y-m-d H:i'),
+                    $lead->notes,
+                ], ';');
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
 };
 ?>
 
@@ -345,6 +436,7 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     <x-admin.card title="Prospects" :padded="false">
 
         <x-slot:actions>
+            <flux:button variant="ghost" size="sm" wire:click="export" icon="arrow-down-tray" aria-label="Exporter CSV" tooltip="Exporter CSV (filtres courants)">Exporter CSV</flux:button>
             <flux:button variant="ghost" size="sm" wire:click="purge" wire:confirm="Purger les prospects de plus de 3 ans ?" aria-label="Purger les prospects de plus de 3 ans" tooltip="Purger les prospects de plus de 3 ans">Purger +3 ans</flux:button>
             <flux:button variant="primary" size="sm" wire:click="create" icon="plus" aria-label="Nouveau prospect" tooltip="Nouveau prospect" />
         </x-slot:actions>

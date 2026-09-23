@@ -101,7 +101,7 @@ class Lead extends Model
             return null;
         }
 
-        // SLA ouvrée lun-sam : dimanches exclus du décompte.
+        // SLA ouvrée lun–sam : dimanches et fériés ivoiriens exclus.
         return SlaClock::workingMinutesBetween($this->created_at, $this->first_contacted_at);
     }
 

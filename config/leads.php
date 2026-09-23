@@ -40,4 +40,27 @@ return [
 
     'assign_mode' => env('LEADS_ASSIGN_MODE', 'round_robin'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Jours fériés supplémentaires (SLA)
+    |--------------------------------------------------------------------------
+    |
+    | Dates Y-m-d ajoutées aux fériés fixes et chrétiens mobiles calculés
+    | par SlaClock (Nouvel An, Travail, Nationale, Assomption, Toussaint,
+    | Paix, Noël, lundi de Pâques, Ascension, lundi de Pentecôte).
+    | À maintenir pour les fêtes musulmanes (Korité, Tabaski, Maouloud).
+    |
+    */
+
+    'holidays' => [
+        // 2026
+        '2026-03-20', // Korité (Aïd el-Fitr)
+        '2026-05-27', // Tabaski (Aïd el-Kebir)
+        '2026-08-25', // Maouloud
+        // 2027
+        '2027-03-10', // Korité
+        '2027-05-17', // Tabaski
+        '2027-08-15', // Maouloud (même jour que l'Assomption — redondant OK)
+    ],
+
 ];

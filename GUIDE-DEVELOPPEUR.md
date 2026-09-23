@@ -106,7 +106,7 @@ Listes : recherche (nom/email/société/réf), filtres statut/secteur/type, pagi
 `reference` unique `SIB-00001` (auto `created + updateQuietly`), `prospect_type`, `sector_id`/`expertise_id`, `request_type`, `budget` + `estimated_amount` (FCFA), `deadline`, `source (+whatsapp)`, `origin_page`, `utm_*`, `assigned_to`, `notes`, `next_action(_at)`, `consent_at/ip`, `notified_at`, `first_contacted_at`. Relations `sector/expertise/assignedTo/activities`. Recherche admin : nom/email/société/réf. Filtres : statut/secteur/type. Doublons email badgés.
 
 ### 6.3 SLA 24h ouvrées — `SlaClock`
-Lun–sam (dimanche exclu, fériés non gérés) : `addWorkingHours` (samedi 10h +24h → lundi 10h), `workingMinutesBetween` (base `responseTimeInMinutes()`), `slaDeadline()`, `respondedWithinHours()`, `isSlaBreached()`. Signatures en `CarbonInterface` (casts parfois `CarbonImmutable`). Journées bornées par `addDay()->startOfDay()` (jamais `endOfDay()`, dérive 1 min).
+Lun–sam hors fériés ivoiriens (dimanche exclu ; fixes + Pâques/Ascension/Pentecôte + `config('leads.holidays')` pour Korité/Tabaski/Maouloud) : `addWorkingHours`, `workingMinutesBetween`, `isHoliday` / `holidaysForYear`. Signatures en `CarbonInterface`. Journées bornées par `addDay()->startOfDay()` (jamais `endOfDay()`, dérive 1 min).
 
 ### 6.4 Assignation — `LeadAssigner`
 `roundRobin()` par défaut (rotation A→B→C→A depuis le dernier assigné, sans état), `leastLoaded()` (moins d’ouverts), `next()` selon `leads.assign_mode`. `commercials()` = `manage_leads` ordonnés, `collect()` vide si permission absente (tests sans seed). `LEADS_AUTO_ASSIGN=false` = tout en boîte partagée.

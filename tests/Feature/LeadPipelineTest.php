@@ -291,6 +291,38 @@ test('sla excludes sundays', function () {
     expect(SlaClock::workingMinutesBetween($saturday, $monday))->toBe(24 * 60);
 });
 
+test('sla excludes ivory coast fixed holidays', function () {
+    SlaClock::flushHolidayCache();
+
+    // Jeudi 6 août 2026 10h + 24h ouvrées : saute le 7 août (fête nationale) → samedi 8 août 10h.
+    $thursday = Carbon::create(2026, 8, 6, 10, 0, 0);
+    $deadline = SlaClock::addWorkingHours($thursday, 24);
+
+    expect(SlaClock::isHoliday(Carbon::create(2026, 8, 7)))->toBeTrue()
+        ->and(SlaClock::isWorkingDay(Carbon::create(2026, 8, 7)))->toBeFalse()
+        ->and($deadline->format('Y-m-d H:i'))->toBe('2026-08-08 10:00');
+});
+
+test('sla excludes configured islamic holidays', function () {
+    SlaClock::flushHolidayCache();
+    config()->set('leads.holidays', ['2026-03-20']);
+
+    expect(SlaClock::isHoliday(Carbon::create(2026, 3, 20)))->toBeTrue()
+        ->and(SlaClock::isWorkingDay(Carbon::create(2026, 3, 20)))->toBeFalse();
+
+    // Jeudi 19 mars 10h + 24h → saute Korité du vendredi → samedi 21 mars 10h.
+    $deadline = SlaClock::addWorkingHours(Carbon::create(2026, 3, 19, 10, 0, 0), 24);
+
+    expect($deadline->format('Y-m-d H:i'))->toBe('2026-03-21 10:00');
+});
+
+test('easter monday is a holiday', function () {
+    SlaClock::flushHolidayCache();
+
+    // Pâques 2026 = 5 avril → lundi de Pâques 6 avril.
+    expect(SlaClock::isHoliday(Carbon::create(2026, 4, 6)))->toBeTrue();
+});
+
 test('sunday lead is not breached on monday morning', function () {
     $sunday = now()->previous(Carbon::SUNDAY)->setTime(10, 0);
     $lead = Lead::factory()->create([

@@ -190,3 +190,34 @@ test('paginates leads with per page setting', function () {
         ->assertSee('lead1@example.com')
         ->assertDontSee('lead6@example.com');
 });
+
+test('exports filtered leads as csv', function () {
+    $this->travelTo(now()->setTime(12, 0, 0));
+
+    Lead::factory()->create([
+        'name' => 'Export Qualifié',
+        'email' => 'export-ok@example.com',
+        'status' => LeadStatus::Qualification,
+        'company' => 'SIBEA Export SARL',
+    ]);
+    Lead::factory()->create([
+        'name' => 'Export Nouveau',
+        'email' => 'export-skip@example.com',
+        'status' => LeadStatus::Nouveau,
+    ]);
+
+    $filename = 'prospects-'.now()->format('Y-m-d-His').'.csv';
+
+    $component = Livewire::actingAs(leadsManager())
+        ->test('pages::admin.leads.index')
+        ->set('statusFilter', LeadStatus::Qualification->value)
+        ->call('export')
+        ->assertFileDownloaded($filename, contentType: 'text/csv; charset=UTF-8');
+
+    $content = base64_decode(data_get($component->effects, 'download.content'));
+
+    expect($content)->toContain('export-ok@example.com')
+        ->and($content)->toContain('SIBEA Export SARL')
+        ->and($content)->not->toContain('export-skip@example.com')
+        ->and($content)->toContain('Réf');
+});
