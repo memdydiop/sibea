@@ -10,6 +10,7 @@ use App\Models\Sector;
 use App\Notifications\LeadAcknowledgment;
 use App\Support\LeadAssigner;
 use App\Support\PageSeo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
@@ -146,35 +147,43 @@ new #[Layout('layouts::public')] class extends Component {
             return;
         }
 
-        $lead = Lead::create([
-            'name' => $this->name,
-            'company' => $this->company,
-            'prospect_type' => $this->prospect_type,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'residence_country' => $this->residence_country,
-            'target_territory' => $this->target_territory,
-            'sector_id' => $this->sector_id,
-            'expertise_id' => $this->resolveExpertiseFromOrigin(),
-            'request_type' => $this->request_type,
-            'budget' => $this->budget,
-            'deadline' => $this->deadline,
-            'message' => $this->message,
-            'status' => LeadStatus::Nouveau,
-            'source' => LeadSource::Site,
-            'origin_page' => $this->origin_page,
-            'utm_source' => $this->utm_source,
-            'utm_medium' => $this->utm_medium,
-            'utm_campaign' => $this->utm_campaign,
-            'assigned_to' => config('leads.auto_assign') ? LeadAssigner::next()?->id : null,
-            'consent_at' => now(),
-            'consent_ip' => request()->ip(),
-        ]);
+        $lead = DB::transaction(function () {
+            $email = mb_strtolower(trim($this->email));
 
-        $lead->activities()->create([
-            'action' => 'created',
-            'description' => 'Prospect créé via la page contact.'.($lead->assigned_to ? ' Assigné auto à '.$lead->assignedTo?->name.'.' : ''),
-        ]);
+            $created = Lead::create([
+                'name' => trim($this->name),
+                'company' => $this->company !== '' ? trim($this->company) : $this->company,
+                'prospect_type' => $this->prospect_type,
+                'email' => $email,
+                'phone' => $this->phone,
+                'residence_country' => $this->residence_country,
+                'target_territory' => $this->target_territory,
+                'sector_id' => $this->sector_id,
+                'expertise_id' => $this->resolveExpertiseFromOrigin(),
+                'request_type' => $this->request_type,
+                'budget' => $this->budget,
+                'deadline' => $this->deadline,
+                'message' => $this->message,
+                'status' => LeadStatus::Nouveau,
+                'source' => LeadSource::Site,
+                'origin_page' => $this->origin_page,
+                'utm_source' => $this->utm_source,
+                'utm_medium' => $this->utm_medium,
+                'utm_campaign' => $this->utm_campaign,
+                'assigned_to' => config('leads.auto_assign') ? LeadAssigner::next()?->id : null,
+                'consent_at' => now(),
+                'consent_ip' => request()->ip(),
+            ]);
+
+            $created->activities()->create([
+                'action' => 'created',
+                'description' => 'Prospect créé via la page contact.'.($created->assigned_to ? ' Assigné auto à '.$created->assignedTo?->name.'.' : ''),
+            ]);
+
+            return $created;
+        });
+
+        $lead->refresh();
 
         LeadCreated::dispatch($lead);
 

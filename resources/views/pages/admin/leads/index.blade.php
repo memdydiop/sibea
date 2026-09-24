@@ -12,6 +12,10 @@ use App\Models\Sector;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -90,13 +94,13 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     #[Computed]
     public function sectors()
     {
-        return Sector::ordered()->get();
+        return Sector::cachedActiveList();
     }
 
     #[Computed]
     public function users()
     {
-        return User::orderBy('name')->get();
+        return User::orderBy('name')->get(['id', 'name', 'email']);
     }
 
     #[Computed]
@@ -112,11 +116,7 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     {
         return Lead::query()
             ->with(['sector', 'expertise', 'assignedTo'])
-            ->when($this->search, fn ($query) => $query->where(fn ($q) => $q
-                ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($this->search).'%'])
-                ->orWhereRaw('LOWER(email) LIKE ?', ['%'.mb_strtolower($this->search).'%'])
-                ->orWhereRaw('LOWER(company) LIKE ?', ['%'.mb_strtolower($this->search).'%'])
-                ->orWhereRaw('LOWER(reference) LIKE ?', ['%'.mb_strtolower($this->search).'%'])))
+            ->when($this->search, fn ($query) => $query->search($this->search))
             ->when($this->statusFilter, fn ($query) => $query->where('status', $this->statusFilter))
             ->when($this->sectorFilter, fn ($query) => $query->where('sector_id', $this->sectorFilter))
             ->when($this->typeFilter, fn ($query) => $query->where('prospect_type', $this->typeFilter))
@@ -126,7 +126,7 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     #[Computed]
     public function leads()
     {
-        return $this->filteredLeadsQuery()->paginate($this->perPage);
+        return $this->filteredLeadsQuery()->paginate($this->clampedPerPage());
     }
 
     public function updatedSearch(): void
@@ -151,7 +151,13 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 
     public function updatedPerPage(): void
     {
+        $this->perPage = $this->clampedPerPage();
         $this->resetPage();
+    }
+
+    private function clampedPerPage(): int
+    {
+        return min(max($this->perPage, 5), 50);
     }
 
     /**
@@ -160,12 +166,12 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     #[Computed]
     public function duplicateEmails(): array
     {
-        return Lead::query()
+        return Cache::remember('leads.duplicate_emails.v1', 300, fn (): array => Lead::query()
             ->selectRaw('email, COUNT(*) as total')
             ->groupBy('email')
             ->havingRaw('COUNT(*) > 1')
             ->pluck('total', 'email')
-            ->all();
+            ->all());
     }
 
     #[Computed]
@@ -202,9 +208,6 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 
     public function save(): void
     {
-        $lead = Lead::findOrFail($this->editingId);
-        $this->authorize('update', $lead);
-
         $validated = $this->validate([
             'status' => ['required', Rule::enum(LeadStatus::class)],
             'assigned_to' => ['nullable', 'exists:users,id'],
@@ -216,48 +219,72 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
             'estimated_amount' => ['nullable', 'integer', 'min:0', 'max:100000000000'],
         ]);
 
-        $oldStatus = $lead->status->value;
-        $oldAssignee = $lead->assigned_to;
-        $oldExpertise = $lead->expertise_id;
+        $lead = Lead::findOrFail($this->editingId);
+        $this->authorize('update', $lead);
 
-        $lead->update([
-            'status' => LeadStatus::from($validated['status']),
-            'assigned_to' => $validated['assigned_to'],
-            'expertise_id' => $validated['expertise_id'],
-            'notes' => $validated['notes'],
-            'next_action' => $validated['next_action'],
-            'next_action_at' => $validated['next_action_at'],
-            'deadline' => $validated['deadline'],
-            'estimated_amount' => $validated['estimated_amount'],
-        ]);
+        $notifyAssignee = null;
 
-        if ($oldStatus !== $lead->status->value) {
-            $lead->activities()->create([
-                'user_id' => auth()->id(),
-                'action' => 'status_changed',
-                'description' => 'Statut : '.$oldStatus.' → '.$lead->status->value.'.',
-            ]);
-        }
+        DB::transaction(function () use ($lead, $validated, &$notifyAssignee): void {
+            $locked = Lead::whereKey($lead->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($oldExpertise !== $lead->expertise_id) {
-            $lead->activities()->create([
-                'user_id' => auth()->id(),
-                'action' => 'expertise_changed',
-                'description' => 'Expertise qualifiée : '.($lead->expertise?->name ?? 'non précisée').'.',
-            ]);
-        }
+            $oldStatus = $locked->status->value;
+            $oldAssignee = $locked->assigned_to;
+            $oldExpertise = $locked->expertise_id;
 
-        if ($oldAssignee !== $lead->assigned_to) {
-            $assignee = $lead->assignedTo?->name ?? 'personne';
-            $lead->activities()->create([
-                'user_id' => auth()->id(),
-                'action' => 'assigned',
-                'description' => 'Assigné à '.$assignee.'.',
+            $locked->update([
+                'status' => LeadStatus::from($validated['status']),
+                'assigned_to' => $validated['assigned_to'],
+                'expertise_id' => $validated['expertise_id'],
+                'notes' => $validated['notes'],
+                'next_action' => $validated['next_action'],
+                'next_action_at' => $validated['next_action_at'],
+                'deadline' => $validated['deadline'],
+                'estimated_amount' => $validated['estimated_amount'],
             ]);
 
-            // Alerte le nouveau commercial (pas d'envoi si désassigné).
-            if ($lead->assignedTo !== null) {
-                $lead->assignedTo->notify(new AssignedLeadNotification($lead));
+            $locked->loadMissing(['expertise', 'assignedTo']);
+
+            if ($oldStatus !== $locked->status->value) {
+                $locked->activities()->create([
+                    'user_id' => auth()->id(),
+                    'action' => 'status_changed',
+                    'description' => 'Statut : '.$oldStatus.' → '.$locked->status->value.'.',
+                ]);
+            }
+
+            if ($oldExpertise !== $locked->expertise_id) {
+                $locked->activities()->create([
+                    'user_id' => auth()->id(),
+                    'action' => 'expertise_changed',
+                    'description' => 'Expertise qualifiée : '.($locked->expertise?->name ?? 'non précisée').'.',
+                ]);
+            }
+
+            if ($oldAssignee !== $locked->assigned_to) {
+                $assignee = $locked->assignedTo?->name ?? 'personne';
+                $locked->activities()->create([
+                    'user_id' => auth()->id(),
+                    'action' => 'assigned',
+                    'description' => 'Assigné à '.$assignee.'.',
+                ]);
+
+                // Alerte le nouveau commercial (pas d'envoi si désassigné).
+                if ($locked->assignedTo !== null) {
+                    $notifyAssignee = $locked->assignedTo;
+                }
+            }
+
+            // Partage le modèle frais pour la notification hors transaction.
+            $lead->setRawAttributes($locked->getAttributes(), true);
+            $lead->setRelations($locked->getRelations());
+        });
+
+        // Notification hors transaction : file after_commit, pas de mail si rollback.
+        if ($notifyAssignee !== null) {
+            $fresh = Lead::with(['sector', 'expertise'])->find($lead->getKey());
+
+            if ($fresh !== null) {
+                $notifyAssignee->notify(new AssignedLeadNotification($fresh));
             }
         }
 
@@ -302,17 +329,24 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
             'estimated_amount' => ['nullable', 'integer', 'min:0', 'max:100000000000'],
         ]);
 
-        $lead = Lead::create($validated + [
-            'status' => LeadStatus::Nouveau,
-            'source' => LeadSource::from($validated['source']),
-            'prospect_type' => isset($validated['prospect_type']) ? ProspectType::from($validated['prospect_type']) : ProspectType::Particulier,
-        ]);
+        $lead = DB::transaction(function () use ($validated): Lead {
+            $created = Lead::create($validated + [
+                'status' => LeadStatus::Nouveau,
+                'source' => LeadSource::from($validated['source']),
+                'email' => mb_strtolower(trim($validated['email'])),
+                'prospect_type' => isset($validated['prospect_type']) ? ProspectType::from($validated['prospect_type']) : ProspectType::Particulier,
+            ]);
 
-        $lead->activities()->create([
-            'user_id' => auth()->id(),
-            'action' => 'created',
-            'description' => 'Prospect créé manuellement par '.auth()->user()->name.'.',
-        ]);
+            $created->activities()->create([
+                'user_id' => auth()->id(),
+                'action' => 'created',
+                'description' => 'Prospect créé manuellement par '.auth()->user()->name.'.',
+            ]);
+
+            return $created;
+        });
+
+        $lead->refresh();
 
         LeadCreated::dispatch($lead);
 
@@ -334,7 +368,19 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
     public function purge(): void
     {
         abort_unless(auth()->user()->can('manage_leads'), 403);
+
+        // Garde-fou anti- ràz massif : 1 purge / 10 min par utilisateur + trace.
+        $key = 'leads.purge:'.auth()->id();
+        if (RateLimiter::tooManyAttempts($key, 1)) {
+            $this->addError('search', 'Purge déjà effectuée récemment. Réessayez plus tard.');
+
+            return;
+        }
+        RateLimiter::hit($key, 600);
+
         Artisan::call('leads:purge');
+
+        Log::info('Purge RGPD des prospects > 3 ans via /admin/prospects.', ['user_id' => auth()->id()]);
     }
 
     public function export(): StreamedResponse
@@ -382,7 +428,7 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
 
             foreach ($query->cursor() as $lead) {
                 /** @var Lead $lead */
-                fputcsv($handle, [
+                fputcsv($handle, array_map(fn ($value): mixed => self::sanitizeCsvValue($value), [
                     $lead->reference,
                     $lead->name,
                     $lead->email,
@@ -410,13 +456,27 @@ new #[Layout('layouts::app')] #[Title('Prospects')] class extends Component
                     $lead->created_at?->format('Y-m-d H:i'),
                     $lead->first_contacted_at?->format('Y-m-d H:i'),
                     $lead->notes,
-                ], ';');
+                ]), ';');
             }
 
             fclose($handle);
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    private static function sanitizeCsvValue(mixed $value): mixed
+    {
+        if (! is_string($value) || $value === '') {
+            return $value;
+        }
+
+        // Anti-injection CSV/Excel : neutralise les formules =,+,-,@,tab,retour.
+        if (in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 };
 ?>

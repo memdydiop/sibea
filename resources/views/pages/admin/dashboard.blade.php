@@ -6,6 +6,7 @@ use App\Models\Lead;
 use App\Models\Page;
 use App\Models\Project;
 use App\Models\Sector;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -78,86 +79,104 @@ new #[Layout('layouts::app')] #[Title('Administration')] class extends Component
     #[Computed]
     public function salesPilot(): array
     {
-        $empty = [
-            'received' => 0,
-            'contacted' => 0,
-            'within24h' => 0,
-            'withinRate' => 0.0,
-            'avgMinutes' => null,
-            'avgLabel' => '—',
-            'won' => 0,
-            'conversionRate' => 0.0,
-            'slaBreached' => 0,
-            'overdueActions' => 0,
-            'pipeline' => [],
-        ];
-
         if (! auth()->user()->can('manage_leads')) {
-            return $empty;
+            return [
+                'received' => 0,
+                'contacted' => 0,
+                'within24h' => 0,
+                'withinRate' => 0.0,
+                'avgMinutes' => null,
+                'avgLabel' => '—',
+                'won' => 0,
+                'conversionRate' => 0.0,
+                'slaBreached' => 0,
+                'overdueActions' => 0,
+                'pipeline' => [],
+            ];
         }
 
-        $received = Lead::count();
+        /** @var array{received: int, contacted: int, within24h: int, withinRate: float, avgMinutes: ?int, avgLabel: string, won: int, conversionRate: float, slaBreached: int, overdueActions: int, pipeline: array<string, int>} */
+        return Cache::remember('dashboard.sales_pilot.v1', 300, function (): array {
+            $empty = [
+                'received' => 0,
+                'contacted' => 0,
+                'within24h' => 0,
+                'withinRate' => 0.0,
+                'avgMinutes' => null,
+                'avgLabel' => '—',
+                'won' => 0,
+                'conversionRate' => 0.0,
+                'slaBreached' => 0,
+                'overdueActions' => 0,
+                'pipeline' => [],
+            ];
 
-        if ($received === 0) {
-            return $empty;
-        }
+            $received = Lead::count();
 
-        $contactedLeads = Lead::query()
-            ->whereNotNull('first_contacted_at')
-            ->get(['created_at', 'first_contacted_at']);
+            if ($received === 0) {
+                return $empty;
+            }
 
-        $delays = $contactedLeads
-            ->map(fn (Lead $lead) => $lead->responseTimeInMinutes())
-            ->filter(fn (?int $minutes) => $minutes !== null);
+            $contactedLeads = Lead::query()
+                ->contacted()
+                ->get(['id', 'created_at', 'first_contacted_at']);
 
-        $within24h = $delays->filter(fn (int $minutes) => $minutes <= 24 * 60)->count();
-        $avgMinutes = $delays->isNotEmpty() ? (int) round($delays->avg()) : null;
+            $delays = $contactedLeads
+                ->map(fn (Lead $lead) => $lead->responseTimeInMinutes())
+                ->filter(fn (?int $minutes) => $minutes !== null);
 
-        $won = Lead::where('status', LeadStatus::Gagne)->count();
+            $within24h = $delays->filter(fn (int $minutes) => $minutes <= 24 * 60)->count();
+            $avgMinutes = $delays->isNotEmpty() ? (int) round($delays->avg()) : null;
 
-        $pipeline = Lead::query()
-            ->selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status')
-            ->all();
+            $won = Lead::where('status', LeadStatus::Gagne)->count();
 
-        // SLA ouvrée lun-sam : dimanches exclus (SlaClock via modèle).
-        $slaBreached = Lead::where('status', LeadStatus::Nouveau)
-            ->whereNull('first_contacted_at')
-            ->get(['created_at', 'first_contacted_at', 'status'])
-            ->filter(fn (Lead $lead) => $lead->isSlaBreached())
-            ->count();
+            $pipeline = Lead::query()
+                ->selectRaw('status, COUNT(*) as total')
+                ->groupBy('status')
+                ->pluck('total', 'status')
+                ->all();
 
-        return [
-            'received' => $received,
-            'contacted' => $contactedLeads->count(),
-            'within24h' => $within24h,
-            'withinRate' => $contactedLeads->isNotEmpty() ? round($within24h / $contactedLeads->count() * 100, 1) : 0.0,
-            'avgMinutes' => $avgMinutes,
-            'avgLabel' => $avgMinutes === null ? '—' : sprintf('%dh%02d', intdiv($avgMinutes, 60), $avgMinutes % 60),
-            'won' => $won,
-            'conversionRate' => round($won / $received * 100, 1),
-            'slaBreached' => $slaBreached,
-            'overdueActions' => Lead::whereNotNull('next_action_at')
-                ->where('next_action_at', '<', now())
-                ->whereNotIn('status', [LeadStatus::Gagne->value, LeadStatus::Perdu->value, LeadStatus::Archive->value])
-                ->count(),
-            'pipeline' => $pipeline,
-        ];
+            // SLA ouvrée lun-sam : dimanches exclus (SlaClock via modèle).
+            $slaBreached = Lead::query()
+                ->slaCandidates()
+                ->get(['id', 'created_at', 'first_contacted_at', 'status'])
+                ->filter(fn (Lead $lead) => $lead->isSlaBreached())
+                ->count();
+
+            return [
+                'received' => $received,
+                'contacted' => $contactedLeads->count(),
+                'within24h' => $within24h,
+                'withinRate' => $contactedLeads->isNotEmpty() ? round($within24h / $contactedLeads->count() * 100, 1) : 0.0,
+                'avgMinutes' => $avgMinutes,
+                'avgLabel' => $avgMinutes === null ? '—' : sprintf('%dh%02d', intdiv($avgMinutes, 60), $avgMinutes % 60),
+                'won' => $won,
+                'conversionRate' => round($won / $received * 100, 1),
+                'slaBreached' => $slaBreached,
+                'overdueActions' => Lead::overdueAction()->count(),
+                'pipeline' => $pipeline,
+            ];
+        });
     }
 
     #[Computed]
     public function overdueLeads()
     {
-        return auth()->user()->can('manage_leads')
-            ? Lead::where('status', LeadStatus::Nouveau)
-                ->whereNull('first_contacted_at')
-                ->get()
-                ->filter(fn (Lead $lead) => $lead->isSlaBreached())
-                ->sortByDesc('created_at')
-                ->take(5)
-                ->values()
-            : collect();
+        if (! auth()->user()->can('manage_leads')) {
+            return collect();
+        }
+
+        /** @var array<int, array<string, mixed>> $items */
+        $items = Cache::remember('dashboard.overdue_leads.v1', 300, fn (): array => Lead::query()
+            ->slaCandidates()
+            ->get()
+            ->filter(fn (Lead $lead) => $lead->isSlaBreached())
+            ->sortByDesc('created_at')
+            ->take(5)
+            ->values()
+            ->toArray());
+
+        return Lead::hydrate($items);
     }
 
     /**

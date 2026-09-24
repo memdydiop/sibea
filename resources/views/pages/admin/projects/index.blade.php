@@ -247,9 +247,9 @@ new #[Layout('layouts::app')] #[Title('Réalisations')] class extends Component
             'expertise_ids.*' => ['exists:expertises,id'],
             'service_ids' => ['array'],
             'service_ids.*' => ['exists:services,id'],
-            'cover' => ['nullable', 'image', 'max:5120'],
+            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:5120'],
             'gallery' => ['array', 'max:10'],
-            'gallery.*' => ['image', 'max:5120'],
+            'gallery.*' => ['image', 'mimes:jpg,jpeg,png,webp,avif', 'max:5120'],
             'documents' => ['array', 'max:5'],
             'documents.*' => ['file', 'mimes:pdf', 'max:10240'],
         ]);

@@ -71,6 +71,8 @@ test('invited user can set a password from the signed link', function () {
 
     $this->get(invitationUrl($user))->assertOk()->assertSee('Définir votre mot de passe');
 
+    session()->put('invitation_verified_'.$user->id, true);
+
     Livewire::test('pages::invitation', ['user' => $user])
         ->set('password', 'N0uveau-P@ssword!')
         ->set('password_confirmation', 'N0uveau-P@ssword!')
@@ -106,8 +108,22 @@ test('expired invitation link is forbidden', function () {
     $this->get($url)->assertForbidden();
 });
 
+test('invitation save without a prior signed link is forbidden', function () {
+    $user = User::factory()->create(['password_changed_at' => null]);
+
+    Livewire::test('pages::invitation', ['user' => $user])
+        ->set('password', 'N0uveau-P@ssword!')
+        ->set('password_confirmation', 'N0uveau-P@ssword!')
+        ->call('save')
+        ->assertForbidden();
+
+    expect($user->fresh()->password_changed_at)->toBeNull();
+});
+
 test('suspended user cannot use the invitation link', function () {
     $user = User::factory()->create(['password_changed_at' => null]);
+
+    session()->put('invitation_verified_'.$user->id, true);
 
     $component = Livewire::test('pages::invitation', ['user' => $user]);
 

@@ -19,6 +19,13 @@ new #[Layout('layouts::auth')] #[Title('Invitation')] class extends Component
     {
         abort_if($user->suspended_at !== null, 403);
 
+        // Le middleware `signed` protège le GET, mais les POST Livewire
+        // (`/livewire/update`) ne portent pas la signature. On mémorise donc
+        // en session qu'un lien signé valide a été présenté pour ce compte.
+        if (request()->hasValidSignature()) {
+            session()->put($this->sessionKey($user), true);
+        }
+
         $this->user = $user;
     }
 
@@ -26,6 +33,7 @@ new #[Layout('layouts::auth')] #[Title('Invitation')] class extends Component
     {
         abort_if($this->user->password_changed_at !== null, 410);
         abort_if($this->user->suspended_at !== null, 403);
+        abort_unless(session()->get($this->sessionKey($this->user)) === true, 403);
 
         $key = 'invitation:'.$this->user->id.'|'.request()->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
@@ -45,8 +53,14 @@ new #[Layout('layouts::auth')] #[Title('Invitation')] class extends Component
         ]);
 
         RateLimiter::clear($key);
+        session()->forget($this->sessionKey($this->user));
 
         $this->redirect(route('login'), navigate: true);
+    }
+
+    private function sessionKey(User $user): string
+    {
+        return 'invitation_verified_'.$user->id;
     }
 };
 ?>

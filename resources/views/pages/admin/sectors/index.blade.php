@@ -174,7 +174,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
             'hero_title' => ['nullable', 'string', 'max:255'],
             'hero_description' => ['nullable', 'string'],
             'hero_cta_label' => ['nullable', 'string', 'max:255'],
-            'heroImage' => ['nullable', 'image', 'max:5120'],
+            'heroImage' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:5120'],
             'intro_title' => ['nullable', 'string', 'max:255'],
             'intro_text' => ['nullable', 'string'],
             'cards' => ['array', 'max:8'],
@@ -213,6 +213,12 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
         if ($this->editingId) {
             $sector = Sector::findOrFail($this->editingId);
             $this->authorize('update', $sector);
+
+            // (Dé)verrouiller un secteur officiel = acte sensible : manage_roles.
+            if (($validated['is_locked'] ?? false) !== (bool) $sector->is_locked) {
+                abort_unless(auth()->user()->can('manage_roles'), 403);
+            }
+
             $sector->update($data);
         } else {
             $this->authorize('create', Sector::class);
@@ -277,6 +283,7 @@ new #[Layout('layouts::app')] #[Title('Secteurs')] class extends Component {
     {
         $sector = Sector::findOrFail($id);
         $this->authorize('update', $sector);
+        abort_if($sector->is_locked, 403, 'Secteur officiel verrouillé.');
         $sector->update(['is_active' => !$sector->is_active]);
         Sector::flushActiveListCache();
     }

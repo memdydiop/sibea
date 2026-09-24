@@ -30,13 +30,15 @@ class AssignedLeadNotification extends Notification implements ShouldQueue
      */
     public function toMail(User $notifiable): MailMessage
     {
+        $this->lead->loadMissing(['sector', 'expertise']);
+
         $message = (new MailMessage)
             ->subject('Prospect assigné : '.$this->lead->name)
             ->greeting('Bonjour '.$notifiable->name.',')
             ->line('Un prospect vous a été assigné sur '.config('app.name').'.')
             ->line('Nom : '.$this->lead->name)
             ->line('Email : '.$this->lead->email)
-            ->line('Type de demande : '.$this->lead->request_type->label());
+            ->line('Type de demande : '.($this->lead->request_type?->label() ?? '—'));
 
         if (filled($this->lead->company)) {
             $message->line('Société : '.$this->lead->company);
@@ -46,8 +48,14 @@ class AssignedLeadNotification extends Notification implements ShouldQueue
             $message->line('Téléphone : '.$this->lead->phone);
         }
 
+        try {
+            $adminUrl = route('admin.leads');
+        } catch (\Throwable) {
+            $adminUrl = url('/admin/prospects');
+        }
+
         $message
-            ->action('Voir dans l’administration', url('/admin/prospects'))
+            ->action('Voir dans l’administration', $adminUrl)
             ->line('Merci !');
 
         // Réponse directe au prospect, expéditeur vérifié conservé.

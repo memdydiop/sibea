@@ -89,7 +89,7 @@ class SlaClock
      */
     public static function addWorkingHours(CarbonInterface $from, int $hours = 24): Carbon
     {
-        $deadline = Carbon::parse($from->toDateTimeString());
+        $deadline = Carbon::instance($from)->copy();
         $remainingMinutes = $hours * 60;
 
         while ($remainingMinutes > 0) {
@@ -128,8 +128,8 @@ class SlaClock
      */
     public static function workingMinutesBetween(CarbonInterface $from, CarbonInterface $to): int
     {
-        $fromCarbon = Carbon::parse($from->toDateTimeString());
-        $toCarbon = Carbon::parse($to->toDateTimeString());
+        $fromCarbon = Carbon::instance($from)->copy();
+        $toCarbon = Carbon::instance($to)->copy();
 
         if ($toCarbon->lessThanOrEqualTo($fromCarbon)) {
             return 0;

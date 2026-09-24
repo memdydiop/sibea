@@ -24,6 +24,8 @@ class NewLeadNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
+        $this->lead->loadMissing(['sector', 'expertise', 'assignedTo']);
+
         $message = (new MailMessage)
             ->subject('Nouveau prospect '.($this->lead->reference ?? '').' : '.$this->lead->name)
             ->greeting('Bonjour,')
@@ -32,7 +34,7 @@ class NewLeadNotification extends Notification implements ShouldQueue
             ->line('Nom : '.$this->lead->name)
             ->line('Email : '.$this->lead->email)
             ->line('Type : '.($this->lead->prospect_type?->label() ?? '—'))
-            ->line('Type de demande : '.$this->lead->request_type->label());
+            ->line('Type de demande : '.($this->lead->request_type?->label() ?? '—'));
 
         if (filled($this->lead->company)) {
             $message->line('Société : '.$this->lead->company);
@@ -90,8 +92,14 @@ class NewLeadNotification extends Notification implements ShouldQueue
             $message->line('Doublon possible : '.$duplicates.' autre(s) demande(s) existe(nt) déjà pour cet email.');
         }
 
+        try {
+            $adminUrl = route('admin.leads');
+        } catch (\Throwable) {
+            $adminUrl = url('/admin/prospects');
+        }
+
         $message
-            ->action('Voir dans l’administration', url('/admin/prospects'))
+            ->action('Voir dans l’administration', $adminUrl)
             ->line('Merci !');
 
         // Permet au commercial de répondre directement au prospect

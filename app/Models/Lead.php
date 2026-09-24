@@ -9,11 +9,14 @@ use App\Enums\RequestType;
 use App\Support\SlaClock;
 use Database\Factories\LeadFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * @property int $id
@@ -71,7 +74,12 @@ class Lead extends Model
                     'reference' => 'SIB-'.str_pad((string) $lead->id, 5, '0', STR_PAD_LEFT),
                 ]);
             }
+
+            self::flushPilotCaches();
         });
+
+        static::updated(fn (): int|bool => self::flushPilotCaches());
+        static::deleted(fn (): int|bool => self::flushPilotCaches());
 
         // SLA 24h : fige l'heure du premier contact dès la première sortie de « Nouveau ».
         static::saving(function (Lead $lead): void {
@@ -145,6 +153,83 @@ class Lead extends Model
     }
 
     /**
+     * Valeurs des statuts ouverts (ni Gagné ni Perdu/Archivé).
+     *
+     * @return array<int, string>
+     */
+    public static function openStatusValues(): array
+    {
+        return collect(LeadStatus::cases())
+            ->filter(fn (LeadStatus $status) => $status->isOpen())
+            ->map(fn (LeadStatus $status) => $status->value)
+            ->all();
+    }
+
+    /**
+     * @param  Builder<Lead>  $query
+     * @return Builder<Lead>
+     */
+    #[Scope]
+    protected function open(Builder $query): Builder
+    {
+        return $query->whereIn('status', self::openStatusValues());
+    }
+
+    /**
+     * Candidats au breach SLA : Nouveau sans premier contact.
+     *
+     * @param  Builder<Lead>  $query
+     * @return Builder<Lead>
+     */
+    #[Scope]
+    protected function slaCandidates(Builder $query): Builder
+    {
+        return $query->where('status', LeadStatus::Nouveau)->whereNull('first_contacted_at');
+    }
+
+    /**
+     * @param  Builder<Lead>  $query
+     * @return Builder<Lead>
+     */
+    #[Scope]
+    protected function contacted(Builder $query): Builder
+    {
+        return $query->whereNotNull('first_contacted_at');
+    }
+
+    /**
+     * Relances en retard : next_action_at passée sur dossier ouvert.
+     *
+     * @param  Builder<Lead>  $query
+     * @return Builder<Lead>
+     */
+    #[Scope]
+    protected function overdueAction(Builder $query): Builder
+    {
+        return $query->whereNotNull('next_action_at')
+            ->where('next_action_at', '<', now())
+            ->whereNotIn('status', [LeadStatus::Gagne->value, LeadStatus::Perdu->value, LeadStatus::Archive->value]);
+    }
+
+    /**
+     * Recherche admin insensible à la casse (nom/email/société/réf).
+     *
+     * @param  Builder<Lead>  $query
+     * @return Builder<Lead>
+     */
+    #[Scope]
+    protected function search(Builder $query, string $term): Builder
+    {
+        $like = '%'.mb_strtolower(trim($term)).'%';
+
+        return $query->where(fn (Builder $q) => $q
+            ->whereRaw('LOWER(name) LIKE ?', [$like])
+            ->orWhereRaw('LOWER(email) LIKE ?', [$like])
+            ->orWhereRaw('LOWER(company) LIKE ?', [$like])
+            ->orWhereRaw('LOWER(reference) LIKE ?', [$like]));
+    }
+
+    /**
      * @return BelongsTo<Sector, $this>
      */
     public function sector(): BelongsTo
@@ -174,5 +259,14 @@ class Lead extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(LeadActivity::class)->latest();
+    }
+
+    private static function flushPilotCaches(): bool
+    {
+        Cache::forget('dashboard.sales_pilot.v1');
+        Cache::forget('dashboard.overdue_leads.v1');
+        Cache::forget('leads.duplicate_emails.v1');
+
+        return true;
     }
 }

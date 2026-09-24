@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\UserInvitation;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -171,6 +173,117 @@ test('assigns users to a role from the role form', function () {
         ->and($outsider->fresh()->hasRole('Rédacteur'))->toBeFalse();
 });
 
+test('a users manager can invite operationals but cannot grant privileged access', function () {
+    $role = Role::create(['name' => 'Gestionnaire', 'guard_name' => 'web']);
+    $role->givePermissionTo(['view_dashboard', 'manage_users']);
+    $manager = User::factory()->create()->assignRole($role);
+
+    $commercial = Role::create(['name' => 'Commercial', 'guard_name' => 'web']);
+    $commercial->givePermissionTo(['view_dashboard', 'manage_leads']);
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.users.index')
+        ->set('name', 'Awa Koné')
+        ->set('email', 'awa@example.com')
+        ->set('role_names', ['Commercial'])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(User::where('email', 'awa@example.com')->first()->hasRole('Commercial'))->toBeTrue();
+
+    $privileged = Role::create(['name' => 'SuperTest', 'guard_name' => 'web']);
+    $privileged->givePermissionTo(['manage_users']);
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.users.index')
+        ->set('name', 'Exploit')
+        ->set('email', 'exploit@example.com')
+        ->set('role_names', ['SuperTest'])
+        ->call('save')
+        ->assertForbidden();
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.users.index')
+        ->set('name', 'Exploit Direct')
+        ->set('email', 'exploit-direct@example.com')
+        ->set('permission_names', ['manage_roles'])
+        ->call('save')
+        ->assertForbidden();
+
+    $this->assertDatabaseMissing('users', ['email' => 'exploit@example.com']);
+    $this->assertDatabaseMissing('users', ['email' => 'exploit-direct@example.com']);
+});
+
+test('resending an invitation is throttled and refused for suspended accounts', function () {
+    Notification::fake();
+
+    $suspended = User::factory()->create(['password_changed_at' => null, 'suspended_at' => now()]);
+
+    $manager = adminManager();
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.users.index')
+        ->call('resendInvitation', $suspended->id)
+        ->assertForbidden();
+
+    $user = User::factory()->create(['password_changed_at' => null]);
+
+    $component = Livewire::actingAs($manager)
+        ->test('pages::admin.users.index');
+
+    for ($i = 0; $i < 4; $i++) {
+        $component->call('resendInvitation', $user->id);
+    }
+
+    Notification::assertSentTimes(UserInvitation::class, 3);
+});
+
+test('cannot suspend or delete the last role manager', function () {
+    $super = adminManager();
+
+    $adminRole = Role::create(['name' => 'Admin test', 'guard_name' => 'web']);
+    $adminRole->givePermissionTo(['view_dashboard', 'manage_users']);
+    $admin = User::factory()->create()->assignRole($adminRole);
+
+    Livewire::actingAs($admin)
+        ->test('pages::admin.users.index')
+        ->call('suspend', $super->id)
+        ->assertForbidden();
+
+    expect($super->fresh()->suspended_at)->toBeNull();
+
+    $super->update(['suspended_at' => now()]);
+
+    Livewire::actingAs($admin)
+        ->test('pages::admin.users.index')
+        ->call('delete', $super->id)
+        ->assertForbidden();
+
+    $this->assertDatabaseHas('users', ['id' => $super->id]);
+});
+
+test('seeded matrix roles cannot be deleted', function () {
+    $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\RolesPermissionsSeeder', '--force' => true]);
+
+    $commercial = Role::where('name', 'Commercial')->firstOrFail();
+    $super = Role::where('name', 'Super administrateur')->firstOrFail();
+
+    $manager = adminManager();
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.users.index')
+        ->call('deleteRole', $commercial->id)
+        ->assertForbidden();
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.roles.show', ['role' => $super])
+        ->call('delete')
+        ->assertForbidden();
+
+    expect(Role::where('name', 'Commercial')->exists())->toBeTrue()
+        ->and(Role::where('name', 'Super administrateur')->exists())->toBeTrue();
+});
+
 test('role details page lists permissions with descriptions', function () {
     $role = Role::create(['name' => 'Support', 'guard_name' => 'web', 'description' => 'Assistance de premier niveau.']);
     Permission::where('name', 'manage_leads')->update(['description' => 'Consulter, assigner et traiter les prospects reçus via le site.']);
@@ -319,6 +432,32 @@ test('filters users by status', function () {
 
     expect($active)->toContain('Compte Actif Test')
         ->and($active)->not->toContain('Compte Suspendu Test');
+});
+
+test('invited users show a pending badge and filter', function () {
+    User::factory()->create(['name' => 'Compte Invité Test', 'password_changed_at' => null, 'suspended_at' => null]);
+    User::factory()->create(['name' => 'Compte Activé Test', 'password_changed_at' => now(), 'suspended_at' => null]);
+
+    $manager = adminManager();
+
+    $invited = Livewire::actingAs($manager)
+        ->test('pages::admin.users.index')
+        ->set('statusFilter', 'invited')
+        ->get('users')->pluck('name')->all();
+
+    expect($invited)->toContain('Compte Invité Test')
+        ->and($invited)->not->toContain('Compte Activé Test');
+
+    Livewire::actingAs($manager)
+        ->test('pages::admin.users.index')
+        ->assertSee('Invitation en attente');
+
+    $active = Livewire::actingAs($manager)
+        ->test('pages::admin.users.index')
+        ->set('statusFilter', 'active')
+        ->get('users')->pluck('name')->all();
+
+    expect($active)->not->toContain('Compte Invité Test');
 });
 
 test('filters users by role', function () {

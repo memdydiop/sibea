@@ -32,7 +32,7 @@ class LeadAcknowledgment extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Bien reçu — '.config('app.name'))
             ->greeting('Bonjour '.$this->lead->name.',')
-            ->line('Merci pour votre demande du '.$this->lead->created_at?->format('d/m/Y').' ('.$this->lead->request_type->label().').')
+            ->line('Merci pour votre demande du '.$this->lead->created_at?->format('d/m/Y').' ('.($this->lead->request_type?->label() ?? '—').').')
             ->line('Notre équipe vous répondra sous 24h ouvrées.')
             ->line('À très vite, l’équipe '.config('app.name').'.');
     }

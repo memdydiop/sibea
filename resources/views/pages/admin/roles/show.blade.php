@@ -95,6 +95,12 @@ new #[Layout('layouts::app')] #[Title('Détail du rôle')] class extends Compone
 
         $this->role->update(['name' => $validated['name'], 'description' => $validated['description']]);
         $this->role->syncPermissions($validated['permission_names'] ?? []);
+
+        // Rattacher des utilisateurs = gestion des comptes : exige manage_users.
+        if (! empty($validated['user_ids'])) {
+            abort_unless(auth()->user()->can('manage_users'), 403);
+        }
+
         $this->role->users()->sync($validated['user_ids'] ?? []);
 
         $this->showForm = false;
@@ -104,6 +110,7 @@ new #[Layout('layouts::app')] #[Title('Détail du rôle')] class extends Compone
     public function delete(): void
     {
         $this->authorize('delete', $this->role);
+        abort_if(in_array($this->role->name, ['Super administrateur', 'Administrateur', 'Éditeur', 'Commercial'], true), 403, 'Rôle système : suppression impossible.');
         $this->role->delete();
 
         $this->redirect(route('admin.users'), navigate: true);

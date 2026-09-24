@@ -240,7 +240,7 @@ new #[Layout('layouts::app')] #[Title('Expertises')] class extends Component
                 'sector_ids.*' => ['exists:sectors,id'],
                 'service_ids' => ['array'],
                 'service_ids.*' => ['exists:services,id'],
-                'cover' => ['nullable', 'image', 'max:5120'],
+                'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:5120'],
             ]);
         } catch (ValidationException $exception) {
             $this->tab = $this->tabForErrors($exception->validator->errors()->keys());

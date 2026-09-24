@@ -4,6 +4,8 @@ use App\Models\Activity;
 use App\Models\User;
 use App\Notifications\UserInvitation;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -16,6 +18,9 @@ use Spatie\Permission\Models\Role;
 
 new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Component {
     use WithPagination;
+
+    /** Rôles de la matrice seedée : leur suppression casserait les accès. */
+    private const SYSTEM_ROLES = ['Super administrateur', 'Administrateur', 'Éditeur', 'Commercial'];
 
     public string $search = '';
 
@@ -69,7 +74,8 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
             ->with(['roles', 'permissions'])
             ->when($this->search, fn($query) => $query->where(fn($q) => $q->whereRaw('LOWER(name) LIKE ?', ['%' . mb_strtolower($this->search) . '%'])->orWhereRaw('LOWER(email) LIKE ?', ['%' . mb_strtolower($this->search) . '%'])))
             ->when($this->statusFilter === 'suspended', fn($query) => $query->whereNotNull('suspended_at'))
-            ->when($this->statusFilter === 'active', fn($query) => $query->whereNull('suspended_at'))
+            ->when($this->statusFilter === 'active', fn($query) => $query->whereNull('suspended_at')->whereNotNull('password_changed_at'))
+            ->when($this->statusFilter === 'invited', fn($query) => $query->whereNull('suspended_at')->whereNull('password_changed_at'))
             ->when($this->roleFilter, fn($query) => $query->whereHas('roles', fn($q) => $q->where('name', $this->roleFilter)))
             ->orderBy('name')
             ->paginate($this->perPage);
@@ -132,6 +138,14 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
             'permission_names.*' => ['exists:permissions,name'],
         ]);
 
+        // Attribuer un accès à privilèges (gestion des comptes ou des rôles,
+        // direct ou via un rôle) = acte d'administration des rôles : exige
+        // manage_roles en plus de manage_users. Les rôles opérationnels
+        // (ex. Commercial) restent attribuables avec manage_users seul.
+        if ($this->assignsPrivilegedAccess($validated['role_names'] ?? [], $validated['permission_names'] ?? [])) {
+            abort_unless(auth()->user()->can('manage_roles'), 403);
+        }
+
         if ($this->editingId) {
             $user = User::findOrFail($this->editingId);
             $this->authorize('update', $user);
@@ -167,6 +181,8 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
     {
         $user = User::findOrFail($id);
         $this->authorize('delete', $user);
+        abort_if($this->isLastRoleManager($user), 403, 'Dernier gestionnaire des rôles : suppression impossible.');
+        DB::table('sessions')->where('user_id', $user->id)->delete();
         $user->delete();
         $this->logActivity($user, 'deleted', 'Compte supprimé.');
     }
@@ -251,6 +267,12 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
             $role = Role::create(['name' => $validated['role_name'], 'description' => $validated['role_description'], 'guard_name' => 'web']);
         }
 
+        // Rattacher des utilisateurs à un rôle = acte de gestion des comptes :
+        // exige manage_users en plus de manage_roles.
+        if (! empty($validated['role_user_ids'])) {
+            abort_unless(auth()->user()->can('manage_users'), 403);
+        }
+
         $role->syncPermissions($validated['role_permission_names'] ?? []);
         $role->users()->sync($validated['role_user_ids'] ?? []);
 
@@ -263,6 +285,7 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
     {
         $role = Role::findOrFail($id);
         $this->authorize('delete', $role);
+        abort_if(in_array($role->name, self::SYSTEM_ROLES, true), 403, 'Rôle système : suppression impossible.');
         $role->delete();
         unset($this->roleCards);
     }
@@ -271,7 +294,14 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
     {
         $user = User::findOrFail($id);
         $this->authorize('suspend', $user);
+        abort_if($this->isLastRoleManager($user), 403, 'Dernier gestionnaire des rôles : suspension impossible.');
         $user->update(['suspended_at' => now()]);
+
+        // Révocation immédiate : sessions DB + remember-me, sinon le compte
+        // suspendu reste connecté jusqu'à expiration naturelle du cookie.
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+        $user->forceFill(['remember_token' => null])->save();
+
         $this->logActivity($user, 'suspended', 'Compte suspendu.');
 
         Flux::toast(variant: 'success', text: 'Compte de ' . $user->email . ' suspendu.');
@@ -292,6 +322,17 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
         $user = User::findOrFail($id);
         $this->authorize('update', $user);
         abort_if($user->password_changed_at !== null, 403);
+        abort_if($user->suspended_at !== null, 403);
+
+        // Anti-spam : 3 renvois / 10 min par compte ciblé.
+        $key = 'invitation.resend:'.$user->id;
+        if (RateLimiter::tooManyAttempts($key, 3)) {
+            Flux::toast(variant: 'error', text: 'Trop de renvois. Réessayez dans quelques minutes.');
+
+            return;
+        }
+        RateLimiter::hit($key, 600);
+
         $user->notify(new UserInvitation());
         $this->logActivity($user, 'invitation_resent', 'Invitation renvoyée.');
 
@@ -339,6 +380,42 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
     private function logActivity(User $user, string $action, ?string $description = null): void
     {
         Activity::record(auth()->user(), $user, $action, $description);
+    }
+
+    /**
+     * @param  array<int, string>  $roleNames
+     * @param  array<int, string>  $permissionNames
+     */
+    private function assignsPrivilegedAccess(array $roleNames, array $permissionNames): bool
+    {
+        if (array_intersect($permissionNames, ['manage_users', 'manage_roles']) !== []) {
+            return true;
+        }
+
+        if ($roleNames === []) {
+            return false;
+        }
+
+        return Role::query()->whereIn('name', $roleNames)
+            ->whereHas('permissions', fn ($query) => $query->whereIn('name', ['manage_users', 'manage_roles']))
+            ->exists();
+    }
+
+    /**
+     * Dernier détenteur actif du pouvoir sur les rôles : le neutraliser
+     * (suspension/suppression) verrouillerait l'administration des accès.
+     */
+    private function isLastRoleManager(User $user): bool
+    {
+        if (! $user->hasRole('Super administrateur') && ! $user->can('manage_roles')) {
+            return false;
+        }
+
+        return ! User::query()->whereKeyNot($user->getKey())->whereNull('suspended_at')
+            ->where(fn ($query) => $query
+                ->whereHas('roles.permissions', fn ($sub) => $sub->where('name', 'manage_roles'))
+                ->orWhereHas('permissions', fn ($sub) => $sub->where('name', 'manage_roles')))
+            ->exists();
     }
 
     private static function randomPassword(): string
@@ -510,6 +587,7 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
                     <flux:select wire:model.live="statusFilter" size="sm">
                         <option value="">Tous les statuts</option>
                         <option value="active">Actif</option>
+                        <option value="invited">Invitation en attente</option>
                         <option value="suspended">Suspendu</option>
                     </flux:select>
                     <flux:select wire:model.live="roleFilter" size="sm">
@@ -562,6 +640,8 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
                                 <flux:table.cell>
                                     @if ($user->suspended_at !== null)
                                         <flux:badge size="sm" color="red">Suspendu</flux:badge>
+                                    @elseif ($user->password_changed_at === null)
+                                        <flux:badge size="sm" color="amber">Invitation en attente</flux:badge>
                                     @else
                                         <flux:badge size="sm" color="green">Actif</flux:badge>
                                     @endif
