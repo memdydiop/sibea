@@ -776,7 +776,7 @@ new #[Layout('layouts::app')] #[Title('Utilisateurs & rôles')] class extends Co
                                 <div class="text-sm font-medium">{{ $activity->description ?: $activity->action }}
                                 </div>
                                 <div class="text-xs text-zinc-500">par {{ $activity->actor?->name ?: 'système' }} ·
-                                    {{ $activity->created_at?->diffForHumans() }}</div>
+                                    {{ $activity->created_at?->diffForHumans() }}@if (! empty($activity->meta['ip'])) · IP {{ $activity->meta['ip'] }}@endif</div>
                             </div>
                             <flux:badge size="sm" color="zinc">{{ $activity->action }}</flux:badge>
                         </li>

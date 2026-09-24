@@ -31,6 +31,36 @@ test('users can authenticate using the login screen', function () {
     $this->assertAuthenticated();
 });
 
+test('a successful login is recorded in the user history', function () {
+    $user = User::factory()->create();
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertSessionHasNoErrors();
+
+    $this->assertDatabaseHas('activities', [
+        'subject_type' => User::class,
+        'subject_id' => $user->id,
+        'action' => 'login',
+    ]);
+});
+
+test('a failed login is not recorded in the user history', function () {
+    $user = User::factory()->create();
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'wrong-password',
+    ]);
+
+    $this->assertDatabaseMissing('activities', [
+        'subject_type' => User::class,
+        'subject_id' => $user->id,
+        'action' => 'login',
+    ]);
+});
+
 test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create();
 
